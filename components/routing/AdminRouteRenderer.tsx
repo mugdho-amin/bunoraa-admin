@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import dynamic from "next/dynamic";
 import type { BaseKey } from "@refinedev/core";
 import { AdminShell } from "@/components/shell/AdminShell";
@@ -88,21 +89,29 @@ export function AdminRouteRenderer({ slug }: { slug: string[] }) {
 
   const route = resolveAdminRoute(slug, bootstrap);
 
+  const pageKey = route.type === "page"
+    ? `page:${route.path}`
+    : route.type === "resource"
+      ? `resource:${route.resource.name}:${route.action}:${route.id ?? ""}`
+      : "not-found";
+
   return (
     <AdminShell route={route}>
-      {route.type === "page"
-        ? renderCustomPage(route.path)
-        : route.type === "resource"
-          ? route.resource.name === "catalog/products"
-            ? renderProductPage(route.action, route.id)
-            : (
-                <GenericResourcePage
-                  resource={route.resource}
-                  action={route.action}
-                  id={route.id}
-                />
-              )
-          : <AdminNotFoundPage />}
+      <Fragment key={pageKey}>
+        {route.type === "page"
+          ? renderCustomPage(route.path)
+          : route.type === "resource"
+            ? route.resource.name === "catalog/products"
+              ? renderProductPage(route.action, route.id)
+              : (
+                  <GenericResourcePage
+                    resource={route.resource}
+                    action={route.action}
+                    id={route.id}
+                  />
+                )
+            : <AdminNotFoundPage />}
+      </Fragment>
     </AdminShell>
   );
 }
