@@ -1,5 +1,6 @@
 "use client";
 
+import "@ant-design/v5-patch-for-react-19";
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, useState } from "react";
 import { App as AntApp, ConfigProvider } from "antd";
 import { RefineThemes } from "@refinedev/antd";
@@ -15,6 +16,7 @@ import { dataProvider } from "@/lib/admin/data-provider";
 import { AdminApiError } from "@/lib/admin/http";
 import { createAdminLiveProvider } from "@/lib/admin/live-provider";
 import type { AdminBootstrap } from "@/lib/admin/types";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
 
 const queryClient = new QueryClient({

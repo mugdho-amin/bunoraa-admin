@@ -16,41 +16,18 @@ const cspHeader = `
 `;
 
 const securityHeaders = [
-  {
-    key: "X-DNS-Prefetch-Control",
-    value: "on",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), browsing-topics=()",
-  },
+  { key: "X-DNS-Prefetch-Control", value: "on" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), browsing-topics=()" },
   ...(isProduction
-    ? [
-        {
-          key: "Strict-Transport-Security",
-          value: "max-age=63072000; includeSubDomains; preload",
-        },
-      ]
+    ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
     : []),
 ];
 
 if (isProduction) {
-  securityHeaders.push({
-    key: "Content-Security-Policy",
-    value: cspHeader.replace(/\s{2,}/g, " ").trim(),
-  });
+  securityHeaders.push({ key: "Content-Security-Policy", value: cspHeader.replace(/\s{2,}/g, " ").trim() });
 }
 
 const nextConfig: NextConfig = {
@@ -58,26 +35,21 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   productionBrowserSourceMaps: false,
+  output: isProduction ? "standalone" : undefined,
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
+      { protocol: "https", hostname: "**.bunoraa.com" },
+      { protocol: "https", hostname: "**.bunoraa.net" },
+      { protocol: "https", hostname: "**.cloudflarestorage.com" },
+      { protocol: "https", hostname: "**.r2.dev" },
+      { protocol: "https", hostname: "**.hf.space" },
     ],
   },
   serverExternalPackages: ["sharp"],
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+  typescript: { ignoreBuildErrors: false },
   async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: securityHeaders,
-      },
-    ];
+    return [{ source: "/:path*", headers: securityHeaders }];
   },
 };
 

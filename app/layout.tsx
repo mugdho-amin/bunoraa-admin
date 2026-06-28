@@ -1,4 +1,3 @@
-import "@ant-design/v5-patch-for-react-19";
 import type { Metadata } from "next";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
