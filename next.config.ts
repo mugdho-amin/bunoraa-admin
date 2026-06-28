@@ -57,7 +57,6 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
-  output: "standalone",
   productionBrowserSourceMaps: false,
   images: {
     formats: ["image/avif", "image/webp"],

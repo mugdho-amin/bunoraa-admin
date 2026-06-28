@@ -7,7 +7,7 @@
     "dev": "next dev --port 3001",
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
     "build:analyze": "cross-env ANALYZE=true NEXT_TELEMETRY_DISABLED=1 next build",
-    "start": "node .next/standalone/server.js",
+    "start": "next start --port 3001",
     "start:dev": "next start --port 3001",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -20,6 +20,9 @@
     "nextjs",
     "admin"
   ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "author": "",
   "license": "ISC",
   "prisma": {
