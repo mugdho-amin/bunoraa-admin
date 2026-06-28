@@ -106,7 +106,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
         label: "Sign out",
         onClick: () => {
           clearAuthState();
-          router.replace("/login");
+          window.location.href = "/login";
         },
       },
     ],

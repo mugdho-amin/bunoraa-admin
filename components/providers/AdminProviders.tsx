@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, useState } from "react";
 import { App as AntApp, ConfigProvider } from "antd";
 import { RefineThemes } from "@refinedev/antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Refine } from "@refinedev/core";
 import routerProvider from "@refinedev/nextjs-router/app";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { fetchAdminBootstrap } from "@/lib/admin/bootstrap";
 import { AdminBootstrapContext } from "@/lib/admin/bootstrap-context";
 import { authProvider } from "@/lib/admin/auth-provider";
@@ -50,7 +50,6 @@ export function AdminProviders({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const router = useRouter();
   const isLoginRoute = pathname === "/login";
   const hydrated = useSyncExternalStore(
     () => () => {},
@@ -59,6 +58,7 @@ export function AdminProviders({
   );
   const [bootstrap, setBootstrap] = useState<AdminBootstrap | null>(null);
   const [loading, setLoading] = useState(false);
+  const bootstrapped = useRef(false);
 
   const clearBootstrap = useCallback(() => {
     setBootstrap(null);
@@ -80,8 +80,8 @@ export function AdminProviders({
       if (error instanceof AdminApiError && (error.status === 401 || error.status === 403)) {
         clearAuthState();
         setBootstrap(null);
-        if (pathname !== "/login") {
-          router.replace("/login");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
         }
         return null;
       }
@@ -89,39 +89,41 @@ export function AdminProviders({
     } finally {
       setLoading(false);
     }
-  }, [pathname, router]);
+  }, []);
 
   useEffect(() => {
     if (!getAccessToken()) {
       if (!isLoginRoute) {
-        router.replace("/login");
+        window.location.href = "/login";
       }
       return;
     }
-    const timer = window.setTimeout(() => {
-      void refreshBootstrap();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [isLoginRoute, refreshBootstrap, router]);
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+    void refreshBootstrap();
+    // Run once on mount — avoids duplicate refreshBootstrap when login→dashboard
+    // navigation changes isLoginRoute. LoginScreen handles bootstrap directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return subscribeToAuthChanges(() => {
       if (!getAccessToken()) {
         setBootstrap(null);
-        if (!isLoginRoute) {
-          router.replace("/login");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
         }
         return;
       }
       void refreshBootstrap();
     });
-  }, [isLoginRoute, refreshBootstrap, router]);
+  }, [refreshBootstrap]);
 
   useEffect(() => {
     if (isLoginRoute && getAccessToken() && bootstrap) {
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     }
-  }, [bootstrap, isLoginRoute, router]);
+  }, [bootstrap, isLoginRoute]);
 
   const websocketUrl = bootstrap?.realtime.websocket_url ?? process.env.NEXT_PUBLIC_ADMIN_WS_URL ?? null;
   const liveProvider = useMemo(

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Alert,
   Button,
@@ -55,7 +54,6 @@ const featureCards = [
 ];
 
 export function LoginScreen() {
-  const router = useRouter();
   const { refreshBootstrap } = useAdminBootstrap();
   const [loginForm] = Form.useForm<LoginFields>();
   const [mfaForm] = Form.useForm<MfaFields>();
@@ -74,8 +72,8 @@ export function LoginScreen() {
         mfaForm.setFieldsValue({ method: result.methods[0] ?? "totp" });
         return;
       }
-      await refreshBootstrap();
-      router.replace("/dashboard");
+      if (!await refreshBootstrap()) return;
+      window.location.href = "/dashboard";
     } catch (error) {
       setError(error instanceof AdminApiError ? error.message : "Unable to sign in.");
     } finally {
@@ -88,8 +86,8 @@ export function LoginScreen() {
     setError(null);
     try {
       await verifyMfaCode(values.method, values.code);
-      await refreshBootstrap();
-      router.replace("/dashboard");
+      if (!await refreshBootstrap()) return;
+      window.location.href = "/dashboard";
     } catch (error) {
       setError(error instanceof AdminApiError ? error.message : "MFA verification failed.");
     } finally {
