@@ -254,86 +254,105 @@ export function AdminShell({ route, children }: AdminShellProps) {
       <Layout style={{ background: "transparent" }}>
         <Header
           style={{
-            padding: isDesktop ? "16px 24px 0 0" : "16px",
+            padding: isDesktop ? "16px 24px 0 0" : "12px",
             background: "transparent",
             height: "auto",
+            lineHeight: "inherit",
           }}
         >
-          <div className="admin-glass-card" style={{ padding: "14px 20px" }}>
-            <Flex align="center" justify="space-between" gap={16} wrap="wrap">
-              <Flex align="center" gap={8}>
-                {isDesktop ? (
-                  <Button
-                    type="text"
-                    icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    style={{ color: "var(--admin-muted)", flexShrink: 0 }}
-                  />
-                ) : (
-                  <Button
-                    type="text"
-                    icon={<MenuIcon size={18} />}
-                    onClick={() => setMobileNavOpen(true)}
-                  />
-                )}
-                <div>
-                  <Space wrap size={[8, 8]}>
-                    <Tag color="blue" bordered={false}>
+          <Flex align="center" justify="space-between" gap={12}>
+            <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+              {isDesktop ? (
+                <Button
+                  type="text"
+                  icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  style={{ color: "var(--admin-muted)", flexShrink: 0, marginLeft: -4 }}
+                />
+              ) : (
+                <Button
+                  type="text"
+                  icon={<MenuIcon size={18} />}
+                  onClick={() => setMobileNavOpen(true)}
+                />
+              )}
+              <Flex vertical gap={0} style={{ minWidth: 0 }}>
+                <Space size={6} wrap>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
+                  >
+                    <Tag
+                      color="blue"
+                      bordered={false}
+                      style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
+                    >
                       {route.type === "resource"
                         ? route.resource.group
                         : route.type === "page"
                           ? route.page.group
                           : "System"}
                     </Tag>
-                    <Tag
-                      color={bootstrap?.app.environment === "production" ? "green" : "gold"}
-                      bordered={false}
-                    >
-                      {bootstrap?.app.environment ?? "unknown"}
-                    </Tag>
-                  </Space>
-                  <Typography.Title
-                    level={4}
-                    className="admin-display"
-                    style={{ margin: "4px 0 0", fontSize: 18 }}
+                    <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>
+                      /
+                    </span>
+                    <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
+                    {subtitle ? (
+                      <>
+                        <span
+                          style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}
+                        >
+                          /
+                        </span>
+                        <span style={{ color: "var(--admin-muted)", opacity: 0.4 }}>
+                          {subtitle}
+                        </span>
+                      </>
+                    ) : null}
+                  </Typography.Text>
+                  <Tag
+                    color={bootstrap?.app.environment === "production" ? "green" : "gold"}
+                    bordered={false}
+                    style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
                   >
-                    {title}
-                  </Typography.Title>
-                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                    {subtitle}
-                  </Typography.Text>
-                </div>
-              </Flex>
-
-              <Space size={12} wrap>
-                <NotificationBell />
-                <Space size={6}>
-                  <ShieldEllipsis size={16} />
-                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                    MFA
-                  </Typography.Text>
+                    {bootstrap?.app.environment ?? "unknown"}
+                  </Tag>
                 </Space>
-                <Dropdown menu={userMenu} trigger={["click"]}>
-                  <Button type="text" style={{ height: "auto", padding: "4px 8px" }}>
-                    <Flex align="center" gap={8}>
-                      <Avatar
-                        size={28}
-                        style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
-                      >
-                        {nameInitial}
-                      </Avatar>
-                      <div style={{ textAlign: "left", lineHeight: 1.2 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{userName}</div>
-                        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                          {userEmail}
-                        </Typography.Text>
-                      </div>
-                    </Flex>
-                  </Button>
-                </Dropdown>
-              </Space>
+                <Typography.Title
+                  level={4}
+                  className="admin-display"
+                  style={{ margin: 0, fontSize: 18, lineHeight: 1.3 }}
+                >
+                  {title}
+                </Typography.Title>
+              </Flex>
             </Flex>
-          </div>
+
+            <Space size={10} wrap>
+              <NotificationBell />
+              <Space size={4}>
+                <ShieldEllipsis size={14} style={{ color: "var(--admin-muted)" }} />
+                <Typography.Text
+                  type="secondary"
+                  style={{ fontSize: 12, color: "var(--admin-muted)" }}
+                >
+                  MFA
+                </Typography.Text>
+              </Space>
+              <Dropdown menu={userMenu} trigger={["click"]}>
+                <Button type="text" style={{ height: "auto", padding: "2px 6px" }}>
+                  <Flex align="center" gap={6}>
+                    <Avatar
+                      size={26}
+                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+                    >
+                      {nameInitial}
+                    </Avatar>
+                  </Flex>
+                </Button>
+              </Dropdown>
+            </Space>
+          </Flex>
         </Header>
 
         <Content style={{ padding: isDesktop ? "20px 24px 24px 0" : "0 16px 24px" }}>
