@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { requestAdminEnvelope } from "@/lib/admin/http";
 import { logger } from "@/lib/admin/logger";
+import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 
 type NotificationItem = {
   id: string;
@@ -45,8 +46,10 @@ function notifyListeners(count: number) {
   globalListeners.forEach((fn) => fn(count));
 }
 
-function setupGlobalWebSocket() {
-  if (globalWsListener) return;
+let globalWs: WebSocket | null = null;
+let globalWsUrl: string | null = null;
+
+function setupGlobalWebSocket(wsUrlOverride?: string) {
   const token =
     typeof window !== "undefined"
       ? localStorage.getItem("admin_access_token")
@@ -54,15 +57,21 @@ function setupGlobalWebSocket() {
   if (!token) return;
 
   const wsUrl =
-    process.env.NEXT_PUBLIC_ADMIN_WS_URL || "ws://127.0.0.1:8000/ws/admin/updates/";
+    wsUrlOverride || process.env.NEXT_PUBLIC_ADMIN_WS_URL || "ws://127.0.0.1:8000/ws/admin/updates/";
   const url = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
-  let ws: WebSocket | null = null;
+
+  if (globalWs && globalWs.readyState <= WebSocket.OPEN) {
+    if (globalWsUrl === wsUrl) return;
+    globalWs.close();
+    globalWs = null;
+  }
+  globalWsUrl = wsUrl;
 
   function connect() {
-    if (ws && ws.readyState <= WebSocket.OPEN) return;
+    if (globalWs && globalWs.readyState <= WebSocket.OPEN) return;
     try {
-      ws = new WebSocket(url);
-      ws.onmessage = (msg) => {
+      globalWs = new WebSocket(url);
+      globalWs.onmessage = (msg) => {
         try {
           const payload = JSON.parse(msg.data);
           if (
@@ -85,8 +94,8 @@ function setupGlobalWebSocket() {
           logger.warn("WS notification: parse error", err);
         }
       };
-      ws.onclose = () => {
-        ws = null;
+      globalWs.onclose = () => {
+        globalWs = null;
         setTimeout(connect, 5000);
       };
     } catch (err) {
@@ -109,23 +118,25 @@ function setupGlobalWebSocket() {
   globalWsListener = () => {};
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(wsUrlOverride?: string) {
   const [count, setCount] = useState(globalUnreadCount);
 
   useEffect(() => {
     globalListeners.add(setCount);
-    setupGlobalWebSocket();
+    setupGlobalWebSocket(wsUrlOverride);
     return () => {
       globalListeners.delete(setCount);
     };
-  }, []);
+  }, [wsUrlOverride]);
 
   return count;
 }
 
 export function NotificationBell() {
   const router = useRouter();
-  const unreadCount = useUnreadCount();
+  const { bootstrap } = useAdminBootstrap();
+  const wsUrl = bootstrap?.realtime?.websocket_url;
+  const unreadCount = useUnreadCount(wsUrl);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
