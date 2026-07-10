@@ -10,6 +10,7 @@ type RequestOptions = {
   skipAuth?: boolean;
   raw?: boolean;
   retryOnAuth?: boolean;
+  withCredentials?: boolean;
 };
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.bunoraa.com/api/v1").replace(/\/$/, "");
@@ -203,6 +204,7 @@ async function requestInternal<T>(path: string, options: RequestOptions = {}): P
     skipAuth = false,
     raw = false,
     retryOnAuth = true,
+    withCredentials = !skipAuth,
   } = options;
 
   const token = skipAuth ? null : getAccessToken();
@@ -217,7 +219,7 @@ async function requestInternal<T>(path: string, options: RequestOptions = {}): P
       ...headers,
     },
     body: serializedBody as BodyInit | undefined,
-    credentials: "include",
+    credentials: withCredentials ? "include" : "same-origin",
   });
 
   const payload = await parseJson(response);
