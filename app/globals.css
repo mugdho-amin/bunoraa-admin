@@ -105,3 +105,89 @@ pre {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ===================================================
+   ADMIN SIDEBAR — Premium Styling
+   =================================================== */
+
+/* Scrollable menu area */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.18);
+}
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.08) transparent;
+}
+
+/* Sidebar glass card */
+.admin-sidebar-glass {
+  position: relative;
+  transition: width 0.2s ease;
+}
+
+/* Menu item sizing & rounding */
+.admin-sidebar-glass .ant-menu-item {
+  border-radius: 10px !important;
+  margin-block: 2px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Group header */
+.admin-sidebar-glass .ant-menu-item-group-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--admin-muted);
+  opacity: 0.65;
+  padding: 16px 12px 6px !important;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Active item — brand accent left edge */
+.admin-sidebar-glass .ant-menu-item-selected {
+  background: rgba(15, 118, 110, 0.08) !important;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 #0f766e;
+}
+.admin-sidebar-glass .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+/* Hover state */
+.admin-sidebar-glass .ant-menu-item:hover {
+  background: rgba(15, 23, 42, 0.04) !important;
+  border-radius: 10px !important;
+}
+
+/* Collapsed mode — center icons */
+.admin-sidebar-glass .ant-menu-inline-collapsed .ant-menu-item {
+  padding-inline: calc(50% - 11px) !important;
+}
+.admin-sidebar-glass .ant-menu-inline-collapsed .ant-menu-item-group-title {
+  display: none;
+}
+
+/* Sider collapse transition */
+.ant-layout-sider {
+  transition: all 0.2s ease !important;
+}
+.ant-layout-sider .ant-layout-sider-children {
+  transition: all 0.2s ease;
+}
+
+/* Remove antd's default trigger area when trigger={null} */
+.ant-layout-sider-trigger {
+  display: none !important;
+}
