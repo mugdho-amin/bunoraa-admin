@@ -107,7 +107,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
     <Flex vertical style={{ height: "100%" }}>
       <div
         style={{
-          padding: sidebarCollapsed ? "20px 0 18px" : "24px 20px 18px",
+          padding: sidebarCollapsed ? "16px 0" : "16px 16px",
           textAlign: sidebarCollapsed ? "center" : "left",
           transition: "padding 0.2s, text-align 0.2s",
         }}
@@ -121,21 +121,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
             B
           </Tag>
         ) : (
-          <>
-            <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 10 }}>
+          <Flex align="center" gap={8}>
+            <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 8 }}>
               Bunoraa
             </Tag>
-            <Typography.Title
-              level={3}
-              className="admin-display"
-              style={{ marginTop: 14, marginBottom: 4, fontSize: 20 }}
-            >
+            <Typography.Text strong style={{ fontSize: 15 }}>
               Admin v2
-            </Typography.Title>
-            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-              Django admin workspace
             </Typography.Text>
-          </>
+          </Flex>
         )}
       </div>
 
@@ -221,20 +214,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
         )}
       </div>
 
-      {isDesktop && (
-        <Button
-          type="text"
-          icon={sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          style={{
-            width: "100%",
-            height: 40,
-            borderRadius: 0,
-            borderTop: "1px solid var(--admin-border)",
-            color: "var(--admin-muted)",
-          }}
-        />
-      )}
     </Flex>
   );
 
@@ -282,14 +261,21 @@ export function AdminShell({ route, children }: AdminShellProps) {
         >
           <div className="admin-glass-card" style={{ padding: "14px 20px" }}>
             <Flex align="center" justify="space-between" gap={16} wrap="wrap">
-              <Flex align="center" gap={14}>
-                {!isDesktop ? (
+              <Flex align="center" gap={8}>
+                {isDesktop ? (
+                  <Button
+                    type="text"
+                    icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    style={{ color: "var(--admin-muted)", flexShrink: 0 }}
+                  />
+                ) : (
                   <Button
                     type="text"
                     icon={<MenuIcon size={18} />}
                     onClick={() => setMobileNavOpen(true)}
                   />
-                ) : null}
+                )}
                 <div>
                   <Space wrap size={[8, 8]}>
                     <Tag color="blue" bordered={false}>
