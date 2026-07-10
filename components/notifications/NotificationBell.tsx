@@ -37,7 +37,6 @@ type NotificationItem = {
   category: string;
 };
 
-let globalWsListener: ((event: Record<string, unknown>) => void) | null = null;
 let globalUnreadCount = 0;
 const globalListeners = new Set<(count: number) => void>();
 
@@ -115,7 +114,6 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
   }
 
   connect();
-  globalWsListener = () => {};
 }
 
 export function useUnreadCount(wsUrlOverride?: string) {
