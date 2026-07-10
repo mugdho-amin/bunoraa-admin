@@ -87,7 +87,8 @@ export function AdminProviders({
         }
         return null;
       }
-      throw error;
+      // Network errors (CORS, DNS, timeout) should not crash the app
+      return null;
     } finally {
       setLoading(false);
     }
@@ -103,8 +104,6 @@ export function AdminProviders({
     if (bootstrapped.current) return;
     bootstrapped.current = true;
     void refreshBootstrap();
-    // Run once on mount — avoids duplicate refreshBootstrap when login→dashboard
-    // navigation changes isLoginRoute. LoginScreen handles bootstrap directly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -117,7 +116,7 @@ export function AdminProviders({
         }
         return;
       }
-      void refreshBootstrap();
+      void refreshBootstrap().catch(() => {});
     });
   }, [refreshBootstrap]);
 
