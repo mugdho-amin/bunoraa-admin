@@ -100,7 +100,7 @@ export function LoginScreen() {
   return (
     <div className="admin-login-page">
       <div className="admin-login-grid">
-        <div className="admin-glass-card admin-shell-gradient" style={{ padding: 32 }}>
+        <div className="admin-glass-card admin-shell-gradient" style={{ padding: "clamp(16px, 4vw, 32px)" }}>
           <Tag bordered={false} color="cyan" style={{ paddingInline: 12, borderRadius: 999 }}>
             Bunoraa Admin v2
           </Tag>
