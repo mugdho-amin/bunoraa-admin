@@ -210,7 +210,7 @@ export function NotificationBell() {
         <Flex
           align="center"
           justify="space-between"
-          style={{ width: 340, padding: "8px 4px 4px" }}
+          style={{ width: "min(340px, 90vw)", padding: "8px 4px 4px" }}
         >
           <Typography.Text strong style={{ fontSize: 15 }}>
             Notifications
@@ -253,7 +253,7 @@ export function NotificationBell() {
     {
       key: "list",
       label: (
-        <div style={{ width: 340, maxHeight: 360, overflow: "auto" }}>
+        <div style={{ width: "min(340px, 90vw)", maxHeight: 360, overflow: "auto" }}>
           {loading ? (
             <Flex justify="center" style={{ padding: 24 }}>
               <Spin size="small" />
@@ -349,7 +349,7 @@ export function NotificationBell() {
             <Bell size={18} />
           </Badge>
         }
-        style={{ height: "auto", paddingBlock: 6 }}
+        style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
       />
     </Dropdown>
   );

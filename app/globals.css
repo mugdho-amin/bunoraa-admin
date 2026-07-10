@@ -73,12 +73,12 @@ textarea {
 }
 
 .admin-page {
-  height: 100vh;
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
 }
 
 .admin-login-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -92,7 +92,7 @@ textarea {
   display: grid;
   gap: 24px;
   width: min(1120px, 100%);
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 440px);
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 440px);
   align-items: stretch;
 }
 
@@ -195,4 +195,31 @@ pre {
 /* Remove antd's default trigger area when trigger={null} */
 .ant-layout-sider-trigger {
   display: none !important;
+}
+
+/* ===================================================
+   MOBILE OVERRIDES
+   =================================================== */
+@media (max-width: 767px) {
+  /* Increase sidebar menu item touch targets to WCAG 44px min */
+  .admin-sidebar-glass .ant-menu-item {
+    height: 44px !important;
+    line-height: 44px !important;
+    margin-block: 4px !important;
+  }
+
+  /* Larger touch targets for sidebar buttons */
+  .admin-sidebar-glass .ant-btn {
+    min-height: 44px;
+  }
+
+  /* Ensure admin content doesn't overflow */
+  .ant-layout-content {
+    overflow-x: auto;
+  }
+
+  /* Login page — reduce info card padding on small screens */
+  .admin-login-grid {
+    gap: 16px;
+  }
 }

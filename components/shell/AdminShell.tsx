@@ -242,8 +242,17 @@ export function AdminShell({ route, children }: AdminShellProps) {
           onClose={() => setMobileNavOpen(false)}
           placement="left"
           closable={false}
-          width={300}
+          width="min(300px, 85vw)"
           styles={{ body: { padding: 0, background: "transparent" } }}
+          extra={
+            <Button
+              type="text"
+              icon={<ChevronLeft size={18} />}
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation"
+              style={{ color: "var(--admin-muted)" }}
+            />
+          }
         >
           <div className="admin-glass-card" style={{ height: "100%", borderRadius: 0 }}>
             {sideMenu}
@@ -271,10 +280,11 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 />
               ) : (
                 <Button
-                  type="text"
-                  icon={<MenuIcon size={18} />}
-                  onClick={() => setMobileNavOpen(true)}
-                />
+                    type="text"
+                    icon={<MenuIcon size={18} />}
+                    onClick={() => setMobileNavOpen(true)}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}
+                  />
               )}
               <Flex vertical gap={0} style={{ minWidth: 0 }}>
                 <Space size={6} wrap>
@@ -340,15 +350,16 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 </Typography.Text>
               </Space>
               <Dropdown menu={userMenu} trigger={["click"]}>
-                <Button type="text" style={{ height: "auto", padding: "2px 6px" }}>
-                  <Flex align="center" gap={6}>
-                    <Avatar
-                      size={26}
-                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
-                    >
-                      {nameInitial}
-                    </Avatar>
-                  </Flex>
+                <Button
+                  type="text"
+                  style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Avatar
+                    size={26}
+                    style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+                  >
+                    {nameInitial}
+                  </Avatar>
                 </Button>
               </Dropdown>
             </Space>
