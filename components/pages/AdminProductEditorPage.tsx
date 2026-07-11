@@ -11,6 +11,7 @@ import {
   Eye, EyeOff, Search, Grid3X3, ArrowLeft,
 } from "lucide-react";
 import type { BaseKey } from "@refinedev/core";
+import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 
 interface VariantForm {
   sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -30,7 +31,7 @@ interface ProductForm {
   price: number | null; sale_price: number | null; cost: number | null; currency: string;
   stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean;
   weight: number | null;
-  variants: VariantForm[]; categoryIds: string[];
+  variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
   is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean;
   meta_title: string; meta_description: string; meta_keywords: string;
 }
@@ -61,6 +62,14 @@ const CURRENCY_OPTIONS = [
   { value: "INR", label: "INR (₹)" },
 ];
 
+/** Parse money/decimal inputs; empty → null, invalid → null. */
+const parseDecimal = (raw: string): number | null => {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+};
+
 const emptyVariant = (sortOrder = 0): VariantForm => ({
   sku: "", size: "", color: "", stock: null, price: null,
   compareAt: null, image: "", weight: null, barcode: "",
@@ -71,7 +80,7 @@ const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", short_description: "", description: "",
   primaryImage: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
   stock_quantity: 0, low_stock_threshold: 5, allow_backorder: false, weight: null,
-  variants: [emptyVariant(0)], categoryIds: [],
+  variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
   is_featured: false, is_bestseller: false, is_new_arrival: false,
   meta_title: "", meta_description: "", meta_keywords: "",
 };
@@ -102,9 +111,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const { result: categoriesResult } = useList({
     resource: "catalog/categories",
     pagination: { pageSize: 500 },
+    sorters: [{ field: "path", order: "asc" }],
   });
   const categories = useMemo(
-    () => (categoriesResult?.data ?? []) as { id: string; name: string }[],
+    () => (categoriesResult?.data ?? []) as CategoryNode[],
     [categoriesResult],
   );
 
@@ -152,6 +162,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         weight: product.weight ? Number(product.weight) : null,
         variants: variants.length ? variants : [emptyVariant(0)],
         categoryIds: (product.categories ?? []).map((c: { id?: string; category?: { id?: string } }) => c.id ?? c.category?.id).filter(Boolean) as string[],
+        primaryCategoryId: String(
+          product.primary_category?.id
+            ?? product.primary_category_id
+            ?? product.primary_category
+            ?? "",
+        ),
         is_featured: product.is_featured ?? false,
         is_bestseller: product.is_bestseller ?? false,
         is_new_arrival: product.is_new_arrival ?? false,
@@ -249,11 +265,37 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     });
   };
 
-  const toggleCategory = (categoryId: string) => setForm((p) => ({
-    ...p, categoryIds: p.categoryIds.includes(categoryId)
-      ? p.categoryIds.filter((id) => id !== categoryId)
-      : [...p.categoryIds, categoryId],
-  }));
+  const handleCategoriesChange = (ids: string[]) => {
+    clearFieldError("categoryIds");
+    setForm((p) => {
+      // Keep primary in the categories set (matches Django admin save behavior).
+      const next = [...ids];
+      if (p.primaryCategoryId && !next.includes(p.primaryCategoryId)) {
+        next.push(p.primaryCategoryId);
+      }
+      return { ...p, categoryIds: next };
+    });
+  };
+
+  const handlePrimaryCategoryChange = (ids: string[]) => {
+    clearFieldError("primaryCategoryId");
+    clearFieldError("categoryIds");
+    const primaryId = ids[0] ?? "";
+    setForm((p) => {
+      const nextCategories = new Set(p.categoryIds);
+      // Drop previous primary if it was only present as primary auto-add.
+      if (p.primaryCategoryId && p.primaryCategoryId !== primaryId) {
+        // Keep old primary if user explicitly selected it among categories
+        // (still in categoryIds intentionally) — only ensure new primary is added.
+      }
+      if (primaryId) nextCategories.add(primaryId);
+      return {
+        ...p,
+        primaryCategoryId: primaryId,
+        categoryIds: Array.from(nextCategories),
+      };
+    });
+  };
 
   const generateSku = (size: string, color: string): string => {
     const prefix = "BUN";
@@ -432,6 +474,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (!form.name) newErrors["name"] = "Product name is required";
     if (!form.slug) newErrors["slug"] = "Slug is required";
     if (form.price === null || form.price === undefined || form.price <= 0) newErrors["price"] = "Price must be greater than 0";
+    if (!form.primaryCategoryId) newErrors["primaryCategoryId"] = "Primary category is required";
     if (!form.categoryIds || form.categoryIds.length === 0) newErrors["categoryIds"] = "At least one category is required";
 
     if (hasVariants) {
@@ -482,12 +525,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       weight: form.weight === null || form.weight === undefined ? null : Number(form.weight),
       variants: hasVariants ? cleanVariants : [],
       categories: form.categoryIds,
+      primary_category: form.primaryCategoryId || null,
+      primary_category_id: form.primaryCategoryId || null,
       is_featured: form.is_featured,
       is_bestseller: form.is_bestseller,
       is_new_arrival: form.is_new_arrival,
-      meta_title: form.meta_title || null,
-      meta_description: form.meta_description || null,
-      meta_keywords: form.meta_keywords || null,
+      meta_title: (form.meta_title || form.name || "").trim(),
+      meta_description: (form.meta_description || form.short_description || "").trim(),
+      meta_keywords: (form.meta_keywords || "").trim(),
     };
 
     try {
@@ -514,20 +559,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       setSaving(false);
     }
   };
-
-  const categoryBadges = useMemo(() =>
-    categories.map((category) => (
-      <button key={category.id} type="button" onClick={() => toggleCategory(category.id)}
-        style={{
-          padding: "4px 16px", borderRadius: 999, border: "1px solid",
-          fontSize: 11, textTransform: "uppercase", letterSpacing: "0.2em", cursor: "pointer", transition: "all 0.15s",
-          background: form.categoryIds.includes(category.id) ? "#0f766e" : "transparent",
-          color: form.categoryIds.includes(category.id) ? "#fff" : "rgba(0,0,0,0.65)",
-          borderColor: form.categoryIds.includes(category.id) ? "#0f766e" : "rgba(0,0,0,0.12)",
-        }}>
-        {category.name}
-      </button>
-    )), [categories, form.categoryIds]);
 
   const filteredVariants = useMemo(() => {
     if (!variantSearch.trim()) return form.variants;
@@ -761,20 +792,29 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? "1fr 1fr" : "1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
-                <input type="number" value={form.price ?? ""} onChange={(e) => {
-                  const val = e.target.value ? Number(e.target.value) : null;
-                  clearFieldError("price");
-                  setForm(prev => ({
-                    ...prev, price: val,
-                    variants: prev.variants.map(v => ({
-                      ...v, price: (v.price === null || v.price === 0 || v.price === prev.price) ? val : v.price,
-                    })),
-                  }));
-                }}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.price ?? ""}
+                  onChange={(e) => {
+                    const val = parseDecimal(e.target.value);
+                    clearFieldError("price");
+                    setForm((prev) => ({
+                      ...prev,
+                      price: val,
+                      variants: prev.variants.map((v) => ({
+                        ...v,
+                        price: (v.price === null || v.price === 0 || v.price === prev.price) ? val : v.price,
+                      })),
+                    }));
+                  }}
                   style={{
                     width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
                     fontSize: 14, outline: "none", background: fieldErrors["price"] ? "rgba(190,18,60,0.04)" : "#fff",
-                  }} />
+                  }}
+                />
                 {fieldErrors["price"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
                 {hasVariants && form.variants.length > 1 && form.price !== null && (
                   <button onClick={applyBasePriceToVariants} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "#0f766e", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
@@ -784,8 +824,15 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sale Price</label>
-                <input type="number" value={form.sale_price ?? ""} onChange={(e) => updateField("sale_price", e.target.value ? Number(e.target.value) : null)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.sale_price ?? ""}
+                  onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                />
               </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Currency</label>
@@ -857,10 +904,92 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           )}
 
-          {/* Categories */}
-          <Card className="admin-soft-panel" variant="borderless" title="Categories *">
-            <Flex wrap="wrap" gap={8}>{categoryBadges}</Flex>
-            {fieldErrors["categoryIds"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500, marginTop: 8, display: "block" }}>{fieldErrors["categoryIds"]}</span>}
+          {/* Categories — Django-admin style hierarchical pickers */}
+          <Card className="admin-soft-panel" variant="borderless" title="Categories">
+            <Flex vertical gap={16}>
+              <Flex vertical gap={6}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                  Primary Category *
+                </label>
+                <CategoryTreeSelect
+                  categories={categories}
+                  value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
+                  onChange={handlePrimaryCategoryChange}
+                  multiple={false}
+                  placeholder="Search or browse primary category..."
+                  error={fieldErrors["primaryCategoryId"]}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  Main category used for breadcrumbs, SEO paths, and storefront navigation.
+                </Typography.Text>
+              </Flex>
+              <Flex vertical gap={6}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                  Categories *
+                </label>
+                <CategoryTreeSelect
+                  categories={categories}
+                  value={form.categoryIds}
+                  onChange={handleCategoriesChange}
+                  multiple
+                  placeholder="Search or browse categories..."
+                  error={fieldErrors["categoryIds"]}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  Drill into subcategories or search. Primary category is kept selected automatically.
+                </Typography.Text>
+              </Flex>
+            </Flex>
+          </Card>
+
+          {/* SEO */}
+          <Card className="admin-soft-panel" variant="borderless" title="SEO">
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
+              Search engine metadata. Leave blank to default meta title from the product name and description from the short description.
+            </Typography.Text>
+            <Flex vertical gap={4}>
+              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                Meta Title
+              </label>
+              <input
+                value={form.meta_title}
+                onChange={(e) => updateField("meta_title", e.target.value)}
+                placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
+                maxLength={255}
+                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+              />
+              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                {(form.meta_title || form.name || "").length}/255
+              </span>
+            </Flex>
+            <Flex vertical gap={4} style={{ marginTop: 12 }}>
+              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                Meta Description
+              </label>
+              <textarea
+                value={form.meta_description}
+                onChange={(e) => updateField("meta_description", e.target.value)}
+                placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
+                rows={3}
+                maxLength={500}
+                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
+              />
+              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                {(form.meta_description || form.short_description || "").length}/500
+              </span>
+            </Flex>
+            <Flex vertical gap={4} style={{ marginTop: 12 }}>
+              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                Meta Keywords
+              </label>
+              <input
+                value={form.meta_keywords}
+                onChange={(e) => updateField("meta_keywords", e.target.value)}
+                placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
+                maxLength={500}
+                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+              />
+            </Flex>
           </Card>
         </Flex>
 
@@ -1130,13 +1259,27 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   </Flex>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price</label>
-                                    <input type="number" value={variant.price ?? ""} onChange={(e) => updateVariant(actualIdx, "price", e.target.value ? Number(e.target.value) : null)}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <input
+                                      type="number"
+                                      inputMode="decimal"
+                                      step="0.01"
+                                      min="0"
+                                      value={variant.price ?? ""}
+                                      onChange={(e) => updateVariant(actualIdx, "price", parseDecimal(e.target.value))}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }}
+                                    />
                                   </Flex>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Compare At</label>
-                                    <input type="number" value={variant.compareAt ?? ""} onChange={(e) => updateVariant(actualIdx, "compareAt", e.target.value ? Number(e.target.value) : null)}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <input
+                                      type="number"
+                                      inputMode="decimal"
+                                      step="0.01"
+                                      min="0"
+                                      value={variant.compareAt ?? ""}
+                                      onChange={(e) => updateVariant(actualIdx, "compareAt", parseDecimal(e.target.value))}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }}
+                                    />
                                   </Flex>
                                 </div>
                               </div>
