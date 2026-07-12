@@ -161,13 +161,11 @@ export function NotificationBell() {
     }
   }, []);
 
-  const dropdownWidth = isMobile ? "calc(100vw - 32px)" : "380px";
-
   const items = [
     {
       key: "header",
       label: (
-        <Flex align="center" justify="space-between" style={{ width: dropdownWidth, padding: "8px 4px 4px" }}>
+        <Flex align="center" justify="space-between" style={{ minWidth: 320, padding: "8px 4px 4px" }}>
           <Typography.Text strong style={{ fontSize: 15 }}>Notifications</Typography.Text>
           <Space size={4}>
             {unreadCount > 0 && (
@@ -186,7 +184,7 @@ export function NotificationBell() {
     {
       key: "list",
       label: (
-        <div style={{ width: dropdownWidth, maxHeight: 400, overflow: "auto" }}>
+        <div style={{ maxWidth: "calc(100vw - 32px)", width: 380, maxHeight: "min(400px, calc(100vh - 160px))", overflow: "auto" }}>
           {loading ? (
             <Flex justify="center" style={{ padding: 24 }}><Spin size="small" /></Flex>
           ) : notifications.length === 0 ? (
