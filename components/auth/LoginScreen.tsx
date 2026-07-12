@@ -121,7 +121,7 @@ export function LoginScreen() {
                     <Input
                       size="large"
                       autoComplete="email"
-                      placeholder="admin@bunoraa.com"
+                      placeholder="you@company.com"
                       prefix={<Mail size={16} style={{ color: "var(--admin-muted)" }} />}
                       style={{ borderRadius: 12, height: 48 }}
                     />

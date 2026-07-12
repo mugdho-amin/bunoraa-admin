@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
-  App, Button, Card, Descriptions, Empty, Flex, Input, Modal, Pagination,
+  App, Button, Card, Descriptions, Empty, Flex, Grid, Input, Modal, Pagination,
   Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -50,8 +50,7 @@ function buildColumns(
   columns.push({
     title: "Actions",
     key: "__actions",
-    fixed: "right",
-    width: 160,
+    width: 100,
     render: (_, record) => (
       <Space size={4}>
         {resource.meta.capabilities.show && record.id != null ? (
@@ -113,6 +112,8 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
 
   const { result, query } = useList<BaseRecord>({
     resource: resource.name,
@@ -262,7 +263,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
           columns={columns}
           loading={query.isLoading}
           pagination={false}
-          scroll={{ x: 980 }}
+          scroll={{ x: isMobile ? 500 : 980 }}
           locale={{ emptyText: <Empty description={`No ${resource.label.toLowerCase()} found.`} /> }}
           onRow={(record) => ({
             onDoubleClick: () => {

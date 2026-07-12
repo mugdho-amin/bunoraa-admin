@@ -41,7 +41,8 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
   const token = typeof window !== "undefined" ? getAccessToken() : null;
   if (!token) return;
 
-  const wsUrl = wsUrlOverride || process.env.NEXT_PUBLIC_ADMIN_WS_URL || "ws://127.0.0.1:8000/ws/admin/updates/";
+  const wsUrl = wsUrlOverride || process.env.NEXT_PUBLIC_ADMIN_WS_URL;
+  if (!wsUrl) return;
   const url = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
 
   if (globalWs && globalWs.readyState <= WebSocket.OPEN) {

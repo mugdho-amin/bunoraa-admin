@@ -13,7 +13,11 @@ type RequestOptions = {
   withCredentials?: boolean;
 };
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.bunoraa.com/api/v1").replace(/\/$/, "");
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+if (!rawBaseUrl) {
+  throw new Error("NEXT_PUBLIC_API_BASE_URL environment variable is required. Set it to your API base URL (e.g. https://api.bunoraa.com/api/v1)");
+}
+const API_BASE_URL = rawBaseUrl.replace(/\/$/, "");
 
 let refreshPromise: Promise<string | null> | null = null;
 

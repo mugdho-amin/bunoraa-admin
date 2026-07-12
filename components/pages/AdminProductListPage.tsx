@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useDelete, useList } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, notification } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, notification } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
 import type { ColumnsType } from "antd/es/table";
@@ -32,6 +32,8 @@ type ProductRecord = BaseRecord & {
 
 export function AdminProductListPage() {
   const router = useRouter();
+  const screens = Grid.useBreakpoint();
+  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -97,22 +99,21 @@ export function AdminProductListPage() {
     {
       title: "Product",
       key: "product",
-      width: "30%",
+      width: isMobile ? "50%" : "30%",
       render: (_, record) => (
-        <Flex align="center" gap={12}>
+        <Flex align="center" gap={isMobile ? 8 : 12}>
           <Image
-            src={record.primary_image || "/placeholder.svg"}
+            src={record.primary_image}
             alt={record.name}
-            width={48}
-            height={48}
+            width={isMobile ? 32 : 48}
+            height={isMobile ? 32 : 48}
             style={{ borderRadius: 8, objectFit: "cover" }}
-            fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSI4IiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iMjQiIHk9IjI2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5ObyBJbWc8L3RleHQ+PC9zdmc+"
           />
-          <Flex vertical gap={2}>
-            <Typography.Text strong style={{ fontSize: 14 }} ellipsis={{ tooltip: record.name }}>
+          <Flex vertical gap={0}>
+            <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }} ellipsis={{ tooltip: record.name }}>
               {record.name}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
               {record.sku || "—"} · {record.primary_category_name || "Uncategorized"}
             </Typography.Text>
           </Flex>
@@ -122,15 +123,15 @@ export function AdminProductListPage() {
     {
       title: "Price",
       key: "price",
-      width: "15%",
+      width: isMobile ? "20%" : "15%",
       render: (_, record) => (
-        <Flex vertical gap={2}>
-          <Typography.Text strong>
-            {record.currency} {record.current_price}
+        <Flex vertical gap={0}>
+          <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }}>
+            {record.current_price}
           </Typography.Text>
           {record.is_on_sale && record.sale_price && (
-            <Typography.Text delete type="secondary" style={{ fontSize: 12 }}>
-              {record.currency} {record.price}
+            <Typography.Text delete type="secondary" style={{ fontSize: 11 }}>
+              {record.price}
             </Typography.Text>
           )}
         </Flex>
@@ -139,18 +140,20 @@ export function AdminProductListPage() {
     {
       title: "Stock",
       key: "stock",
-      width: "12%",
-      render: (_, record) => {
-        if (!record.is_in_stock) {
-          return <Tag color="red">Out of stock</Tag>;
-        }
-        return <Tag color="green">In Stock</Tag>;
-      },
+      width: isMobile ? "auto" : "12%",
+      render: (_, record) => (
+        isMobile
+          ? <span style={{ color: record.is_in_stock ? "#52c41a" : "#ff4d4f", fontSize: 18 }}>{record.is_in_stock ? "✓" : "✗"}</span>
+          : record.is_in_stock
+            ? <Tag color="green">In Stock</Tag>
+            : <Tag color="red">Out of stock</Tag>
+      ),
     },
     {
       title: "Status",
       key: "status",
       width: "18%",
+      responsive: ["md" as const],
       render: (_, record) => {
         const badges: React.ReactNode[] = [];
         if (record.is_on_sale) badges.push(<Tag key="sale" color="volcano">Sale</Tag>);
@@ -163,18 +166,20 @@ export function AdminProductListPage() {
     {
       title: "Actions",
       key: "actions",
-      width: "15%",
+      width: isMobile ? "auto" : "15%",
       render: (_, record) => (
-        <Space size="small">
+        <Space size={isMobile ? 0 : "small"}>
           <Button
             type="text"
-            icon={<Pencil size={16} />}
+            size={isMobile ? "small" : "middle"}
+            icon={<Pencil size={isMobile ? 14 : 16} />}
             onClick={() => router.push(`/catalog/products/edit/${record.id}`)}
           />
           <Button
             type="text"
             danger
-            icon={<Trash2 size={16} />}
+            size={isMobile ? "small" : "middle"}
+            icon={<Trash2 size={isMobile ? 14 : 16} />}
             loading={isDeleting}
             onClick={() => handleDelete(record)}
           />
@@ -257,9 +262,8 @@ export function AdminProductListPage() {
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50", "100"],
               }}
-              onRow={(record) => ({
-                style: { cursor: "pointer" },
-                onClick: () => router.push(`/catalog/products/edit/${record.id}`),
+              onRow={() => ({
+                style: { cursor: "default" },
               })}
             />
           )}

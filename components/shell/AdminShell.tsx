@@ -240,6 +240,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
             <Button type="text" style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
                 size={32}
+                shape="circle"
                 style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
               >
                 {nameInitial}
@@ -251,6 +252,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
             <Dropdown menu={userMenu} trigger={["click"]}>
               <Avatar
                 size={36}
+                shape="circle"
                 style={{
                   background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
                   cursor: "pointer",
@@ -403,6 +405,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   >
                     <Avatar
                       size={26}
+                      shape="circle"
                       style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
                     >
                       {nameInitial}
