@@ -23,9 +23,22 @@ export const metadata: Metadata = {
   },
   description: "Enterprise-grade administrative workspace for Bunoraa operations.",
   applicationName: "Bunoraa Admin v2",
-  robots: {
-    index: false,
-    follow: false,
+  robots: { index: false, follow: false },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Bunoraa Admin",
+    statusBarStyle: "black-translucent",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    viewportFit: "cover",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -33,11 +46,13 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`}>
+      <head>
+        <meta name="theme-color" content="#0f766e" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body>
         <AntdRegistry>
           <AdminProviders>{children}</AdminProviders>

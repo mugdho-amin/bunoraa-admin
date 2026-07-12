@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Avatar,
@@ -13,6 +13,7 @@ import {
   Menu,
   Space,
   Tag,
+  Tooltip,
   Typography,
 } from "antd";
 import {
@@ -20,14 +21,19 @@ import {
   ChevronRight,
   LogOut,
   Menu as MenuIcon,
+  Moon,
   RefreshCcw,
+  Search,
   ShieldEllipsis,
+  Sun,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 import { clearAuthState } from "@/lib/admin/auth-storage";
 import type { ParsedAdminRoute } from "@/lib/admin/types";
 import { getIconNode } from "@/lib/admin/utils";
+import { useThemeStore, type ThemeMode } from "@/lib/admin/theme-store";
+import { CommandPalette } from "@/components/shared/CommandPalette";
 
 type AdminShellProps = {
   route: ParsedAdminRoute;
@@ -36,14 +42,45 @@ type AdminShellProps = {
 
 const { Header, Content, Sider } = Layout;
 
+function MobileBottomNav({ items, pathname, onNavigate }: {
+  items: Array<{ key: string; icon: React.ReactNode; label: string }>;
+  pathname: string;
+  onNavigate: (key: string) => void;
+}) {
+  const topItems = items.slice(0, 5);
+  return (
+    <nav className="admin-mobile-bottom-nav">
+      {topItems.map((item) => (
+        <button
+          key={item.key}
+          className={`admin-mobile-nav-item${pathname === item.key ? " active" : ""}`}
+          onClick={() => onNavigate(item.key)}
+          aria-label={item.label}
+        >
+          {item.icon}
+          <span className="admin-mobile-nav-label">{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 export function AdminShell({ route, children }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const screens = Grid.useBreakpoint();
   const isDesktop = Boolean(screens.lg);
+  const isMobile = Boolean(screens.xs) || (!isDesktop && Boolean(screens.sm));
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const { mode, setMode } = useThemeStore();
+
+  const toggleTheme = useCallback(() => {
+    const next: Record<string, ThemeMode> = { light: "dark", dark: "system", system: "light" };
+    setMode(next[mode] as ThemeMode);
+  }, [mode, setMode]);
 
   const navigationItems = useMemo(
     () =>
@@ -58,6 +95,18 @@ export function AdminShell({ route, children }: AdminShellProps) {
         })),
       })),
     [bootstrap?.navigation, sidebarCollapsed],
+  );
+
+  const flatNavItems = useMemo(
+    () =>
+      (bootstrap?.navigation ?? []).flatMap((section) =>
+        section.items.map((item) => ({
+          key: item.path,
+          icon: getIconNode(item.icon, 18),
+          label: item.label,
+        })),
+      ),
+    [bootstrap?.navigation],
   );
 
   const title =
@@ -79,8 +128,25 @@ export function AdminShell({ route, children }: AdminShellProps) {
     setMobileNavOpen(false);
   };
 
+  const handleMobileNav = (key: string) => {
+    router.push(key);
+  };
+
   const userMenu = {
     items: [
+      {
+        key: "theme",
+        icon: mode === "dark" ? <Sun size={16} /> : <Moon size={16} />,
+        label: mode === "dark" ? "Light mode" : mode === "system" ? "System theme" : "Dark mode",
+        onClick: toggleTheme,
+      },
+      {
+        key: "command",
+        icon: <Search size={16} />,
+        label: "Command palette",
+        onClick: () => setCommandOpen(true),
+      },
+      { type: "divider" as const },
       {
         key: "refresh",
         icon: <RefreshCcw size={16} />,
@@ -121,13 +187,24 @@ export function AdminShell({ route, children }: AdminShellProps) {
             B
           </Tag>
         ) : (
-          <Flex align="center" gap={8}>
-            <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 8 }}>
-              Bunoraa
-            </Tag>
-            <Typography.Text strong style={{ fontSize: 15 }}>
-              Admin v2
-            </Typography.Text>
+          <Flex align="center" gap={8} justify="space-between">
+            <Flex align="center" gap={8}>
+              <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 8 }}>
+                Bunoraa
+              </Tag>
+              <Typography.Text strong style={{ fontSize: 15 }}>
+                Admin v2
+              </Typography.Text>
+            </Flex>
+            <Tooltip title={mode === "dark" ? "Light mode" : "Dark mode"}>
+              <button
+                className="theme-toggle-btn"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+              >
+                {mode === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
+            </Tooltip>
           </Flex>
         )}
       </div>
@@ -199,177 +276,190 @@ export function AdminShell({ route, children }: AdminShellProps) {
               </div>
               <Typography.Text
                 type="secondary"
-                style={{
-                  fontSize: 11,
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
+                style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               >
                 {userEmail}
-              </Typography.Text>
+      </Typography.Text>
             </div>
           </Flex>
         )}
       </div>
-
     </Flex>
   );
 
   return (
-    <Layout className="admin-page" style={{ background: "transparent" }}>
-      {isDesktop ? (
-        <Sider
-          width={280}
-          collapsedWidth={72}
-          collapsible
-          collapsed={sidebarCollapsed}
-          onCollapse={setSidebarCollapsed}
-          trigger={null}
-          style={{
-            background: "transparent",
-            padding: 16,
-          }}
-        >
-          <div className="admin-glass-card admin-sidebar-glass" style={{ height: "100%", overflow: "hidden" }}>
-            {sideMenu}
-          </div>
-        </Sider>
-      ) : (
-        <Drawer
-          open={mobileNavOpen}
-          onClose={() => setMobileNavOpen(false)}
-          placement="left"
-          closable={false}
-          width="min(300px, 85vw)"
-          styles={{ body: { padding: 0, background: "transparent" } }}
-          extra={
-            <Button
-              type="text"
-              icon={<ChevronLeft size={18} />}
-              onClick={() => setMobileNavOpen(false)}
-              aria-label="Close navigation"
-              style={{ color: "var(--admin-muted)" }}
-            />
-          }
-        >
-          <div className="admin-glass-card" style={{ height: "100%", borderRadius: 0 }}>
-            {sideMenu}
-          </div>
-        </Drawer>
-      )}
+    <>
+      <Layout className="admin-page" style={{ background: "transparent", paddingBottom: isMobile ? 64 : 0 }}>
+        {isDesktop ? (
+          <Sider
+            width={280}
+            collapsedWidth={72}
+            collapsible
+            collapsed={sidebarCollapsed}
+            onCollapse={setSidebarCollapsed}
+            trigger={null}
+            style={{ background: "transparent", padding: 16 }}
+          >
+            <div className="admin-glass-card admin-sidebar-glass" style={{ height: "100%", overflow: "hidden" }}>
+              {sideMenu}
+            </div>
+          </Sider>
+        ) : (
+          <Drawer
+            open={mobileNavOpen}
+            onClose={() => setMobileNavOpen(false)}
+            placement="left"
+            closable={false}
+            width="min(300px, 85vw)"
+            styles={{ body: { padding: 0, background: "transparent" } }}
+            extra={
+              <Button
+                type="text"
+                icon={<ChevronLeft size={18} />}
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Close navigation"
+                style={{ color: "var(--admin-muted)" }}
+              />
+            }
+          >
+            <div className="admin-glass-card" style={{ height: "100%", borderRadius: 0 }}>
+              {sideMenu}
+            </div>
+          </Drawer>
+        )}
 
-      <Layout style={{ background: "transparent" }}>
-        <Header
-          style={{
-            padding: isDesktop ? "16px 24px 0 0" : "12px",
-            background: "transparent",
-            height: "auto",
-            lineHeight: "inherit",
-          }}
-        >
-          <Flex align="center" justify="space-between" gap={12}>
-            <Flex align="center" gap={10} style={{ minWidth: 0 }}>
-              {isDesktop ? (
-                <Button
-                  type="text"
-                  icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  style={{ color: "var(--admin-muted)", flexShrink: 0, marginLeft: -4 }}
-                />
-              ) : (
-                <Button
+        <Layout style={{ background: "transparent" }}>
+          <Header
+            style={{
+              padding: isDesktop ? "16px 24px 0 0" : "12px",
+              background: "transparent",
+              height: "auto",
+              lineHeight: "inherit",
+            }}
+          >
+            <Flex align="center" justify="space-between" gap={12}>
+              <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+                {isDesktop ? (
+                  <Button
+                    type="text"
+                    icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    style={{ color: "var(--admin-muted)", flexShrink: 0, marginLeft: -4 }}
+                  />
+                ) : (
+                  <Button
                     type="text"
                     icon={<MenuIcon size={18} />}
                     onClick={() => setMobileNavOpen(true)}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}
                   />
-              )}
-              <Flex vertical gap={0} style={{ minWidth: 0 }}>
-                <Space size={6} wrap>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
-                  >
-                    <Tag
-                      color="blue"
-                      bordered={false}
-                      style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
+                )}
+                <Flex vertical gap={0} style={{ minWidth: 0 }}>
+                  <Space size={6} wrap>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
                     >
-                      {route.type === "resource"
-                        ? route.resource.group
-                        : route.type === "page"
-                          ? route.page.group
-                          : "System"}
+                      <Tag
+                        color="blue"
+                        bordered={false}
+                        style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
+                      >
+                        {route.type === "resource"
+                          ? route.resource.group
+                          : route.type === "page"
+                            ? route.page.group
+                            : "System"}
+                      </Tag>
+                      <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
+                      <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
+                      {subtitle ? (
+                        <>
+                          <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
+                          <span style={{ color: "var(--admin-muted)", opacity: 0.4 }}>{subtitle}</span>
+                        </>
+                      ) : null}
+                    </Typography.Text>
+                    <Tag
+                      color={bootstrap?.app.environment === "production" ? "green" : "gold"}
+                      bordered={false}
+                      style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
+                    >
+                      {bootstrap?.app.environment ?? "unknown"}
                     </Tag>
-                    <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>
-                      /
-                    </span>
-                    <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
-                    {subtitle ? (
-                      <>
-                        <span
-                          style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}
-                        >
-                          /
-                        </span>
-                        <span style={{ color: "var(--admin-muted)", opacity: 0.4 }}>
-                          {subtitle}
-                        </span>
-                      </>
-                    ) : null}
-                  </Typography.Text>
-                  <Tag
-                    color={bootstrap?.app.environment === "production" ? "green" : "gold"}
-                    bordered={false}
-                    style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
+                  </Space>
+                  <Typography.Title
+                    level={4}
+                    className="admin-display"
+                    style={{ margin: 0, fontSize: 18, lineHeight: 1.3 }}
                   >
-                    {bootstrap?.app.environment ?? "unknown"}
-                  </Tag>
-                </Space>
-                <Typography.Title
-                  level={4}
-                  className="admin-display"
-                  style={{ margin: 0, fontSize: 18, lineHeight: 1.3 }}
-                >
-                  {title}
-                </Typography.Title>
+                    {title}
+                  </Typography.Title>
+                </Flex>
               </Flex>
-            </Flex>
 
-            <Space size={10} wrap>
-              <NotificationBell />
-              <Space size={4}>
-                <ShieldEllipsis size={14} style={{ color: "var(--admin-muted)" }} />
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 12, color: "var(--admin-muted)" }}
-                >
-                  MFA
-                </Typography.Text>
-              </Space>
-              <Dropdown menu={userMenu} trigger={["click"]}>
-                <Button
-                  type="text"
-                  style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
-                >
-                  <Avatar
-                    size={26}
-                    style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+              <Space size={8} wrap>
+                <Tooltip title="Search (Cmd+K)">
+                  <Button
+                    type="text"
+                    icon={<Search size={16} />}
+                    onClick={() => setCommandOpen(true)}
+                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    aria-label="Command palette"
+                  />
+                </Tooltip>
+                <NotificationBell />
+                <Space size={4}>
+                  <ShieldEllipsis size={14} style={{ color: "var(--admin-muted)" }} />
+                  <Typography.Text type="secondary" style={{ fontSize: 12, color: "var(--admin-muted)" }}>
+                    MFA
+                  </Typography.Text>
+                </Space>
+                <Dropdown menu={userMenu} trigger={["click"]}>
+                  <Button
+                    type="text"
+                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
                   >
-                    {nameInitial}
-                  </Avatar>
-                </Button>
-              </Dropdown>
-            </Space>
-          </Flex>
-        </Header>
+                    <Avatar
+                      size={26}
+                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+                    >
+                      {nameInitial}
+                    </Avatar>
+                  </Button>
+                </Dropdown>
+              </Space>
+            </Flex>
+          </Header>
 
-        <Content style={{ padding: isDesktop ? "20px 24px 24px 0" : "0 16px 24px" }}>
-          {children}
-        </Content>
+          <Content style={{ padding: isDesktop ? "20px 24px 24px 0" : "12px 16px 24px" }}>
+            <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+              {children}
+            </div>
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && flatNavItems.length > 0 && (
+        <MobileBottomNav
+          items={flatNavItems}
+          pathname={pathname}
+          onNavigate={handleMobileNav}
+        />
+      )}
+
+      {/* Command Palette */}
+      {commandOpen && (
+        <CommandPalette
+          items={flatNavItems}
+          onClose={() => setCommandOpen(false)}
+          onNavigate={(key) => {
+            router.push(key);
+            setCommandOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 }

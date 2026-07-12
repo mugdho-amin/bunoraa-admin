@@ -37,11 +37,15 @@
     "@refinedev/nextjs-router": "^7.0.5",
     "@tanstack/react-query": "^5.100.10",
     "antd": "^5.29.3",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.14.0",
     "next": "^16.2.6",
     "qs": "^6.15.1",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "recharts": "^3.9.2",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

@@ -1,26 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
-  App,
-  Button,
-  Card,
-  Descriptions,
-  Empty,
-  Flex,
-  Input,
-  Modal,
-  Pagination,
-  Skeleton,
-  Space,
-  Table,
-  Tag,
-  Typography,
+  App, Button, Card, Descriptions, Empty, Flex, Input, Modal, Pagination,
+  Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useDelete, useList, useOne, useCreate, useUpdate } from "@refinedev/core";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { BaseKey, BaseRecord, CrudSort } from "@refinedev/core";
+import {
+  Download, Filter, Plus, Search, Eye, Pencil, Trash2,
+  ArrowUpDown, FileSpreadsheet, RefreshCcw, SlidersHorizontal,
+} from "lucide-react";
 import { fetchOptionsForResource } from "@/lib/admin/bootstrap";
 import type { AdminOptionsResponse, AdminResourceConfig, ResourceViewAction } from "@/lib/admin/types";
 import { formatValue, humanizeLabel, pickVisibleKeys } from "@/lib/admin/utils";
@@ -43,9 +35,15 @@ function buildColumns(
   const sample = records[0] ?? {};
   const keys = pickVisibleKeys(sample).slice(0, 8);
   const columns: ColumnsType<BaseRecord> = keys.map((key) => ({
-    title: humanizeLabel(key),
+    title: (
+      <Flex align="center" gap={4}>
+        {humanizeLabel(key)}
+        <ArrowUpDown size={10} style={{ color: "rgba(0,0,0,0.25)" }} />
+      </Flex>
+    ),
     dataIndex: key,
     key,
+    ellipsis: true,
     render: (value) => formatValue(value),
   }));
 
@@ -53,37 +51,32 @@ function buildColumns(
     title: "Actions",
     key: "__actions",
     fixed: "right",
+    width: 160,
     render: (_, record) => (
-      <Space wrap>
-        <Button size="small" onClick={() => router.push(`/${resource.name}/show/${record.id}`)}>
-          View
-        </Button>
+      <Space size={4}>
+        <Tooltip title="View details">
+          <Button type="text" size="small" icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}/show/${record.id}`)} />
+        </Tooltip>
         {resource.meta.capabilities.edit ? (
-          <Button size="small" onClick={() => router.push(`/${resource.name}/edit/${record.id}`)}>
-            Edit
-          </Button>
+          <Tooltip title="Edit">
+            <Button type="text" size="small" icon={<Pencil size={14} />} onClick={() => router.push(`/${resource.name}/edit/${record.id}`)} />
+          </Tooltip>
         ) : null}
         {resource.meta.capabilities.delete && onDelete ? (
-          <Button danger size="small" onClick={() => onDelete(record)}>
-            Delete
-          </Button>
+          <Tooltip title="Delete">
+            <Button danger type="text" size="small" icon={<Trash2 size={14} />} onClick={() => onDelete(record)} />
+          </Tooltip>
         ) : null}
       </Space>
     ),
-  });
+  }));
 
   return columns;
 }
 
 function listSearchFilter(search: string) {
   return search
-    ? [
-        {
-          field: "search",
-          operator: "eq" as const,
-          value: search,
-        },
-      ]
+    ? [{ field: "search", operator: "eq" as const, value: search }]
     : [];
 }
 
@@ -91,10 +84,34 @@ function pickActionFields(options?: AdminOptionsResponse) {
   return options?.actions?.PATCH || options?.actions?.PUT || options?.actions?.POST || {};
 }
 
+function exportToCsv(data: BaseRecord[], filename: string) {
+  if (data.length === 0) return;
+  const keys = pickVisibleKeys(data[0]);
+  const headers = keys.map(humanizeLabel).join(",");
+  const rows = data.map((row) =>
+    keys.map((key) => {
+      const val = row[key];
+      if (val === null || val === undefined) return "";
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    }).join(","),
+  );
+  const csv = [headers, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [showFilters, setShowFilters] = useState(false);
+
   const { result, query } = useList<BaseRecord>({
     resource: resource.name,
     pagination: {
@@ -102,36 +119,24 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
       pageSize: Number(searchParams.get("pageSize") || 20),
     },
     sorters: searchParams.get("ordering")
-      ? [
-          {
-            field: searchParams.get("ordering")!.replace(/^-/, ""),
-            order: searchParams.get("ordering")!.startsWith("-") ? "desc" : "asc",
-          } satisfies CrudSort,
-        ]
+      ? [{ field: searchParams.get("ordering")!.replace(/^-/, ""), order: searchParams.get("ordering")!.startsWith("-") ? "desc" : "asc" } satisfies CrudSort]
       : [],
     filters: listSearchFilter(searchParams.get("q") || ""),
     liveMode: "auto",
   });
   const deleteOne = useDelete();
   const { message } = App.useApp();
+
   const handleDelete = useMemo(
     () => (record: BaseRecord) => {
-      if (!record?.id) {
-        return;
-      }
-
+      if (!record?.id) return;
       Modal.confirm({
         title: `Delete ${resource.label} record?`,
         content: `This will permanently delete record ${record.id}.`,
         okText: "Delete",
-        okButtonProps: {
-          danger: true,
-        },
+        okButtonProps: { danger: true },
         onOk: async () => {
-          await deleteOne.mutateAsync({
-            resource: resource.name,
-            id: record.id as BaseKey,
-          });
+          await deleteOne.mutateAsync({ resource: resource.name, id: record.id as BaseKey });
           message.success("Record deleted.");
           await query.refetch();
         },
@@ -148,33 +153,107 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
   const updateQuery = (next: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(next).forEach(([key, value]) => {
-      if (value === undefined || value === "") {
-        params.delete(key);
-      } else {
-        params.set(key, String(value));
-      }
+      if (value === undefined || value === "") params.delete(key);
+      else params.set(key, String(value));
     });
     router.push(`${pathname}?${params.toString()}`);
   };
 
   return (
     <Flex vertical gap={18}>
-      <Flex justify="space-between" gap={16} wrap="wrap">
-        <Input.Search
-          allowClear
-          placeholder={`Search ${resource.label.toLowerCase()}`}
-          defaultValue={searchParams.get("q") || ""}
-          onSearch={(value) => updateQuery({ q: value || undefined, page: 1 })}
-          style={{ maxWidth: 360 }}
-        />
-        {resource.meta.capabilities.create ? (
-          <Button type="primary" onClick={() => router.push(`/${resource.name}/create`)}>
-            Create {resource.label}
+      {/* Toolbar */}
+      <Flex justify="space-between" gap={12} wrap="wrap" align="center">
+        <Flex gap={8} wrap="wrap" flex={1}>
+          <Input.Search
+            allowClear
+            placeholder={`Search ${resource.label.toLowerCase()}...`}
+            defaultValue={searchParams.get("q") || ""}
+            onSearch={(value) => updateQuery({ q: value || undefined, page: 1 })}
+            style={{ maxWidth: 320 }}
+            prefix={<Search size={14} style={{ color: "var(--admin-muted)" }} />}
+          />
+          <Tooltip title="Toggle filters">
+            <Button
+              icon={<SlidersHorizontal size={14} />}
+              onClick={() => setShowFilters(!showFilters)}
+              type={showFilters ? "primary" : "default"}
+            />
+          </Tooltip>
+        </Flex>
+        <Space wrap>
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: "csv",
+                  icon: <FileSpreadsheet size={14} />,
+                  label: "Export CSV",
+                  onClick: () => exportToCsv(result.data || [], resource.label),
+                },
+              ],
+            }}
+            trigger={["click"]}
+          >
+            <Button icon={<Download size={14} />}>Export</Button>
+          </Dropdown>
+          <Button icon={<RefreshCcw size={14} />} onClick={() => query.refetch()}>
+            Refresh
           </Button>
-        ) : null}
+          {resource.meta.capabilities.create ? (
+            <Button type="primary" icon={<Plus size={14} />} onClick={() => router.push(`/${resource.name}/create`)}>
+              Create {resource.label}
+            </Button>
+          ) : null}
+        </Space>
       </Flex>
 
-      <Card className="admin-soft-panel" bordered={false}>
+      {/* Expandable Advanced Filters */}
+      {showFilters && (
+        <Card className="admin-soft-panel" size="small" bordered={false}>
+          <Flex gap={12} wrap="wrap" align="flex-end">
+            <div>
+              <Typography.Text style={{ fontSize: 11, display: "block", marginBottom: 4, color: "var(--admin-muted)" }}>Status</Typography.Text>
+              <Select
+                allowClear
+                placeholder="All statuses"
+                style={{ width: 160 }}
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                  { value: "draft", label: "Draft" },
+                ]}
+                onChange={(val) => updateQuery({ status: val || undefined, page: 1 })}
+              />
+            </div>
+            <div>
+              <Typography.Text style={{ fontSize: 11, display: "block", marginBottom: 4, color: "var(--admin-muted)" }}>Date range</Typography.Text>
+              <DatePicker.RangePicker
+                style={{ width: 240 }}
+                onChange={(dates) => {
+                  updateQuery({
+                    date_from: dates?.[0]?.toISOString().split("T")[0],
+                    date_to: dates?.[1]?.toISOString().split("T")[0],
+                    page: 1,
+                  });
+                }}
+              />
+            </div>
+            <Button
+              size="small"
+              onClick={() => {
+                const params = new URLSearchParams();
+                router.push(pathname);
+              }}
+              icon={<Filter size={12} />}
+            >
+              Clear filters
+            </Button>
+          </Flex>
+        </Card>
+      )}
+
+      {/* Table */}
+      <Card className="admin-soft-panel" bordered={false} styles={{ body: { padding: 0 } }}>
         <Table
           rowKey={(record) => String(record.id)}
           dataSource={result.data}
@@ -182,15 +261,20 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
           loading={query.isLoading}
           pagination={false}
           scroll={{ x: 980 }}
+          locale={{ emptyText: <Empty description={`No ${resource.label.toLowerCase()} found.`} /> }}
           onRow={(record) => ({
             onDoubleClick: () => router.push(`/${resource.name}/show/${record.id}`),
+            style: { cursor: "pointer", transition: "background 0.1s" },
+            onMouseEnter: (e) => { e.currentTarget.style.background = "rgba(15,118,110,0.03)"; },
+            onMouseLeave: (e) => { e.currentTarget.style.background = ""; },
           })}
+          size="middle"
         />
-        <Flex justify="space-between" align="center" style={{ marginTop: 20 }} wrap="wrap" gap={12}>
+        <Flex justify="space-between" align="center" style={{ padding: "16px 20px", borderTop: "1px solid var(--admin-border)" }} wrap="wrap" gap={12}>
           <Space wrap>
-            <Tag color="blue">{result.total ?? 0} records</Tag>
+            <Tag color="blue" bordered={false}>{result.total ?? 0} records</Tag>
             {resource.meta.search_fields?.length ? (
-              <Tag>{resource.meta.search_fields.length} search fields</Tag>
+              <Tag bordered={false}>{resource.meta.search_fields.length} search fields</Tag>
             ) : null}
           </Space>
           <Pagination
@@ -198,6 +282,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
             pageSize={Number(searchParams.get("pageSize") || 20)}
             total={result.total}
             showSizeChanger
+            pageSizeOptions={["10", "20", "50", "100"]}
             onChange={(page, pageSize) => updateQuery({ page, pageSize })}
           />
         </Flex>
@@ -228,15 +313,17 @@ function ResourceShowView({ resource, id }: { resource: AdminResourceConfig; id:
       <Flex justify="space-between" wrap="wrap" gap={12}>
         <Space wrap>
           {resource.meta.capabilities.edit ? (
-            <Button type="primary" onClick={() => router.push(`/${resource.name}/edit/${id}`)}>
+            <Button type="primary" icon={<Pencil size={14} />} onClick={() => router.push(`/${resource.name}/edit/${id}`)}>
               Edit
             </Button>
           ) : null}
-          <Button onClick={() => router.push(`/${resource.name}`)}>Back to list</Button>
+          <Button icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}`)}>
+            Back to list
+          </Button>
         </Space>
         <Space wrap>
           {resource.meta.extra_actions?.map((action) => (
-            <Tag key={action.name}>
+            <Tag key={action.name} bordered={false}>
               {action.name} | {action.methods.join(", ")}
             </Tag>
           ))}
@@ -244,7 +331,7 @@ function ResourceShowView({ resource, id }: { resource: AdminResourceConfig; id:
       </Flex>
 
       <Card className="admin-soft-panel" bordered={false}>
-        <Descriptions column={{ xs: 1, lg: 2 }} bordered>
+        <Descriptions column={{ xs: 1, lg: 2 }} bordered size="small" style={{ borderRadius: 16 }}>
           {Object.entries(record).map(([key, value]) => (
             <Descriptions.Item key={key} label={humanizeLabel(key)}>
               {formatValue(value)}
@@ -256,24 +343,14 @@ function ResourceShowView({ resource, id }: { resource: AdminResourceConfig; id:
       {resource.name === "orders" && record.id ? (
         <OrderOperationsPanel
           orderId={record.id as BaseKey}
-          onUpdated={async () => {
-            await recordQuery.query.refetch();
-          }}
+          onUpdated={async () => { await recordQuery.query.refetch(); }}
         />
       ) : null}
     </Flex>
   );
 }
 
-function ResourceFormView({
-  resource,
-  action,
-  id,
-}: {
-  resource: AdminResourceConfig;
-  action: "create" | "edit";
-  id?: BaseKey;
-}) {
+function ResourceFormView({ resource, action, id }: { resource: AdminResourceConfig; action: "create" | "edit"; id?: BaseKey }) {
   const router = useRouter();
   const { message } = App.useApp();
   const [submitting, setSubmitting] = useState(false);
@@ -284,9 +361,7 @@ function ResourceFormView({
   const recordQuery = useOne<BaseRecord>({
     resource: resource.name,
     id: id ?? "",
-    queryOptions: {
-      enabled: action === "edit" && Boolean(id),
-    },
+    queryOptions: { enabled: action === "edit" && Boolean(id) },
   });
   const createOne = useCreate();
   const updateOne = useUpdate();
@@ -297,6 +372,9 @@ function ResourceFormView({
 
   return (
     <Card className="admin-soft-panel" bordered={false}>
+      <Typography.Title level={5} style={{ marginBottom: 20 }}>
+        {action === "create" ? `Create ${resource.label}` : `Edit ${resource.label}`}
+      </Typography.Title>
       <SchemaForm
         fields={pickActionFields(optionsQuery.data)}
         initialValues={recordQuery.query.data?.data}
@@ -306,20 +384,12 @@ function ResourceFormView({
           setSubmitting(true);
           try {
             if (action === "create") {
-              const created = await createOne.mutateAsync({
-                resource: resource.name,
-                values,
-              });
+              const created = await createOne.mutateAsync({ resource: resource.name, values });
               message.success(`${resource.label} created.`);
               router.push(`/${resource.name}/show/${created.data.id}`);
               return;
             }
-
-            const updated = await updateOne.mutateAsync({
-              resource: resource.name,
-              id: id as BaseKey,
-              values,
-            });
+            const updated = await updateOne.mutateAsync({ resource: resource.name, id: id as BaseKey, values });
             message.success(`${resource.label} updated.`);
             router.push(`/${resource.name}/show/${updated.data.id}`);
           } finally {
@@ -331,28 +401,15 @@ function ResourceFormView({
   );
 }
 
-export function GenericResourcePage({
-  resource,
-  action,
-  id,
-}: GenericResourcePageProps) {
-  if (action === "list") {
-    return <ResourceListView resource={resource} />;
-  }
-
-  if (action === "show" && id !== undefined) {
-    return <ResourceShowView resource={resource} id={id} />;
-  }
-
+export function GenericResourcePage({ resource, action, id }: GenericResourcePageProps) {
+  if (action === "list") return <ResourceListView resource={resource} />;
+  if (action === "show" && id !== undefined) return <ResourceShowView resource={resource} id={id} />;
   if ((action === "create" || action === "edit") && resource.meta.capabilities[action]) {
     return <ResourceFormView resource={resource} action={action} id={id} />;
   }
-
   return (
     <Card className="admin-soft-panel" bordered={false}>
-      <Typography.Text type="secondary">
-        This action is not enabled for the selected resource.
-      </Typography.Text>
+      <Typography.Text type="secondary">This action is not enabled for the selected resource.</Typography.Text>
     </Card>
   );
 }

@@ -18,6 +18,8 @@ import { createAdminLiveProvider } from "@/lib/admin/live-provider";
 import type { AdminBootstrap } from "@/lib/admin/types";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
+import { initTheme, useThemeStore } from "@/lib/admin/theme-store";
+import { registerServiceWorker } from "@/lib/admin/pwa";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,13 +40,39 @@ const adminTheme = {
     colorSuccess: "#047857",
     colorWarning: "#b45309",
     colorError: "#be123c",
-    colorBgLayout: "#eef2f7",
-    colorBgContainer: "#ffffff",
-    colorBorderSecondary: "rgba(15, 23, 42, 0.08)",
     borderRadius: 18,
     fontFamily: 'var(--font-body), "IBM Plex Sans", sans-serif',
   },
+  components: {
+    Layout: {
+      bodyBg: "transparent",
+    },
+    Card: {
+      paddingLG: 20,
+      borderRadiusLG: 20,
+    },
+    Menu: {
+      itemBg: "transparent",
+      subMenuItemBg: "transparent",
+    },
+  },
 };
+
+function useThemeAwareConfig() {
+  const resolved = useThemeStore((s) => s.resolved);
+  const isDark = resolved === "dark";
+  return useMemo(() => ({
+    ...adminTheme,
+    token: {
+      ...adminTheme.token,
+      colorBgLayout: isDark ? "#0b1120" : "#eef2f7",
+      colorBgContainer: isDark ? "#161c30" : "#ffffff",
+      colorBorderSecondary: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)",
+      colorText: isDark ? "#e8edf5" : "#0f172a",
+      colorTextSecondary: isDark ? "#8a99b5" : "#52607a",
+    },
+  }), [isDark]);
+}
 
 export function AdminProviders({
   children,
@@ -61,6 +89,16 @@ export function AdminProviders({
   const [bootstrap, setBootstrap] = useState<AdminBootstrap | null>(null);
   const [loading, setLoading] = useState(false);
   const bootstrapped = useRef(false);
+  const themeResolved = useThemeStore((s) => s.resolved);
+  const themeInitialized = useRef(false);
+
+  useEffect(() => {
+    if (!themeInitialized.current) {
+      initTheme();
+      themeInitialized.current = true;
+      registerServiceWorker();
+    }
+  }, []);
 
   const clearBootstrap = useCallback(() => {
     setBootstrap(null);
@@ -140,7 +178,7 @@ export function AdminProviders({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={adminTheme}>
+      <ConfigProvider theme={useThemeAwareConfig()}>
         <AntApp>
           <AdminBootstrapContext.Provider
             value={{
