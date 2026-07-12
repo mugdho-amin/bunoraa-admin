@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Typography, message, Spin, Tag } from "antd";
+import { Button, Card, Flex, Grid, Typography, message, Spin, Tag } from "antd";
 import Image from "next/image";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
@@ -82,7 +82,7 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
 const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", short_description: "", description: "",
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
-  stock_quantity: 0, low_stock_threshold: 5, allow_backorder: false, tax_included: false, weight: null, length: null, width: null, height: null, free_shipping: false,
+  stock_quantity: 0, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
   is_featured: false, is_bestseller: false, is_new_arrival: false,
   meta_title: "", meta_description: "", meta_keywords: "",
@@ -90,6 +90,8 @@ const emptyForm: ProductForm = {
 
 export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const router = useRouter();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -103,6 +105,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [hasVariants, setHasVariants] = useState(false);
   const [seoCollapsed, setSeoCollapsed] = useState(true);
   const [shippingCollapsed, setShippingCollapsed] = useState(true);
+  const [imageUploadKey, setImageUploadKey] = useState(0);
   const slugManuallyEdited = useRef(false);
   const variantContainerRef = useRef<HTMLDivElement>(null);
 
@@ -646,9 +649,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         </Flex>
       </Card>
 
-      <div style={{ display: "grid", gap: 24, gridTemplateColumns: hasVariants ? "1fr 2fr" : "1fr" }}>
+      <div style={{ display: "grid", gap: isMobile ? 16 : 24, gridTemplateColumns: hasVariants && !isMobile ? "1fr 2fr" : "1fr" }}>
         {/* ── Left Column: Product Info ── */}
-        <Flex vertical gap={20}>
+        <Flex vertical gap={isMobile ? 16 : 20}>
           <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
             <Flex vertical gap={4}>
               <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Name *</label>
@@ -659,7 +662,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 }} />
               {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
             </Flex>
-            <div style={{ display: "grid", gridTemplateColumns: hasVariants ? "1fr" : "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: hasVariants || isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
@@ -704,17 +707,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Description</label>
                 <textarea value={form.description} onChange={(e) => updateField("description", e.target.value)}
-                  rows={5}
+                  rows={isMobile ? 4 : 5}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
               </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Short Description</label>
                 <textarea value={form.short_description} onChange={(e) => updateField("short_description", e.target.value)}
-                  rows={5}
+                  rows={isMobile ? 4 : 5}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
               </Flex>
             </div>
@@ -729,8 +732,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   padding: "8px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, color: "rgba(0,0,0,0.45)",
                 }}>
                   <Upload size={14} /> Choose File
-                  <input type="file" accept="image/*" style={{ display: "none" }}
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload("primaryImage", f); e.target.value = ""; }} />
+                  <input key={`primary-${imageUploadKey}`} type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleFileUpload("primaryImage", f); setImageUploadKey((k) => k + 1); } }} />
                 </label>
                 <input value={form.primaryImage} onChange={(e) => { clearFieldError("primaryImage"); updateField("primaryImage", e.target.value); }}
                   placeholder="https://cdn.bunoraa.com/images/product.jpg"
@@ -850,7 +853,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </button>
                 <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   <Upload size={14} /> Upload Files
-                  <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { handleMultipleGalleryUpload(e.target.files); e.target.value = ""; }} />
+                  <input key={`gallery-${imageUploadKey}`} type="file" accept="image/*" multiple style={{ display: "none" }}
+                    onChange={(e) => { handleMultipleGalleryUpload(e.target.files); setImageUploadKey((k) => k + 1); }} />
                 </label>
               </div>
             </Card>
@@ -896,7 +900,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
           {/* Base Price + Stock */}
           <Card className="admin-soft-panel" variant="borderless" title={hasVariants ? "Listing Price (shown on collections)" : "Price"}>
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr 1fr" }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr" : "1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
                 <input
@@ -1047,7 +1051,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </div>
                 {!shippingCollapsed && (
                   <div style={{ padding: "0 20px 20px" }}>
-                    <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", marginTop: 12 }}>
+                    <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                       <Flex vertical gap={4}>
                         <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
                         <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
@@ -1259,7 +1263,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                             {/* Expanded Form */}
                             {isExpanded && (
                               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr" }}>
+                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
                                     <div style={{ position: "relative" }}>
@@ -1288,7 +1292,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
                                   </Flex>
                                 </div>
-                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr", marginTop: 12 }}>
+                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Size</label>
                                     <input type="text" value={variant.size} onChange={(e) => updateVariant(actualIdx, "size", e.target.value)}
@@ -1330,7 +1334,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     )}
                                   </Flex>
                                 </div>
-                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", marginTop: 12 }}>
+                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
                                     <input type="number" value={variant.stock ?? ""} onChange={(e) => updateVariant(actualIdx, "stock", e.target.value ? Number(e.target.value) : null)}
