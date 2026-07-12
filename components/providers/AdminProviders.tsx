@@ -1,7 +1,7 @@
 "use client";
 
 import "@ant-design/v5-patch-for-react-19";
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { App as AntApp, ConfigProvider } from "antd";
 import { RefineThemes } from "@refinedev/antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -81,11 +81,10 @@ export function AdminProviders({
 }>) {
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
-  const hydrated = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
   const [bootstrap, setBootstrap] = useState<AdminBootstrap | null>(null);
   const [loading, setLoading] = useState(false);
   const bootstrapped = useRef(false);
@@ -169,6 +168,7 @@ export function AdminProviders({
     () => createAdminLiveProvider(() => websocketUrl),
     [websocketUrl],
   );
+  const configTheme = useThemeAwareConfig();
 
   const shouldGate = hydrated && !isLoginRoute && Boolean(getAccessToken()) && !bootstrap;
 
@@ -178,7 +178,7 @@ export function AdminProviders({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={useThemeAwareConfig()}>
+      <ConfigProvider theme={configTheme}>
         <AntApp>
           <AdminBootstrapContext.Provider
             value={{
