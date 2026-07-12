@@ -103,7 +103,7 @@ export function AdminProductListPage() {
       render: (_, record) => (
         <Flex align="center" gap={isMobile ? 8 : 12}>
           <Image
-            src={record.primary_image}
+            src={record.primary_image ?? undefined}
             alt={record.name}
             width={isMobile ? 32 : 48}
             height={isMobile ? 32 : 48}

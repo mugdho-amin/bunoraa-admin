@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   App, Button, Card, Descriptions, Empty, Flex, Grid, Input, Modal, Pagination,
   Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
@@ -244,7 +244,6 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
             <Button
               size="small"
               onClick={() => {
-                const params = new URLSearchParams();
                 router.push(pathname);
               }}
               icon={<Filter size={12} />}

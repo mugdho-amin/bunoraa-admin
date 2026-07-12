@@ -7,7 +7,7 @@ import {
 } from "antd";
 import {
   Users, Package, ShoppingCart, DollarSign,
-  AlertCircle, Activity, Zap, BarChart3, RefreshCcw,
+  AlertCircle, Activity, BarChart3, RefreshCcw,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,

@@ -48,10 +48,6 @@ export function CommandPalette({ items, onClose, onNavigate }: CommandPalettePro
     return () => window.removeEventListener("keydown", handler);
   }, [onClose, filtered, selectedIndex, onNavigate]);
 
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
   return (
     <div className="command-palette-overlay" onClick={onClose}>
       <div className="command-palette-dialog" onClick={(e) => e.stopPropagation()}>
@@ -60,7 +56,7 @@ export function CommandPalette({ items, onClose, onNavigate }: CommandPalettePro
           <input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
             placeholder="Search pages, resources, and actions..."
             style={{
               flex: 1,

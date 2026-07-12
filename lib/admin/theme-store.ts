@@ -23,7 +23,7 @@ function resolveTheme(mode: ThemeMode): "light" | "dark" {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       mode: "light",
       resolved: "light",
       setMode: (mode: ThemeMode) => {

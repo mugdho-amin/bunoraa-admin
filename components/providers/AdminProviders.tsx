@@ -16,7 +16,6 @@ import { dataProvider } from "@/lib/admin/data-provider";
 import { AdminApiError } from "@/lib/admin/http";
 import { createAdminLiveProvider } from "@/lib/admin/live-provider";
 import type { AdminBootstrap } from "@/lib/admin/types";
-import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
 import { initTheme, useThemeStore } from "@/lib/admin/theme-store";
 import { registerServiceWorker } from "@/lib/admin/pwa";
@@ -82,13 +81,10 @@ export function AdminProviders({
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  if (typeof window !== "undefined" && !hydrated) setHydrated(true);
   const [bootstrap, setBootstrap] = useState<AdminBootstrap | null>(null);
   const [loading, setLoading] = useState(false);
   const bootstrapped = useRef(false);
-  const themeResolved = useThemeStore((s) => s.resolved);
   const themeInitialized = useRef(false);
 
   useEffect(() => {

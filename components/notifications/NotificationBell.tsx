@@ -6,7 +6,7 @@ import {
   Badge, Button, Dropdown, Flex, List, Space, Tag, Typography, Spin, Empty, Grid,
 } from "antd";
 import {
-  Bell, CheckCheck, ExternalLink, Circle, BellOff,
+  Bell, CheckCheck, ExternalLink, Circle,
 } from "lucide-react";
 import { requestAdminEnvelope } from "@/lib/admin/http";
 import { logger } from "@/lib/admin/logger";

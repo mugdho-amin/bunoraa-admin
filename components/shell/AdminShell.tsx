@@ -115,13 +115,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
         ? route.resource.label
         : "Not Found";
 
-  const subtitle =
-    route.type === "page"
-      ? route.page.description
-      : route.type === "resource"
-        ? route.resource.description
-        : "The requested route does not match a registered admin page or resource.";
-
   const handleMenuClick = (event: { key: string }) => {
     router.push(event.key);
     setMobileNavOpen(false);
