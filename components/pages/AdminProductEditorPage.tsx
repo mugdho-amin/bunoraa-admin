@@ -22,15 +22,16 @@ interface VariantForm {
 interface GalleryImage {
   url: string;
   variantIds: string[];
+  alt: string;
 }
 
 interface ProductForm {
   name: string; slug: string; sku: string;
   short_description: string; description: string;
-  primaryImage: string; gallery: GalleryImage[];
+  primaryImage: string; primaryImageAlt: string; gallery: GalleryImage[];
   price: number | null; sale_price: number | null; cost: number | null; currency: string;
-  stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean;
-  weight: number | null;
+  stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean; tax_included: boolean;
+  weight: number | null; length: number | null; width: number | null; height: number | null; free_shipping: boolean;
   variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
   is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean;
   meta_title: string; meta_description: string; meta_keywords: string;
@@ -78,8 +79,8 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
 
 const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", short_description: "", description: "",
-  primaryImage: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
-  stock_quantity: 0, low_stock_threshold: 5, allow_backorder: false, weight: null,
+  primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
+  stock_quantity: 0, low_stock_threshold: 5, allow_backorder: false, tax_included: false, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
   is_featured: false, is_bestseller: false, is_new_arrival: false,
   meta_title: "", meta_description: "", meta_keywords: "",
@@ -130,9 +131,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       formInitialized.current = true;
       slugManuallyEdited.current = true;
       const rawGallery = product.images ?? [];
-      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variantIds?: string[] }) => {
-        if (typeof item === "string") return { url: item, variantIds: [] };
-        return { url: item.image || item.url || "", variantIds: item.variantIds ?? [] };
+      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variantIds?: string[]; alt?: string }) => {
+        if (typeof item === "string") return { url: item, variantIds: [], alt: "" };
+        return { url: item.image || item.url || "", variantIds: item.variantIds ?? [], alt: item.alt ?? "" };
       });
       const variants: VariantForm[] = (product.variants ?? []).map((v: Record<string, unknown>, i: number) => ({
         sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
@@ -151,6 +152,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         short_description: product.short_description ?? "",
         description: product.description ?? "",
         primaryImage: product.primary_image ?? "",
+        primaryImageAlt: product.primary_image_alt ?? "",
         gallery: mappedGallery,
         price: product.price ? Number(product.price) : null,
         sale_price: product.sale_price ? Number(product.sale_price) : null,
@@ -159,7 +161,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         stock_quantity: product.stock_quantity ?? 0,
         low_stock_threshold: product.low_stock_threshold ?? 5,
         allow_backorder: product.allow_backorder ?? false,
+        tax_included: product.tax_included ?? false,
         weight: product.weight ? Number(product.weight) : null,
+        length: product.length ? Number(product.length) : null,
+        width: product.width ? Number(product.width) : null,
+        height: product.height ? Number(product.height) : null,
+        free_shipping: product.free_shipping ?? false,
         variants: variants.length ? variants : [emptyVariant(0)],
         categoryIds: (product.categories ?? []).map((c: { id?: string; category?: { id?: string } }) => c.id ?? c.category?.id).filter(Boolean) as string[],
         primaryCategoryId: String(
@@ -336,6 +343,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     }));
   };
 
+  const generateAllBarcodes = () => {
+    setForm((p) => ({
+      ...p,
+      variants: p.variants.map((v) => ({ ...v, barcode: generateBarcode() })),
+    }));
+  };
+
   const getStockStatus = (stock: number | null, threshold: number) => {
     if (stock === null || stock === undefined) return { label: "N/A", color: "default" as const };
     if (stock <= 0) return { label: "Out of Stock", color: "error" as const };
@@ -370,7 +384,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         clearFieldError("primaryImage");
         updateField("primaryImage", dataUrl);
       } else {
-        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { url: dataUrl, variantIds: [] }] }));
+        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { url: dataUrl, variantIds: [], alt: "" }] }));
       }
     };
     reader.onerror = () => message.error("Failed to read file");
@@ -390,7 +404,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         if (completed === files.length) {
           setForm((prev) => ({
             ...prev,
-            gallery: [...prev.gallery, ...results.map((url) => ({ url, variantIds: [] }))],
+            gallery: [...prev.gallery, ...results.map((url) => ({ url, variantIds: [], alt: "" }))],
           }));
         }
       };
@@ -401,7 +415,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const handleAddGalleryUrl = () => {
     const url = prompt("Enter image URL:");
-    if (url) updateField("gallery", [...form.gallery, { url, variantIds: [] }]);
+    if (url) updateField("gallery", [...form.gallery, { url, variantIds: [], alt: "" }]);
   };
 
   const handleRemoveGalleryImage = (index: number) => {
@@ -514,7 +528,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       short_description: form.short_description,
       description: form.description,
       primary_image: form.primaryImage || null,
-      images: form.gallery.map((g) => g.url),
+      primary_image_alt: form.primaryImageAlt || null,
+      images: form.gallery.map((g) => ({ url: g.url, alt: g.alt })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
@@ -522,7 +537,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       stock_quantity: hasVariants ? 0 : Number(form.variants[0]?.stock ?? 0),
       low_stock_threshold: form.low_stock_threshold,
       allow_backorder: form.allow_backorder,
+      tax_included: form.tax_included,
       weight: form.weight === null || form.weight === undefined ? null : Number(form.weight),
+      length: form.length === null || form.length === undefined ? null : Number(form.length),
+      width: form.width === null || form.width === undefined ? null : Number(form.width),
+      height: form.height === null || form.height === undefined ? null : Number(form.height),
+      free_shipping: form.free_shipping,
       variants: hasVariants ? cleanVariants : [],
       categories: form.categoryIds,
       primary_category: form.primaryCategoryId || null,
@@ -635,7 +655,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 }} />
               {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
             </Flex>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
@@ -648,148 +668,189 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
-                <input value={form.sku} onChange={(e) => updateField("sku", e.target.value)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-              </Flex>
-            </div>
-            <Flex vertical gap={4} style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Short Description</label>
-              <textarea value={form.short_description} onChange={(e) => updateField("short_description", e.target.value)}
-                rows={3}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
-            </Flex>
-            <Flex vertical gap={4} style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Description</label>
-              <textarea value={form.description} onChange={(e) => updateField("description", e.target.value)}
-                rows={6}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
-            </Flex>
-          </Card>
-
-          {/* Primary Image */}
-          <Card className="admin-soft-panel" variant="borderless" title="Primary Image">
-            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8 }}>
-              <label style={{
-                display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 8,
-                padding: "8px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, color: "rgba(0,0,0,0.45)",
-              }}>
-                <Upload size={14} /> Choose File
-                <input type="file" accept="image/*" style={{ display: "none" }}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload("primaryImage", f); e.target.value = ""; }} />
-              </label>
-              <input value={form.primaryImage} onChange={(e) => { clearFieldError("primaryImage"); updateField("primaryImage", e.target.value); }}
-                placeholder="https://cdn.bunoraa.com/images/product.jpg"
-                style={{
-                  width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                  fontSize: 13, outline: "none",
-                }} />
-            </div>
-            {fieldErrors["primaryImage"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["primaryImage"]}</span>}
-            {form.primaryImage && (
-              <div style={{ position: "relative", display: "inline-block", marginTop: 8 }}>
-                <Image src={form.primaryImage} alt="Primary" width={64} height={80} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
-                <button onClick={() => updateField("primaryImage", "")}
-                  style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  ×
-                </button>
-              </div>
-            )}
-          </Card>
-
-          {/* Gallery */}
-          <Card className="admin-soft-panel" variant="borderless" title={"Gallery Images" + (hasVariants && form.variants.length > 1 ? " — click an image, then check which variant(s) it belongs to" : "")}>
-            {form.gallery.length > 0 && (
-              <Flex vertical gap={8}>
-                {form.gallery.map((img, i) => (
-                  <div key={i}
+                <div style={{ position: "relative" }}>
+                  <input type="text" value={form.variants[0]?.sku ?? ""}
+                    onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
                     style={{
-                      borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", padding: 12,
-                      opacity: galleryDragIndex === i ? 0.5 : 1,
-                    }}
-                    draggable
-                    onDragStart={() => setGalleryDragIndex(i)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      if (galleryDragIndex === null || galleryDragIndex === i) return;
-                      setForm((p) => {
-                        const next = [...p.gallery];
-                        const [moved] = next.splice(galleryDragIndex, 1);
-                        next.splice(i, 0, moved);
-                        return { ...p, gallery: next };
-                      });
-                      setGalleryDragIndex(i);
-                    }}
-                    onDragEnd={() => setGalleryDragIndex(null)}
-                  >
-                    <Flex gap={12} align="start">
-                      <div style={{ cursor: "grab", color: "rgba(0,0,0,0.2)", marginTop: 4 }}>
-                        <GripVertical size={16} />
-                      </div>
-                      <div style={{ position: "relative", flexShrink: 0 }}>
-                        <Image src={img.url} alt={`Gallery ${i}`} width={48} height={64} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
-                        <button onClick={() => handleRemoveGalleryImage(i)}
-                          style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          ×
-                        </button>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Typography.Text style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(0,0,0,0.45)" }} ellipsis>{img.url}</Typography.Text>
-                        {hasVariants && form.variants.length > 1 && (
-                          <Flex wrap="wrap" gap={4} style={{ marginTop: 6 }}>
-                            {form.variants.map((v, vi) => {
-                              const checked = img.variantIds.includes(String(vi));
-                              return (
-                                <label key={vi} style={{
-                                  display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, border: "1px solid",
-                                  fontSize: 10, cursor: "pointer", transition: "all 0.15s",
-                                  background: checked ? "#0f766e" : "transparent",
-                                  color: checked ? "#fff" : "rgba(0,0,0,0.45)",
-                                  borderColor: checked ? "#0f766e" : "rgba(0,0,0,0.12)",
-                                }}>
-                                  <input type="checkbox" checked={checked} onChange={() => {
-                                    setForm((p) => {
-                                      const next = p.gallery.map((g, gi) => {
-                                        if (gi !== i) return g;
-                                        const ids = g.variantIds.includes(String(vi))
-                                          ? g.variantIds.filter((vid) => vid !== String(vi))
-                                          : [...g.variantIds, String(vi)];
-                                        return { ...g, variantIds: ids };
-                                      });
-                                      return { ...p, gallery: next };
-                                    });
-                                  }} style={{ display: "none" }} />
-                                  {v.size && <span>{v.size}</span>}
-                                  {v.size && v.color && <span>/</span>}
-                                  {v.color && <span>{v.color}</span>}
-                                  {!v.size && !v.color && <span>Variant {vi + 1}</span>}
-                                </label>
-                              );
-                            })}
-                          </Flex>
-                        )}
-                      </div>
-                    </Flex>
-                  </div>
-                ))}
+                      width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
+                      border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                      fontSize: 14, outline: "none",
+                    }} />
+                  <button onClick={() => generateSingleSku(0)}
+                    style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                    <WandSparkles size={14} />
+                  </button>
+                </div>
+                {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
               </Flex>
-            )}
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); handleMultipleGalleryUpload(e.dataTransfer.files); }}>
-              <button onClick={handleAddGalleryUrl}
-                style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", background: "none" }}>
-                + Add URL
-              </button>
-              <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                <Upload size={14} /> Upload Files
-                <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { handleMultipleGalleryUpload(e.target.files); e.target.value = ""; }} />
-              </label>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
+                <div style={{ position: "relative" }}>
+                  <input type="text" value={form.variants[0]?.barcode ?? ""}
+                    onChange={(e) => updateVariant(0, "barcode", e.target.value)}
+                    style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                  <button onClick={() => generateSingleBarcode(0)}
+                    style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                    <WandSparkles size={14} />
+                  </button>
+                </div>
+              </Flex>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Description</label>
+                <textarea value={form.description} onChange={(e) => updateField("description", e.target.value)}
+                  rows={5}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
+              </Flex>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Short Description</label>
+                <textarea value={form.short_description} onChange={(e) => updateField("short_description", e.target.value)}
+                  rows={5}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
+              </Flex>
             </div>
           </Card>
 
-          {/* Base Price */}
+          {/* Images — Primary + Gallery side by side */}
+          <Flex gap={16} wrap="wrap">
+            <Card className="admin-soft-panel" variant="borderless" title="Primary Image" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8 }}>
+                <label style={{
+                  display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 8,
+                  padding: "8px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, color: "rgba(0,0,0,0.45)",
+                }}>
+                  <Upload size={14} /> Choose File
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload("primaryImage", f); e.target.value = ""; }} />
+                </label>
+                <input value={form.primaryImage} onChange={(e) => { clearFieldError("primaryImage"); updateField("primaryImage", e.target.value); }}
+                  placeholder="https://cdn.bunoraa.com/images/product.jpg"
+                  style={{
+                    width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                    fontSize: 13, outline: "none",
+                  }} />
+              </div>
+              {fieldErrors["primaryImage"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["primaryImage"]}</span>}
+              {form.primaryImage && (
+                <div style={{ position: "relative", display: "inline-block", marginTop: 8 }}>
+                  <Image src={form.primaryImage} alt="Primary" width={64} height={80} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
+                  <button onClick={() => updateField("primaryImage", "")}
+                    style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    ×
+                  </button>
+                </div>
+              )}
+              <Flex vertical gap={4} style={{ marginTop: 8 }}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Alt Text</label>
+                <input value={form.primaryImageAlt} onChange={(e) => updateField("primaryImageAlt", e.target.value)}
+                  placeholder="Descriptive text for accessibility and SEO"
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 13, outline: "none" }} />
+              </Flex>
+            </Card>
+            <Card className="admin-soft-panel" variant="borderless" title="Gallery Images" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              {form.gallery.length > 0 && (
+                <Flex vertical gap={8}>
+                  {form.gallery.map((img, i) => (
+                    <div key={i}
+                      style={{
+                        borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", padding: 12,
+                        opacity: galleryDragIndex === i ? 0.5 : 1,
+                      }}
+                      draggable
+                      onDragStart={() => setGalleryDragIndex(i)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (galleryDragIndex === null || galleryDragIndex === i) return;
+                        setForm((p) => {
+                          const next = [...p.gallery];
+                          const [moved] = next.splice(galleryDragIndex, 1);
+                          next.splice(i, 0, moved);
+                          return { ...p, gallery: next };
+                        });
+                        setGalleryDragIndex(i);
+                      }}
+                      onDragEnd={() => setGalleryDragIndex(null)}
+                    >
+                      <Flex gap={12} align="start">
+                        <div style={{ cursor: "grab", color: "rgba(0,0,0,0.2)", marginTop: 4 }}>
+                          <GripVertical size={16} />
+                        </div>
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                          <Image src={img.url} alt={`Gallery ${i}`} width={48} height={64} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
+                          <button onClick={() => handleRemoveGalleryImage(i)}
+                            style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            ×
+                          </button>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Typography.Text style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(0,0,0,0.45)" }} ellipsis>{img.url}</Typography.Text>
+                          {hasVariants && form.variants.length > 1 && (
+                            <Flex wrap="wrap" gap={4} style={{ marginTop: 6 }}>
+                              {form.variants.map((v, vi) => {
+                                const checked = img.variantIds.includes(String(vi));
+                                return (
+                                  <label key={vi} style={{
+                                    display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, border: "1px solid",
+                                    fontSize: 10, cursor: "pointer", transition: "all 0.15s",
+                                    background: checked ? "#0f766e" : "transparent",
+                                    color: checked ? "#fff" : "rgba(0,0,0,0.45)",
+                                    borderColor: checked ? "#0f766e" : "rgba(0,0,0,0.12)",
+                                  }}>
+                                    <input type="checkbox" checked={checked} onChange={() => {
+                                      setForm((p) => {
+                                        const next = p.gallery.map((g, gi) => {
+                                          if (gi !== i) return g;
+                                          const ids = g.variantIds.includes(String(vi))
+                                            ? g.variantIds.filter((vid) => vid !== String(vi))
+                                            : [...g.variantIds, String(vi)];
+                                          return { ...g, variantIds: ids };
+                                        });
+                                        return { ...p, gallery: next };
+                                      });
+                                    }} style={{ display: "none" }} />
+                                    {v.size && <span>{v.size}</span>}
+                                    {v.size && v.color && <span>/</span>}
+                                    {v.color && <span>{v.color}</span>}
+                                    {!v.size && !v.color && <span>Variant {vi + 1}</span>}
+                                  </label>
+                                );
+                              })}
+                            </Flex>
+                          )}
+                          <input value={img.alt} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.gallery];
+                              next[i] = { ...next[i], alt: e.target.value };
+                              return { ...p, gallery: next };
+                            });
+                          }}
+                            placeholder="Alt text"
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 11, outline: "none", marginTop: 6 }} />
+                        </div>
+                      </Flex>
+                    </div>
+                  ))}
+                </Flex>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); handleMultipleGalleryUpload(e.dataTransfer.files); }}>
+                <button onClick={handleAddGalleryUrl}
+                  style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", background: "none" }}>
+                  + Add URL
+                </button>
+                <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <Upload size={14} /> Upload Files
+                  <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => { handleMultipleGalleryUpload(e.target.files); e.target.value = ""; }} />
+                </label>
+              </div>
+            </Card>
+          </Flex>
+
+          {/* Base Price + Stock */}
           <Card className="admin-soft-panel" variant="borderless" title={hasVariants ? "Listing Price (shown on collections)" : "Price"}>
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? "1fr 1fr" : "1fr 1fr 1fr" }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
                 <input
@@ -843,64 +904,64 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   ))}
                 </select>
               </Flex>
+              {!hasVariants && (
+                <>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                    <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                  </Flex>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                    <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                  </Flex>
+                </>
+              )}
             </div>
+            <Flex gap={24} style={{ marginTop: 16 }}>
+              <Flex align="center" gap={8}>
+                <input type="checkbox" id="tax_included" checked={form.tax_included} onChange={(e) => updateField("tax_included", e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                <label htmlFor="tax_included" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Tax Included</label>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <input type="checkbox" id="allow_backorder" checked={form.allow_backorder} onChange={(e) => updateField("allow_backorder", e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                <label htmlFor="allow_backorder" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Allow Backorders</label>
+              </Flex>
+            </Flex>
+          </Card>
 
-            {/* Simple Product Fields */}
-            {!hasVariants && (
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr", marginTop: 16 }}>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
-                  <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Low Stock Threshold</label>
-                  <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
+          {!hasVariants && (
+            <Card className="admin-soft-panel" variant="borderless" title="Shipping">
+              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
                 <Flex vertical gap={4}>
                   <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
                   <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
                     style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
                 </Flex>
-              </div>
-            )}
-          </Card>
-
-          {/* Simple Product SKU/Barcode */}
-          {!hasVariants && (
-            <Card className="admin-soft-panel" variant="borderless" title="Product Identifiers">
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU *</label>
-                  <div style={{ position: "relative" }}>
-                    <input type="text" value={form.variants[0]?.sku ?? ""}
-                      onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
-                      style={{
-                        width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
-                        border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                        fontSize: 14, outline: "none",
-                      }} />
-                    <button onClick={() => generateSingleSku(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                      <WandSparkles size={14} />
-                    </button>
-                  </div>
-                  {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Length (cm)</label>
+                  <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
                 </Flex>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
-                  <div style={{ position: "relative" }}>
-                    <input type="text" value={form.variants[0]?.barcode ?? ""}
-                      onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                      style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                    <button onClick={() => generateSingleBarcode(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                      <WandSparkles size={14} />
-                    </button>
-                  </div>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Width (cm)</label>
+                  <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                </Flex>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Height (cm)</label>
+                  <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
                 </Flex>
               </div>
+              <Flex align="center" gap={8} style={{ marginTop: 12 }}>
+                <input type="checkbox" id="free_shipping" checked={form.free_shipping} onChange={(e) => updateField("free_shipping", e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                <label htmlFor="free_shipping" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Free Shipping</label>
+              </Flex>
             </Card>
           )}
 
@@ -1205,28 +1266,28 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Size</label>
-                                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                                      <input type="text" value={variant.size} onChange={(e) => updateVariant(actualIdx, "size", e.target.value)}
-                                        style={{ flex: 1, minWidth: 60, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <input type="text" value={variant.size} onChange={(e) => updateVariant(actualIdx, "size", e.target.value)}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <Flex wrap="wrap" gap={4}>
                                       {SIZE_PRESETS.slice(0, 5).map((s) => (
                                         <button key={s} onClick={() => updateVariant(actualIdx, "size", s)}
                                           style={{ padding: "4px 8px", fontSize: 10, borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: variant.size === s ? "#0f766e" : "none", color: variant.size === s ? "#fff" : "rgba(0,0,0,0.45)" }}>
                                           {s}
                                         </button>
                                       ))}
-                                    </div>
+                                    </Flex>
                                   </Flex>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Color</label>
-                                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-                                      <input type="text" value={variant.color} onChange={(e) => updateVariant(actualIdx, "color", e.target.value)}
-                                        style={{ flex: 1, minWidth: 60, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <input type="text" value={variant.color} onChange={(e) => updateVariant(actualIdx, "color", e.target.value)}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                    <Flex wrap="wrap" gap={4}>
                                       {COLOR_PRESETS.slice(0, 8).map((c) => (
                                         <button key={c.name} onClick={() => updateVariant(actualIdx, "color", c.name)}
                                           title={c.name}
                                           style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid #0f766e" : "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: c.hex }} />
                                       ))}
-                                    </div>
+                                    </Flex>
                                   </Flex>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Variant Image</label>
@@ -1244,7 +1305,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     )}
                                   </Flex>
                                 </div>
-                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr 1fr", marginTop: 12 }}>
+                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
                                     <input type="number" value={variant.stock ?? ""} onChange={(e) => updateVariant(actualIdx, "stock", e.target.value ? Number(e.target.value) : null)}
@@ -1255,7 +1316,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                       }} />
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Low Stock Threshold</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
                                     <input type="number" value={variant.lowStockThreshold} onChange={(e) => updateVariant(actualIdx, "lowStockThreshold", Number(e.target.value))}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
                                   </Flex>
@@ -1302,6 +1363,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </Typography.Text>
                 <Flex gap={6}>
                   <Button size="small" onClick={generateAllSkus}>Generate all SKUs</Button>
+                  <Button size="small" onClick={generateAllBarcodes}>Generate all Barcodes</Button>
                 </Flex>
               </div>
             </Card>
