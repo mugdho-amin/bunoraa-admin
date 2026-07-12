@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Typography, message, Spin, Tag } from "antd";
+import { Button, Card, Collapse, Flex, Typography, message, Spin, Tag } from "antd";
 import Image from "next/image";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
@@ -904,93 +904,117 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           )}
 
-          {/* Categories — Django-admin style hierarchical pickers */}
-          <Card className="admin-soft-panel" variant="borderless" title="Categories">
-            <Flex vertical gap={16}>
-              <Flex vertical gap={6}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                  Primary Category *
-                </label>
-                <CategoryTreeSelect
-                  categories={categories}
-                  value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
-                  onChange={handlePrimaryCategoryChange}
-                  multiple={false}
-                  placeholder="Search or browse primary category..."
-                  error={fieldErrors["primaryCategoryId"]}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                  Main category used for breadcrumbs, SEO paths, and storefront navigation.
-                </Typography.Text>
-              </Flex>
-              <Flex vertical gap={6}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                  Categories *
-                </label>
-                <CategoryTreeSelect
-                  categories={categories}
-                  value={form.categoryIds}
-                  onChange={handleCategoriesChange}
-                  multiple
-                  placeholder="Search or browse categories..."
-                  error={fieldErrors["categoryIds"]}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                  Drill into subcategories or search. Primary category is kept selected automatically.
-                </Typography.Text>
-              </Flex>
-            </Flex>
-          </Card>
-
-          {/* SEO */}
-          <Card className="admin-soft-panel" variant="borderless" title="SEO">
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
-              Search engine metadata. Leave blank to default meta title from the product name and description from the short description.
-            </Typography.Text>
-            <Flex vertical gap={4}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                Meta Title
-              </label>
-              <input
-                value={form.meta_title}
-                onChange={(e) => updateField("meta_title", e.target.value)}
-                placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
-                maxLength={255}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
-              />
-              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
-                {(form.meta_title || form.name || "").length}/255
-              </span>
-            </Flex>
-            <Flex vertical gap={4} style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                Meta Description
-              </label>
-              <textarea
-                value={form.meta_description}
-                onChange={(e) => updateField("meta_description", e.target.value)}
-                placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
-                rows={3}
-                maxLength={500}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
-              />
-              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
-                {(form.meta_description || form.short_description || "").length}/500
-              </span>
-            </Flex>
-            <Flex vertical gap={4} style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                Meta Keywords
-              </label>
-              <input
-                value={form.meta_keywords}
-                onChange={(e) => updateField("meta_keywords", e.target.value)}
-                placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
-                maxLength={500}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
-              />
-            </Flex>
-          </Card>
+          {/* Classification & SEO — collapsed sections for simple products */}
+          <Collapse
+            className="admin-soft-panel"
+            defaultActiveKey={["categories"]}
+            expandIconPosition="end"
+            size="small"
+            items={[
+                {
+                  key: "categories",
+                  label: (
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>
+                      Categories {!form.primaryCategoryId && <Tag color="error" style={{ marginLeft: 8, fontSize: 10 }}>Required</Tag>}
+                    </span>
+                  ),
+                  children: (
+                    <Flex vertical gap={16} style={{ padding: "4px 0" }}>
+                      <Flex vertical gap={6}>
+                        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                          Primary Category *
+                        </label>
+                        <CategoryTreeSelect
+                          categories={categories}
+                          value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
+                          onChange={handlePrimaryCategoryChange}
+                          multiple={false}
+                          placeholder="Search or browse primary category..."
+                          error={fieldErrors["primaryCategoryId"]}
+                        />
+                        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                          Main category used for breadcrumbs, SEO paths, and storefront navigation.
+                        </Typography.Text>
+                      </Flex>
+                      <Flex vertical gap={6}>
+                        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                          Additional Categories
+                        </label>
+                        <CategoryTreeSelect
+                          categories={categories}
+                          value={form.categoryIds}
+                          onChange={handleCategoriesChange}
+                          multiple
+                          placeholder="Search or browse additional categories..."
+                          error={fieldErrors["categoryIds"]}
+                        />
+                        <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                          Secondary categories for cross-listing and filtering.
+                        </Typography.Text>
+                      </Flex>
+                    </Flex>
+                  ),
+                },
+                {
+                  key: "seo",
+                  label: (
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>
+                      Search Engine Optimization
+                    </span>
+                  ),
+                  children: (
+                    <Flex vertical gap={12} style={{ padding: "4px 0" }}>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        Search engine metadata. Leave blank to derive from product name and short description.
+                      </Typography.Text>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                          Meta Title
+                        </label>
+                        <input
+                          value={form.meta_title}
+                          onChange={(e) => updateField("meta_title", e.target.value)}
+                          placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
+                          maxLength={255}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                        />
+                        <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                          {(form.meta_title || form.name || "").length}/255
+                        </span>
+                      </Flex>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                          Meta Description
+                        </label>
+                        <textarea
+                          value={form.meta_description}
+                          onChange={(e) => updateField("meta_description", e.target.value)}
+                          placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
+                          rows={3}
+                          maxLength={500}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
+                        />
+                        <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                          {(form.meta_description || form.short_description || "").length}/500
+                        </span>
+                      </Flex>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                          Meta Keywords
+                        </label>
+                        <input
+                          value={form.meta_keywords}
+                          onChange={(e) => updateField("meta_keywords", e.target.value)}
+                          placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
+                          maxLength={500}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                        />
+                      </Flex>
+                    </Flex>
+                  ),
+                },
+              ]}
+          />
         </Flex>
 
         {/* ── Right Column: Variants (only when toggle is ON) ── */}
