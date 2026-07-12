@@ -31,22 +31,6 @@ const methodLabel: Record<string, string> = {
   backup_code: "Backup Code",
   passkey: "Passkey",
 };
-  {
-    icon: <LayoutDashboard size={18} />,
-    title: "Operational Control",
-    description: "Orders, catalog, payments, shipping, support, and analytics from one cockpit.",
-  },
-  {
-    icon: <ShieldCheck size={18} />,
-    title: "Security First",
-    description: "JWT auth, MFA-aware flows, audit logging, and environment health visibility by default.",
-  },
-  {
-    icon: <Sparkles size={18} />,
-    title: "Refine + Dynamic Metadata",
-    description: "A schema-driven workspace that stays aligned with your Django admin API as it grows.",
-  },
-];
 
 export function LoginScreen() {
   const { refreshBootstrap } = useAdminBootstrap();
