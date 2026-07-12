@@ -34,7 +34,7 @@ function matchResourceAction(path: string, resources: AdminResourceConfig[]) {
       const prefix = normalizePath(resource.edit.replace(":id", ""));
       if (normalized.startsWith(prefix)) {
         const id = normalized.slice(prefix.length).replace(/^\/+/, "");
-        if (id) {
+        if (id && id !== "undefined") {
           return {
             resource,
             action: "edit" as ResourceViewAction,
@@ -48,7 +48,7 @@ function matchResourceAction(path: string, resources: AdminResourceConfig[]) {
       const prefix = normalizePath(resource.show.replace(":id", ""));
       if (normalized.startsWith(prefix)) {
         const id = normalized.slice(prefix.length).replace(/^\/+/, "");
-        if (id) {
+        if (id && id !== "undefined") {
           return {
             resource,
             action: "show" as ResourceViewAction,

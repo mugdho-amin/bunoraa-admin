@@ -11,6 +11,7 @@ import {
 import { requestAdminEnvelope } from "@/lib/admin/http";
 import { logger } from "@/lib/admin/logger";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
+import { getAccessToken } from "@/lib/admin/auth-storage";
 
 type NotificationItem = {
   id: string;
@@ -37,7 +38,7 @@ let globalWs: WebSocket | null = null;
 let globalWsUrl: string | null = null;
 
 function setupGlobalWebSocket(wsUrlOverride?: string) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("admin_access_token") : null;
+  const token = typeof window !== "undefined" ? getAccessToken() : null;
   if (!token) return;
 
   const wsUrl = wsUrlOverride || process.env.NEXT_PUBLIC_ADMIN_WS_URL || "ws://127.0.0.1:8000/ws/admin/updates/";

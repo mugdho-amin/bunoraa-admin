@@ -54,9 +54,11 @@ function buildColumns(
     width: 160,
     render: (_, record) => (
       <Space size={4}>
-        <Tooltip title="View details">
-          <Button type="text" size="small" icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}/show/${record.id}`)} />
-        </Tooltip>
+        {resource.meta.capabilities.show && record.id != null ? (
+          <Tooltip title="View details">
+            <Button type="text" size="small" icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}/show/${record.id}`)} />
+          </Tooltip>
+        ) : null}
         {resource.meta.capabilities.edit ? (
           <Tooltip title="Edit">
             <Button type="text" size="small" icon={<Pencil size={14} />} onClick={() => router.push(`/${resource.name}/edit/${record.id}`)} />
@@ -263,7 +265,11 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
           scroll={{ x: 980 }}
           locale={{ emptyText: <Empty description={`No ${resource.label.toLowerCase()} found.`} /> }}
           onRow={(record) => ({
-            onDoubleClick: () => router.push(`/${resource.name}/show/${record.id}`),
+            onDoubleClick: () => {
+            if (record.id != null && resource.meta.capabilities.show) {
+              router.push(`/${resource.name}/show/${record.id}`);
+            }
+          },
             style: { cursor: "pointer", transition: "background 0.1s" },
             onMouseEnter: (e) => { e.currentTarget.style.background = "rgba(15,118,110,0.03)"; },
             onMouseLeave: (e) => { e.currentTarget.style.background = ""; },
@@ -403,7 +409,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
 
 export function GenericResourcePage({ resource, action, id }: GenericResourcePageProps) {
   if (action === "list") return <ResourceListView resource={resource} />;
-  if (action === "show" && id !== undefined) return <ResourceShowView resource={resource} id={id} />;
+  if (action === "show" && id !== undefined && id !== "undefined") return <ResourceShowView resource={resource} id={id} />;
   if ((action === "create" || action === "edit") && resource.meta.capabilities[action]) {
     return <ResourceFormView resource={resource} action={action} id={id} />;
   }
