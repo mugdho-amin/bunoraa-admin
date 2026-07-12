@@ -23,6 +23,7 @@ import {
   Menu as MenuIcon,
   Moon,
   RefreshCcw,
+  Search,
   Sun,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
