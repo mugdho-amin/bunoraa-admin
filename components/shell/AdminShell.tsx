@@ -23,8 +23,6 @@ import {
   Menu as MenuIcon,
   Moon,
   RefreshCcw,
-  Search,
-  ShieldEllipsis,
   Sun,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -328,13 +326,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
           </Drawer>
         )}
 
-        <Layout style={{ background: "transparent" }}>
+        <Layout style={{ background: "transparent", overflow: "hidden" }}>
           <Header
             style={{
               padding: isDesktop ? "16px 24px 0 0" : "12px",
               background: "transparent",
               height: "auto",
               lineHeight: "inherit",
+              flexShrink: 0,
             }}
           >
             <Flex align="center" justify="space-between" gap={12}>
@@ -355,39 +354,35 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   />
                 )}
                 <Flex vertical gap={0} style={{ minWidth: 0 }}>
-                  <Space size={6} wrap>
-                    <Typography.Text
-                      type="secondary"
-                      style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Tag
-                        color="blue"
-                        bordered={false}
-                        style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
+                  {isDesktop ? (
+                    <Space size={6} wrap>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
                       >
-                        {route.type === "resource"
-                          ? route.resource.group
-                          : route.type === "page"
-                            ? route.page.group
-                            : "System"}
+                        <Tag
+                          color="blue"
+                          bordered={false}
+                          style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
+                        >
+                          {route.type === "resource"
+                            ? route.resource.group
+                            : route.type === "page"
+                              ? route.page.group
+                              : "System"}
+                        </Tag>
+                        <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
+                        <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
+                      </Typography.Text>
+                      <Tag
+                        color={bootstrap?.app.environment === "production" ? "green" : "gold"}
+                        bordered={false}
+                        style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
+                      >
+                        {bootstrap?.app.environment ?? "unknown"}
                       </Tag>
-                      <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
-                      <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
-                      {subtitle ? (
-                        <>
-                          <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
-                          <span style={{ color: "var(--admin-muted)", opacity: 0.4 }}>{subtitle}</span>
-                        </>
-                      ) : null}
-                    </Typography.Text>
-                    <Tag
-                      color={bootstrap?.app.environment === "production" ? "green" : "gold"}
-                      bordered={false}
-                      style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
-                    >
-                      {bootstrap?.app.environment ?? "unknown"}
-                    </Tag>
-                  </Space>
+                    </Space>
+                  ) : null}
                   <Typography.Title
                     level={4}
                     className="admin-display"
@@ -399,22 +394,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
               </Flex>
 
               <Space size={8} wrap>
-                <Tooltip title="Search (Cmd+K)">
-                  <Button
-                    type="text"
-                    icon={<Search size={16} />}
-                    onClick={() => setCommandOpen(true)}
-                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
-                    aria-label="Command palette"
-                  />
-                </Tooltip>
                 <NotificationBell />
-                <Space size={4}>
-                  <ShieldEllipsis size={14} style={{ color: "var(--admin-muted)" }} />
-                  <Typography.Text type="secondary" style={{ fontSize: 12, color: "var(--admin-muted)" }}>
-                    MFA
-                  </Typography.Text>
-                </Space>
                 <Dropdown menu={userMenu} trigger={["click"]}>
                   <Button
                     type="text"
@@ -432,7 +412,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
             </Flex>
           </Header>
 
-          <Content style={{ padding: isDesktop ? "20px 24px 24px 0" : "12px 16px 24px" }}>
+          <Content
+            className="admin-page-scroll"
+            style={{
+              padding: isDesktop ? "20px 24px 24px 0" : "12px 16px 24px",
+              height: "100%",
+              overflow: "auto",
+            }}
+          >
             <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
               {children}
             </div>

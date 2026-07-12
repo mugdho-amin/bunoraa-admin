@@ -15,8 +15,8 @@ import {
   Typography,
 } from "antd";
 import {
-  KeyRound, LayoutDashboard, ShieldCheck, Sparkles, Eye, EyeOff,
-  Mail, Lock, Globe, ArrowRight,
+  KeyRound, Eye, EyeOff,
+  Mail, Lock, ArrowRight,
 } from "lucide-react";
 import { loginWithPassword, verifyMfaCode } from "@/lib/admin/auth-provider";
 import { getPendingMfaChallenge } from "@/lib/admin/auth-storage";
@@ -31,8 +31,6 @@ const methodLabel: Record<string, string> = {
   backup_code: "Backup Code",
   passkey: "Passkey",
 };
-
-const featureCards = [
   {
     icon: <LayoutDashboard size={18} />,
     title: "Operational Control",
@@ -98,50 +96,19 @@ export function LoginScreen() {
   return (
     <div className="admin-login-page">
       <div className="admin-login-grid">
-        {/* ── Left: Brand / Info Panel ── */}
-        <div className="admin-glass-card admin-shell-gradient" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column" }}>
-          <Flex align="center" gap={8} style={{ marginBottom: 8 }}>
+        {/* ── Left: Brand Panel ── */}
+        <div className="admin-glass-card admin-shell-gradient" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <Flex align="center" gap={8} style={{ marginBottom: 24 }}>
             <Tag bordered={false} color="cyan" style={{ paddingInline: 12, borderRadius: 999 }}>
               Bunoraa Admin v2
             </Tag>
-            <Tag bordered={false} color="blue" style={{ paddingInline: 8, borderRadius: 999, fontSize: 10 }}>
-              Enterprise
-            </Tag>
           </Flex>
-          <Typography.Title level={1} className="admin-display" style={{ marginTop: 12, marginBottom: 12, fontSize: "clamp(24px, 3vw, 36px)" }}>
-            Premium operations, <br />without replacing your <br />trusted v1.
+          <Typography.Title level={1} className="admin-display" style={{ marginTop: 0, marginBottom: 16, fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
+            Enterprise operations <br />dashboard
           </Typography.Title>
-          <Typography.Paragraph style={{ fontSize: 15, color: "rgba(15, 23, 42, 0.8)", maxWidth: 600, lineHeight: 1.7 }}>
-            This workspace runs in parallel with Django admin, reuses your existing staff APIs, and is designed
-            for a gradual, low-risk rollout with zero disruption.
-          </Typography.Paragraph>
-
-          <div style={{ flex: 1 }} />
-
-          <Space direction="vertical" size={14} style={{ width: "100%" }}>
-            {featureCards.map((item) => (
-              <div key={item.title} className="admin-soft-panel" style={{ padding: "16px 20px" }}>
-                <Flex align="flex-start" gap={14}>
-                  <Flex
-                    align="center"
-                    justify="center"
-                    style={{
-                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                      background: "linear-gradient(135deg, rgba(15, 118, 110, 0.18), rgba(29, 78, 216, 0.18))",
-                    }}
-                  >
-                    {item.icon}
-                  </Flex>
-                  <div>
-                    <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4, fontSize: 14 }}>
-                      {item.title}
-                    </Typography.Title>
-                    <Typography.Text type="secondary" style={{ fontSize: 13 }}>{item.description}</Typography.Text>
-                  </div>
-                </Flex>
-              </div>
-            ))}
-          </Space>
+          <Typography.Text style={{ fontSize: 15, color: "rgba(15, 23, 42, 0.7)", lineHeight: 1.6 }}>
+            Sign in to manage orders, products, payments, and analytics from a single workspace.
+          </Typography.Text>
         </div>
 
         {/* ── Right: Login Form ── */}
