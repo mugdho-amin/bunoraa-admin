@@ -40,14 +40,16 @@ interface ProductForm {
 const COLOR_PRESETS = [
   { name: "Black", hex: "#000000" }, { name: "White", hex: "#FFFFFF" },
   { name: "Navy", hex: "#1B2838" }, { name: "Charcoal", hex: "#36454F" },
-  { name: "Gray", hex: "#808080" }, { name: "Red", hex: "#CC0000" },
-  { name: "Maroon", hex: "#800000" }, { name: "Burgundy", hex: "#900020" },
-  { name: "Green", hex: "#2E7D32" }, { name: "Olive", hex: "#808000" },
-  { name: "Blue", hex: "#1565C0" }, { name: "Sky Blue", hex: "#87CEEB" },
-  { name: "Brown", hex: "#6D4C41" }, { name: "Beige", hex: "#F5F5DC" },
-  { name: "Cream", hex: "#FFFDD0" }, { name: "Khaki", hex: "#C3B091" },
+  { name: "Gray", hex: "#808080" }, { name: "Blue", hex: "#1565C0" },
+  { name: "Green", hex: "#2E7D32" }, { name: "Red", hex: "#CC0000" },
+  { name: "Pink", hex: "#E91E63" }, { name: "Purple", hex: "#6A1B9A" },
+  { name: "Teal", hex: "#008080" }, { name: "Olive", hex: "#808000" },
+  { name: "Coral", hex: "#FF7F50" }, { name: "Mint", hex: "#98FF98" },
+  { name: "Lavender", hex: "#E6E6FA" }, { name: "Cream", hex: "#FFFDD0" },
+  { name: "Beige", hex: "#F5F5DC" }, { name: "Khaki", hex: "#C3B091" },
+  { name: "Brown", hex: "#6D4C41" }, { name: "Maroon", hex: "#800000" },
+  { name: "Burgundy", hex: "#900020" }, { name: "Sky Blue", hex: "#87CEEB" },
   { name: "Orange", hex: "#FF6F00" }, { name: "Yellow", hex: "#F9A825" },
-  { name: "Purple", hex: "#6A1B9A" }, { name: "Pink", hex: "#E91E63" },
 ];
 
 const SIZE_PRESETS = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"];
@@ -99,6 +101,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [matrixSizes, setMatrixSizes] = useState("");
   const [matrixColors, setMatrixColors] = useState("");
   const [hasVariants, setHasVariants] = useState(false);
+  const [seoCollapsed, setSeoCollapsed] = useState(true);
+  const [shippingCollapsed, setShippingCollapsed] = useState(true);
   const slugManuallyEdited = useRef(false);
   const variantContainerRef = useRef<HTMLDivElement>(null);
 
@@ -655,7 +659,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 }} />
               {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
             </Flex>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: hasVariants ? "1fr" : "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
@@ -666,35 +670,39 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }} />
                 {fieldErrors["slug"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["slug"]}</span>}
               </Flex>
-              <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
-                <div style={{ position: "relative" }}>
-                  <input type="text" value={form.variants[0]?.sku ?? ""}
-                    onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
-                    style={{
-                      width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
-                      border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                      fontSize: 14, outline: "none",
-                    }} />
-                  <button onClick={() => generateSingleSku(0)}
-                    style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                    <WandSparkles size={14} />
-                  </button>
-                </div>
-                {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
-              </Flex>
-              <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
-                <div style={{ position: "relative" }}>
-                  <input type="text" value={form.variants[0]?.barcode ?? ""}
-                    onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                    style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                  <button onClick={() => generateSingleBarcode(0)}
-                    style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                    <WandSparkles size={14} />
-                  </button>
-                </div>
-              </Flex>
+              {!hasVariants && (
+                <>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
+                    <div style={{ position: "relative" }}>
+                      <input type="text" value={form.variants[0]?.sku ?? ""}
+                        onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
+                        style={{
+                          width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
+                          border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                          fontSize: 14, outline: "none",
+                        }} />
+                      <button onClick={() => generateSingleSku(0)}
+                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                        <WandSparkles size={14} />
+                      </button>
+                    </div>
+                    {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
+                  </Flex>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
+                    <div style={{ position: "relative" }}>
+                      <input type="text" value={form.variants[0]?.barcode ?? ""}
+                        onChange={(e) => updateVariant(0, "barcode", e.target.value)}
+                        style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      <button onClick={() => generateSingleBarcode(0)}
+                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                        <WandSparkles size={14} />
+                      </button>
+                    </div>
+                  </Flex>
+                </>
+              )}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
@@ -848,6 +856,44 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           </Flex>
 
+          {/* Categories */}
+          <Card className="admin-soft-panel" variant="borderless" title="Categories">
+            <Flex vertical gap={16}>
+              <Flex vertical gap={6}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                  Primary Category *
+                </label>
+                <CategoryTreeSelect
+                  categories={categories}
+                  value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
+                  onChange={handlePrimaryCategoryChange}
+                  multiple={false}
+                  placeholder="Search or browse primary category..."
+                  error={fieldErrors["primaryCategoryId"]}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  Main category used for breadcrumbs, SEO paths, and storefront navigation.
+                </Typography.Text>
+              </Flex>
+              <Flex vertical gap={6}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                  Additional Categories
+                </label>
+                <CategoryTreeSelect
+                  categories={categories}
+                  value={form.categoryIds}
+                  onChange={handleCategoriesChange}
+                  multiple
+                  placeholder="Search or browse additional categories..."
+                  error={fieldErrors["categoryIds"]}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                  Secondary categories for cross-listing and filtering.
+                </Typography.Text>
+              </Flex>
+            </Flex>
+          </Card>
+
           {/* Base Price + Stock */}
           <Card className="admin-soft-panel" variant="borderless" title={hasVariants ? "Listing Price (shown on collections)" : "Price"}>
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? "1fr 1fr 1fr" : "1fr 1fr 1fr 1fr 1fr" }}>
@@ -933,126 +979,105 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Flex>
           </Card>
 
-          {!hasVariants && (
-            <Card className="admin-soft-panel" variant="borderless" title="Shipping">
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
-                  <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Length (cm)</label>
-                  <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Width (cm)</label>
-                  <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Height (cm)</label>
-                  <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                </Flex>
-              </div>
-              <Flex align="center" gap={8} style={{ marginTop: 12 }}>
-                <input type="checkbox" id="free_shipping" checked={form.free_shipping} onChange={(e) => updateField("free_shipping", e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                <label htmlFor="free_shipping" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Free Shipping</label>
-              </Flex>
-            </Card>
-          )}
-
-          {/* Categories + SEO — side by side */}
+          {/* SEO + Shipping — side by side */}
           <Flex gap={16} wrap="wrap">
-            <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <Flex vertical gap={16}>
-                <Flex vertical gap={6}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                    Primary Category *
-                  </label>
-                  <CategoryTreeSelect
-                    categories={categories}
-                    value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
-                    onChange={handlePrimaryCategoryChange}
-                    multiple={false}
-                    placeholder="Search or browse primary category..."
-                    error={fieldErrors["primaryCategoryId"]}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                    Main category used for breadcrumbs, SEO paths, and storefront navigation.
-                  </Typography.Text>
-                </Flex>
-                <Flex vertical gap={6}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                    Additional Categories
-                  </label>
-                  <CategoryTreeSelect
-                    categories={categories}
-                    value={form.categoryIds}
-                    onChange={handleCategoriesChange}
-                    multiple
-                    placeholder="Search or browse additional categories..."
-                    error={fieldErrors["categoryIds"]}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                    Secondary categories for cross-listing and filtering.
-                  </Typography.Text>
-                </Flex>
-              </Flex>
+            <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <div onClick={() => setSeoCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+                <Typography.Text strong style={{ fontSize: 13 }}>Search Engine Optimization</Typography.Text>
+                {seoCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </div>
+              {!seoCollapsed && (
+                <div style={{ padding: "0 20px 20px" }}>
+                  <Flex vertical gap={12} style={{ marginTop: 12 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      Leave blank to derive from product name and short description.
+                    </Typography.Text>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                        Meta Title
+                      </label>
+                      <input
+                        value={form.meta_title}
+                        onChange={(e) => updateField("meta_title", e.target.value)}
+                        placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
+                        maxLength={255}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                      />
+                      <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                        {(form.meta_title || form.name || "").length}/255
+                      </span>
+                    </Flex>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                        Meta Description
+                      </label>
+                      <textarea
+                        value={form.meta_description}
+                        onChange={(e) => updateField("meta_description", e.target.value)}
+                        placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
+                        rows={3}
+                        maxLength={500}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
+                      />
+                      <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                        {(form.meta_description || form.short_description || "").length}/500
+                      </span>
+                    </Flex>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                        Meta Keywords
+                      </label>
+                      <input
+                        value={form.meta_keywords}
+                        onChange={(e) => updateField("meta_keywords", e.target.value)}
+                        placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
+                        maxLength={500}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                      />
+                    </Flex>
+                  </Flex>
+                </div>
+              )}
             </Card>
-            <Card className="admin-soft-panel" variant="borderless" title="Search Engine Optimization" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <Flex vertical gap={12}>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Leave blank to derive from product name and short description.
-                </Typography.Text>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                    Meta Title
-                  </label>
-                  <input
-                    value={form.meta_title}
-                    onChange={(e) => updateField("meta_title", e.target.value)}
-                    placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
-                    maxLength={255}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
-                  />
-                  <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
-                    {(form.meta_title || form.name || "").length}/255
-                  </span>
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                    Meta Description
-                  </label>
-                  <textarea
-                    value={form.meta_description}
-                    onChange={(e) => updateField("meta_description", e.target.value)}
-                    placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
-                    rows={3}
-                    maxLength={500}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
-                  />
-                  <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
-                    {(form.meta_description || form.short_description || "").length}/500
-                  </span>
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                    Meta Keywords
-                  </label>
-                  <input
-                    value={form.meta_keywords}
-                    onChange={(e) => updateField("meta_keywords", e.target.value)}
-                    placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
-                    maxLength={500}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
-                  />
-                </Flex>
-              </Flex>
-            </Card>
+            {!hasVariants && (
+              <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
+                <div onClick={() => setShippingCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+                  <Typography.Text strong style={{ fontSize: 13 }}>Shipping</Typography.Text>
+                  {shippingCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                </div>
+                {!shippingCollapsed && (
+                  <div style={{ padding: "0 20px 20px" }}>
+                    <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", marginTop: 12 }}>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
+                        <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      </Flex>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Length (cm)</label>
+                        <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      </Flex>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Width (cm)</label>
+                        <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      </Flex>
+                      <Flex vertical gap={4}>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Height (cm)</label>
+                        <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      </Flex>
+                    </div>
+                    <Flex align="center" gap={8} style={{ marginTop: 12 }}>
+                      <input type="checkbox" id="free_shipping" checked={form.free_shipping} onChange={(e) => updateField("free_shipping", e.target.checked)}
+                        style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                      <label htmlFor="free_shipping" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Free Shipping</label>
+                    </Flex>
+                  </div>
+                )}
+              </Card>
+            )}
           </Flex>
         </Flex>
 
@@ -1282,7 +1307,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     <input type="text" value={variant.color} onChange={(e) => updateVariant(actualIdx, "color", e.target.value)}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
                                     <Flex wrap="wrap" gap={4}>
-                                      {COLOR_PRESETS.slice(0, 8).map((c) => (
+                                      {COLOR_PRESETS.slice(0, 12).map((c) => (
                                         <button key={c.name} onClick={() => updateVariant(actualIdx, "color", c.name)}
                                           title={c.name}
                                           style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid #0f766e" : "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: c.hex }} />
