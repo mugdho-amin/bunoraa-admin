@@ -249,7 +249,7 @@ export function AdminDashboardPage() {
                     </Pie>
                     <RechartsTooltip
                       contentStyle={{ borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)" }}
-                      formatter={(value: number, name: string) => [`${value}%`, name]}
+                      formatter={(value, name) => [`${value}%`, name]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
