@@ -190,7 +190,7 @@ export function AdminDashboardPage() {
         <Col xs={24} lg={8}>
           <div className="bento-cell" style={{ padding: isMobile ? 14 : 20 }}>
             <Flex align="center" gap={8} style={{ marginBottom: 16 }}>
-              <PieChart size={16} style={{ color: "var(--admin-muted)" }} />
+              <BarChart3 size={16} style={{ color: "var(--admin-muted)" }} />
               <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Categories
               </Typography.Text>
@@ -205,7 +205,7 @@ export function AdminDashboardPage() {
                   </Pie>
                   <RechartsTooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)" }}
-                    formatter={(value: number, name: string) => [`${value}%`, name]}
+                    formatter={(value, name) => [`${value}%`, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>

@@ -16,7 +16,7 @@ import {
 } from "antd";
 import {
   KeyRound, LayoutDashboard, ShieldCheck, Sparkles, Eye, EyeOff,
-  Mail, Lock, Github, ChromeIcon as Google, ArrowRight,
+  Mail, Lock, Globe, ArrowRight,
 } from "lucide-react";
 import { loginWithPassword, verifyMfaCode } from "@/lib/admin/auth-provider";
 import { getPendingMfaChallenge } from "@/lib/admin/auth-storage";
@@ -165,20 +165,6 @@ export function LoginScreen() {
 
             {!showMfa ? (
               <>
-                {/* Social Login */}
-                <Flex vertical gap={8}>
-                  <Button size="large" block icon={<Google size={16} />} style={{ borderRadius: 12, height: 48 }}>
-                    Continue with Google
-                  </Button>
-                  <Button size="large" block icon={<Github size={16} />} style={{ borderRadius: 12, height: 48 }}>
-                    Continue with GitHub
-                  </Button>
-                </Flex>
-
-                <Divider plain style={{ fontSize: 11, color: "var(--admin-muted)", margin: "8px 0" }}>
-                  or sign in with email
-                </Divider>
-
                 <Form<LoginFields> form={loginForm} layout="vertical" onFinish={handleLogin}>
                   <Form.Item label="Email" name="email" rules={[{ required: true, type: "email" }]}>
                     <Input
