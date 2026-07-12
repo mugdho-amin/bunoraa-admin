@@ -69,7 +69,7 @@ function buildColumns(
         ) : null}
       </Space>
     ),
-  }));
+  });
 
   return columns;
 }
