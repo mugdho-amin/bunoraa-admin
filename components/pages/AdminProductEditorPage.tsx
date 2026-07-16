@@ -20,10 +20,14 @@ interface VariantForm {
 }
 
 interface GalleryImage {
+  _id: string;
   url: string;
   variantIds: string[];
   alt: string;
 }
+
+let galleryIdCounter = 0;
+const galleryId = () => `gallery_${Date.now()}_${++galleryIdCounter}`;
 
 interface ProductForm {
   name: string; slug: string; sku: string;
@@ -139,8 +143,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       slugManuallyEdited.current = true;
       const rawGallery = product.images ?? [];
       const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variantIds?: string[]; alt?: string }) => {
-        if (typeof item === "string") return { url: item, variantIds: [], alt: "" };
-        return { url: item.image || item.url || "", variantIds: item.variantIds ?? [], alt: item.alt ?? "" };
+        if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
+        return { _id: galleryId(), url: item.image || item.url || "", variantIds: item.variantIds ?? [], alt: item.alt ?? "" };
       });
       const variants: VariantForm[] = (product.variants ?? []).map((v: Record<string, unknown>, i: number) => ({
         sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
@@ -391,7 +395,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         clearFieldError("primaryImage");
         updateField("primaryImage", dataUrl);
       } else {
-        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { url: dataUrl, variantIds: [], alt: "" }] }));
+        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { _id: galleryId(), url: dataUrl, variantIds: [], alt: "" }] }));
       }
     };
     reader.onerror = () => message.error("Failed to read file");
@@ -400,29 +404,36 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const handleMultipleGalleryUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const results: string[] = [];
+    const results: { dataUrl: string; index: number }[] = [];
     let completed = 0;
+    let failed = 0;
     for (let i = 0; i < files.length; i++) {
       const reader = new FileReader();
       const idx = i;
       reader.onload = (e) => {
-        results[idx] = e.target?.result as string;
+        const dataUrl = e.target?.result as string;
+        if (dataUrl) results.push({ dataUrl, index: idx });
         completed++;
         if (completed === files.length) {
-          setForm((prev) => ({
-            ...prev,
-            gallery: [...prev.gallery, ...results.map((url) => ({ url, variantIds: [], alt: "" }))],
-          }));
+          results.sort((a, b) => a.index - b.index);
+          if (results.length > 0) {
+            const newGalleryItems = results.map((r) => ({ _id: galleryId(), url: r.dataUrl, variantIds: [], alt: "" }));
+            setForm((prev) => ({
+              ...prev,
+              gallery: [...prev.gallery, ...newGalleryItems],
+            }));
+          }
+          if (failed > 0) message.warning(`${failed} file(s) failed to upload.`);
         }
       };
-      reader.onerror = () => { completed++; };
+      reader.onerror = () => { completed++; failed++; };
       reader.readAsDataURL(files[i]);
     }
   };
 
   const handleAddGalleryUrl = () => {
     const url = prompt("Enter image URL:");
-    if (url) updateField("gallery", [...form.gallery, { url, variantIds: [], alt: "" }]);
+    if (url) updateField("gallery", [...form.gallery, { _id: galleryId(), url, variantIds: [], alt: "" }]);
   };
 
   const handleRemoveGalleryImage = (index: number) => {
@@ -536,7 +547,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       description: form.description,
       primary_image: form.primaryImage || null,
       primary_image_alt: form.primaryImageAlt || null,
-      images: form.gallery.map((g) => ({ url: g.url, alt: g.alt })),
+      images: form.gallery.map((g) => ({ url: g.url, alt: g.alt, variant_ids: g.variantIds })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
@@ -651,7 +662,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
       <div style={{ display: "grid", gap: isMobile ? 16 : 24, gridTemplateColumns: hasVariants && !isMobile ? "1fr 2fr" : "1fr" }}>
         {/* ── Left Column: Product Info ── */}
-        <Flex vertical gap={isMobile ? 16 : 20}>
+        <Flex vertical gap={isMobile ? 16 : 20} style={{ minWidth: 0 }}>
           <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
             <Flex vertical gap={4}>
               <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Name *</label>
@@ -763,7 +774,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               {form.gallery.length > 0 && (
                 <Flex vertical gap={8}>
                   {form.gallery.map((img, i) => (
-                    <div key={i}
+                    <div key={img._id}
                       style={{
                         borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", padding: 12,
                         opacity: galleryDragIndex === i ? 0.5 : 1,
@@ -1024,7 +1035,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </Flex>
               </Card>
               <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr" }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
                 <input
@@ -1051,11 +1062,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }}
                 />
                 {fieldErrors["price"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
-                {hasVariants && form.variants.length > 1 && form.price !== null && (
-                  <button onClick={applyBasePriceToVariants} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "#0f766e", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
-                    Apply to all variants
-                  </button>
-                )}
               </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sale Price</label>
@@ -1078,16 +1084,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   ))}
                 </select>
               </Flex>
-                  <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
-                    <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                  </Flex>
-                  <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
-                    <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                  </Flex>
+              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", gridColumn: "1 / -1" }}>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                  <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                </Flex>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                  <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                </Flex>
+              </div>
             </div>
             <Flex gap={24} style={{ marginTop: 16 }}>
               <Flex align="center" gap={8}>
