@@ -860,46 +860,48 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           </Flex>
 
-          {/* Categories */}
-          <Card className="admin-soft-panel" variant="borderless" title="Categories">
-            <Flex vertical gap={16}>
-              <Flex vertical gap={6}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                  Primary Category *
-                </label>
-                <CategoryTreeSelect
-                  categories={categories}
-                  value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
-                  onChange={handlePrimaryCategoryChange}
-                  multiple={false}
-                  placeholder="Search or browse primary category..."
-                  error={fieldErrors["primaryCategoryId"]}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                  Main category used for breadcrumbs, SEO paths, and storefront navigation.
-                </Typography.Text>
-              </Flex>
-              <Flex vertical gap={6}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
-                  Additional Categories
-                </label>
-                <CategoryTreeSelect
-                  categories={categories}
-                  value={form.categoryIds}
-                  onChange={handleCategoriesChange}
-                  multiple
-                  placeholder="Search or browse additional categories..."
-                  error={fieldErrors["categoryIds"]}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                  Secondary categories for cross-listing and filtering.
-                </Typography.Text>
-              </Flex>
-            </Flex>
-          </Card>
+          {hasVariants ? (
+            <>
+              {/* Categories */}
+              <Card className="admin-soft-panel" variant="borderless" title="Categories">
+                <Flex vertical gap={16}>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      Primary Category *
+                    </label>
+                    <CategoryTreeSelect
+                      categories={categories}
+                      value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
+                      onChange={handlePrimaryCategoryChange}
+                      multiple={false}
+                      placeholder="Search or browse primary category..."
+                      error={fieldErrors["primaryCategoryId"]}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Main category used for breadcrumbs, SEO paths, and storefront navigation.
+                    </Typography.Text>
+                  </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      Additional Categories
+                    </label>
+                    <CategoryTreeSelect
+                      categories={categories}
+                      value={form.categoryIds}
+                      onChange={handleCategoriesChange}
+                      multiple
+                      placeholder="Search or browse additional categories..."
+                      error={fieldErrors["categoryIds"]}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Secondary categories for cross-listing and filtering.
+                    </Typography.Text>
+                  </Flex>
+                </Flex>
+              </Card>
 
-          {/* Base Price + Stock */}
-          <Card className="admin-soft-panel" variant="borderless" title={hasVariants ? "Listing Price (shown on collections)" : "Price"}>
+              {/* Base Price + Stock */}
+              <Card className="admin-soft-panel" variant="borderless" title="Listing Price (shown on collections)">
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr" : "1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
@@ -982,6 +984,128 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Flex>
             </Flex>
           </Card>
+            </>
+          ) : (
+            <Flex gap={16} wrap="wrap">
+              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0 }}>
+                <Flex vertical gap={16}>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      Primary Category *
+                    </label>
+                    <CategoryTreeSelect
+                      categories={categories}
+                      value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
+                      onChange={handlePrimaryCategoryChange}
+                      multiple={false}
+                      placeholder="Search or browse primary category..."
+                      error={fieldErrors["primaryCategoryId"]}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Main category used for breadcrumbs, SEO paths, and storefront navigation.
+                    </Typography.Text>
+                  </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      Additional Categories
+                    </label>
+                    <CategoryTreeSelect
+                      categories={categories}
+                      value={form.categoryIds}
+                      onChange={handleCategoriesChange}
+                      multiple
+                      placeholder="Search or browse additional categories..."
+                      error={fieldErrors["categoryIds"]}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Secondary categories for cross-listing and filtering.
+                    </Typography.Text>
+                  </Flex>
+                </Flex>
+              </Card>
+              <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr" }}>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.price ?? ""}
+                  onChange={(e) => {
+                    const val = parseDecimal(e.target.value);
+                    clearFieldError("price");
+                    setForm((prev) => ({
+                      ...prev,
+                      price: val,
+                      variants: prev.variants.map((v) => ({
+                        ...v,
+                        price: (v.price === null || v.price === 0 || v.price === prev.price) ? val : v.price,
+                      })),
+                    }));
+                  }}
+                  style={{
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "rgba(190,18,60,0.04)" : "#fff",
+                  }}
+                />
+                {fieldErrors["price"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
+                {hasVariants && form.variants.length > 1 && form.price !== null && (
+                  <button onClick={applyBasePriceToVariants} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "#0f766e", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                    Apply to all variants
+                  </button>
+                )}
+              </Flex>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sale Price</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.sale_price ?? ""}
+                  onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                />
+              </Flex>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Currency</label>
+                <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", background: "#fff" }}>
+                  {CURRENCY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </Flex>
+                <>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                    <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                  </Flex>
+                  <Flex vertical gap={4}>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                    <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                  </Flex>
+                </>
+            </div>
+            <Flex gap={24} style={{ marginTop: 16 }}>
+              <Flex align="center" gap={8}>
+                <input type="checkbox" id="tax_included" checked={form.tax_included} onChange={(e) => updateField("tax_included", e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                <label htmlFor="tax_included" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Tax Included</label>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <input type="checkbox" id="allow_backorder" checked={form.allow_backorder} onChange={(e) => updateField("allow_backorder", e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
+                <label htmlFor="allow_backorder" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Allow Backorders</label>
+              </Flex>
+            </Flex>
+              </Card>
+            </Flex>
+          )}
 
           {/* SEO + Shipping — side by side */}
           <Flex gap={16} wrap="wrap">
