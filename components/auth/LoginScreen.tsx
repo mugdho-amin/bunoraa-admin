@@ -89,7 +89,7 @@ export function LoginScreen() {
           <Typography.Title level={1} className="admin-display" style={{ marginTop: 0, marginBottom: 16, fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
             Enterprise operations <br />dashboard
           </Typography.Title>
-          <Typography.Text style={{ fontSize: 15, color: "rgba(15, 23, 42, 0.7)", lineHeight: 1.6 }}>
+          <Typography.Text style={{ fontSize: 15, color: "var(--admin-ink-secondary)", lineHeight: 1.6 }}>
             Sign in to manage orders, products, payments, and analytics from a single workspace.
           </Typography.Text>
         </div>

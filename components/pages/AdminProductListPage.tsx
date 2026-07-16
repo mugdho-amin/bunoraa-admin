@@ -143,7 +143,7 @@ export function AdminProductListPage() {
       width: isMobile ? "auto" : "12%",
       render: (_, record) => (
         isMobile
-          ? <span style={{ color: record.is_in_stock ? "#52c41a" : "#ff4d4f", fontSize: 18 }}>{record.is_in_stock ? "✓" : "✗"}</span>
+          ? <span style={{ color: record.is_in_stock ? "var(--admin-success)" : "var(--admin-danger)", fontSize: 18 }}>{record.is_in_stock ? "✓" : "✗"}</span>
           : record.is_in_stock
             ? <Tag color="green">In Stock</Tag>
             : <Tag color="red">Out of stock</Tag>
@@ -216,9 +216,9 @@ export function AdminProductListPage() {
 
       <Card className="admin-soft-panel" variant="borderless">
         <Flex vertical gap={16}>
-          <Input
+            <Input
             placeholder="Search products..."
-            prefix={<Search size={16} color="#999" />}
+            prefix={<Search size={16} style={{ color: "var(--admin-muted-light)" }} />}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -236,7 +236,7 @@ export function AdminProductListPage() {
             </Flex>
           ) : products.length === 0 ? (
             <Flex vertical align="center" gap={12} style={{ padding: "48px 0" }}>
-              <PackageSearch size={48} color="#ccc" />
+              <PackageSearch size={48} style={{ color: "var(--admin-muted-light)" }} />
               <Typography.Text type="secondary">
                 {search ? "No products match your search." : "No products yet. Create your first product."}
               </Typography.Text>

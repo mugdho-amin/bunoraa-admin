@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#0f766e",
+  themeColor: "#f3f5f9",
 };
 
 export const metadata: Metadata = {
@@ -53,6 +53,9 @@ export default function RootLayout({
     <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem("bunoraa-admin-v2:theme");if(t){var s=JSON.parse(t).state;if(s){var r=s.mode;if(r==="system"){r=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",r);var m=document.querySelector("meta[name=\\"theme-color\\"]");if(m)m.setAttribute("content",r==="dark"?"#0b1120":"#f3f5f9")}}}catch(e){}}())`,
+        }} />
       </head>
       <body>
         <AntdRegistry>

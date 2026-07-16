@@ -4,29 +4,53 @@
   --admin-surface: rgba(255, 255, 255, 0.84);
   --admin-panel: rgba(255, 255, 255, 0.94);
   --admin-border: rgba(16, 24, 40, 0.08);
+  --admin-border-strong: rgba(16, 24, 40, 0.15);
   --admin-ink: #0f172a;
+  --admin-ink-secondary: #475569;
   --admin-muted: #52607a;
+  --admin-muted-light: #94a3b8;
   --admin-brand: #0f766e;
   --admin-brand-strong: #115e59;
   --admin-brand-light: rgba(15, 118, 110, 0.12);
   --admin-accent: #1d4ed8;
   --admin-danger: #be123c;
+  --admin-danger-light: rgba(190, 18, 60, 0.06);
   --admin-warning: #b45309;
+  --admin-warning-light: rgba(180, 83, 9, 0.06);
   --admin-success: #047857;
+  --admin-success-light: rgba(4, 120, 87, 0.06);
+  --admin-input-bg: #ffffff;
+  --admin-input-border: rgba(16, 24, 40, 0.12);
+  --admin-hover-bg: rgba(15, 23, 42, 0.04);
+  --admin-hover-brand: rgba(15, 118, 110, 0.06);
   --admin-shadow: 0 24px 64px rgba(15, 23, 42, 0.08);
   --admin-shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.04);
+  --admin-shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.1);
   --admin-radius: 18px;
   --admin-radius-sm: 12px;
   --admin-radius-xs: 8px;
+  --admin-scrollbar-thumb: rgba(15, 23, 42, 0.12);
+  --admin-scrollbar-thumb-hover: rgba(15, 23, 42, 0.25);
+  --admin-chart-grid: rgba(0, 0, 0, 0.04);
+  --admin-chart-tooltip-bg: #ffffff;
 
   /* ── Dark mode overrides ── */
   --admin-bg-dark: #0b1120;
   --admin-surface-dark: rgba(18, 26, 45, 0.84);
   --admin-panel-dark: rgba(22, 32, 52, 0.94);
   --admin-border-dark: rgba(255, 255, 255, 0.06);
+  --admin-border-strong-dark: rgba(255, 255, 255, 0.12);
   --admin-ink-dark: #e8edf5;
+  --admin-ink-secondary-dark: #94a3b8;
   --admin-muted-dark: #8a99b5;
+  --admin-muted-light-dark: #64748b;
   --admin-shadow-dark: 0 24px 64px rgba(0, 0, 0, 0.4);
+  --admin-shadow-sm-dark: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --admin-shadow-lg-dark: 0 12px 28px rgba(0, 0, 0, 0.3);
+  --admin-scrollbar-thumb-dark: rgba(148, 163, 184, 0.15);
+  --admin-scrollbar-thumb-hover-dark: rgba(148, 163, 184, 0.3);
+  --admin-chart-grid-dark: rgba(255, 255, 255, 0.06);
+  --admin-chart-tooltip-bg-dark: #1e293b;
 }
 
 [data-theme="dark"] {
@@ -34,9 +58,22 @@
   --admin-surface: var(--admin-surface-dark);
   --admin-panel: var(--admin-panel-dark);
   --admin-border: var(--admin-border-dark);
+  --admin-border-strong: var(--admin-border-strong-dark);
   --admin-ink: var(--admin-ink-dark);
+  --admin-ink-secondary: var(--admin-ink-secondary-dark);
   --admin-muted: var(--admin-muted-dark);
+  --admin-muted-light: var(--admin-muted-light-dark);
+  --admin-input-bg: rgba(30, 41, 59, 0.6);
+  --admin-input-border: rgba(255, 255, 255, 0.1);
+  --admin-hover-bg: rgba(255, 255, 255, 0.04);
+  --admin-hover-brand: rgba(15, 118, 110, 0.15);
   --admin-shadow: var(--admin-shadow-dark);
+  --admin-shadow-sm: var(--admin-shadow-sm-dark);
+  --admin-shadow-lg: var(--admin-shadow-lg-dark);
+  --admin-scrollbar-thumb: var(--admin-scrollbar-thumb-dark);
+  --admin-scrollbar-thumb-hover: var(--admin-scrollbar-thumb-hover-dark);
+  --admin-chart-grid: var(--admin-chart-grid-dark);
+  --admin-chart-tooltip-bg: var(--admin-chart-tooltip-bg-dark);
 }
 
 * { box-sizing: border-box; }
@@ -61,7 +98,19 @@ html, body {
     linear-gradient(180deg, #0b1120 0%, #0f172a 100%);
 }
 
-body { min-height: 100vh; }
+body {
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+/* Smooth theme transitions for themed containers */
+.admin-soft-panel,
+.admin-glass-card,
+.admin-sidebar-glass,
+.admin-mobile-bottom-nav,
+.command-palette-dialog {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
 
 a { color: inherit; text-decoration: none; }
 
@@ -91,22 +140,22 @@ button, input, select, textarea { font: inherit; }
 }
 
 [data-theme="dark"] .admin-glass-card {
-  background: var(--admin-panel-dark);
-  border-color: var(--admin-border-dark);
+  background: var(--admin-panel);
+  border-color: var(--admin-border);
 }
 
 /* ── Soft Panel ── */
 .admin-soft-panel {
   background: var(--admin-surface);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--admin-border);
   border-radius: 20px;
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--admin-shadow-sm);
   backdrop-filter: blur(14px);
 }
 
 [data-theme="dark"] .admin-soft-panel {
-  background: var(--admin-surface-dark);
-  border-color: rgba(255, 255, 255, 0.04);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
 }
 
 /* ── Page Layout ── */
@@ -206,16 +255,16 @@ button, input, select, textarea { font: inherit; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
+  background: var(--admin-scrollbar-thumb);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.25); }
+::-webkit-scrollbar-thumb:hover { background: var(--admin-scrollbar-thumb-hover); }
 
 /* ── Sidebar ── */
 .sidebar-scroll {
   overflow-y: auto !important;
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.15) transparent;
+  scrollbar-color: var(--admin-scrollbar-thumb) transparent;
 }
 
 .admin-sidebar-glass {
@@ -253,7 +302,7 @@ button, input, select, textarea { font: inherit; }
 .admin-sidebar-glass .ant-menu-item-selected::after { display: none !important; }
 
 .admin-sidebar-glass .ant-menu-item:hover {
-  background: rgba(15, 23, 42, 0.04) !important;
+  background: var(--admin-hover-bg) !important;
   border-radius: 10px !important;
 }
 
@@ -279,16 +328,11 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: space-around;
   padding: 6px 0 env(safe-area-inset-bottom, 6px);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--admin-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(16, 24, 40, 0.06);
+  border-top: 1px solid var(--admin-border);
   box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.06);
-}
-
-[data-theme="dark"] .admin-mobile-bottom-nav {
-  background: rgba(18, 26, 45, 0.92);
-  border-top-color: rgba(255, 255, 255, 0.06);
 }
 
 .admin-mobile-nav-item {
@@ -425,13 +469,8 @@ pre { white-space: pre-wrap; word-break: break-word; }
   background: var(--admin-panel);
   border: 1px solid var(--admin-border);
   border-radius: 20px;
-  box-shadow: 0 32px 64px rgba(0,0,0,0.2);
+  box-shadow: var(--admin-shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-[data-theme="dark"] .command-palette-dialog {
-  background: var(--admin-panel-dark);
-  border-color: var(--admin-border-dark);
 }

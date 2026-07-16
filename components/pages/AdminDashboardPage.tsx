@@ -210,11 +210,11 @@ export function AdminDashboardPage() {
                         <stop offset="95%" stopColor="#0f766e" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-chart-grid)" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <RechartsTooltip
-                      contentStyle={{ borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)" }}
+                      contentStyle={{ borderRadius: 12, border: "1px solid var(--admin-border)", background: "var(--admin-chart-tooltip-bg)" }}
                     />
                     <Area type="monotone" dataKey="revenue" stroke="#0f766e" strokeWidth={2} fill="url(#revGrad)" name="Revenue" />
                     <Area type="monotone" dataKey="orders" stroke="#1d4ed8" strokeWidth={2} fill="none" strokeDasharray="4 4" name="Orders" />

@@ -271,7 +271,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
             }
           },
             style: { cursor: "pointer", transition: "background 0.1s" },
-            onMouseEnter: (e) => { e.currentTarget.style.background = "rgba(15,118,110,0.03)"; },
+            onMouseEnter: (e) => { e.currentTarget.style.background = "var(--admin-hover-brand)"; },
             onMouseLeave: (e) => { e.currentTarget.style.background = ""; },
           })}
           size="middle"

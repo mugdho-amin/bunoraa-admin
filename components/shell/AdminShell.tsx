@@ -41,25 +41,38 @@ type AdminShellProps = {
 
 const { Header, Content, Sider } = Layout;
 
+const MOBILE_PRIORITY_NAMES = new Set([
+  "dashboard",
+  "orders",
+  "catalog/products",
+  "catalog/categories",
+  "users",
+]);
+
 function MobileBottomNav({ items, pathname, onNavigate }: {
   items: Array<{ key: string; icon: React.ReactNode; label: string }>;
   pathname: string;
   onNavigate: (key: string) => void;
 }) {
   const topItems = items.slice(0, 5);
+  const normalizedPathname = pathname.replace(/^\/admin/, "") || "/dashboard";
   return (
     <nav className="admin-mobile-bottom-nav">
-      {topItems.map((item) => (
-        <button
-          key={item.key}
-          className={`admin-mobile-nav-item${pathname === item.key ? " active" : ""}`}
-          onClick={() => onNavigate(item.key)}
-          aria-label={item.label}
-        >
-          {item.icon}
-          <span className="admin-mobile-nav-label">{item.label}</span>
-        </button>
-      ))}
+      {topItems.map((item) => {
+        const itemPath = item.key.replace(/^\/admin/, "") || "/dashboard";
+        const isActive = pathname === item.key || normalizedPathname === itemPath;
+        return (
+          <button
+            key={item.key}
+            className={`admin-mobile-nav-item${isActive ? " active" : ""}`}
+            onClick={() => onNavigate(item.key)}
+            aria-label={item.label}
+          >
+            {item.icon}
+            <span className="admin-mobile-nav-label">{item.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -97,16 +110,35 @@ export function AdminShell({ route, children }: AdminShellProps) {
   );
 
   const flatNavItems = useMemo(
-    () =>
-      (bootstrap?.navigation ?? []).flatMap((section) =>
+    () => {
+      const all = (bootstrap?.navigation ?? []).flatMap((section) =>
         section.items.map((item) => ({
           key: item.path,
           icon: getIconNode(item.icon, 18),
           label: item.label,
+          name: item.name,
         })),
-      ),
+      );
+      const priority: typeof all = [];
+      const rest: typeof all = [];
+      for (const item of all) {
+        if (MOBILE_PRIORITY_NAMES.has(item.name)) {
+          priority.push(item);
+        } else {
+          rest.push(item);
+        }
+      }
+      priority.sort((a, b) => itemPriority(a.name) - itemPriority(b.name));
+      return [...priority, ...rest];
+    },
     [bootstrap?.navigation],
   );
+
+  function itemPriority(name: string): number {
+    const order = ["dashboard", "orders", "catalog/products", "catalog/categories", "users"];
+    const idx = order.indexOf(name);
+    return idx === -1 ? 999 : idx;
+  }
 
   const title =
     route.type === "page"
