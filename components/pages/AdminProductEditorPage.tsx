@@ -874,7 +874,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           {hasVariants ? (
             <>
               {/* Categories */}
-              <Card className="admin-soft-panel" variant="borderless" title="Categories">
+              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
                     <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
@@ -998,7 +998,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </>
           ) : (
             <Flex gap={16} wrap="wrap">
-              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
                     <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
