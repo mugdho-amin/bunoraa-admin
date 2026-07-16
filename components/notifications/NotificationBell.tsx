@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Badge, Button, Dropdown, Flex, List, Space, Tag, Typography, Spin, Empty, Grid,
+  Badge, Button, Dropdown, Flex, List, Space, Tag, Typography, Spin, Empty,
 } from "antd";
 import {
   Bell, CheckCheck, ExternalLink, Circle,
@@ -132,8 +132,6 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const screens = Grid.useBreakpoint();
-  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
 
   const fetchRecent = useCallback(async () => {
     setLoading(true);
