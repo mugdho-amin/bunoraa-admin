@@ -1217,7 +1217,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
         {/* ── Right Column: Variants (only when toggle is ON) ── */}
         {hasVariants && (
-          <Flex vertical gap={16}>
+          <Flex vertical gap={16} style={{ minWidth: 0 }}>
             <Card className="admin-soft-panel" variant="borderless" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "16px 24px" }}>
                 <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
