@@ -1078,7 +1078,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   ))}
                 </select>
               </Flex>
-                <>
                   <Flex vertical gap={4}>
                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
                     <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
@@ -1089,7 +1088,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
                       style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
                   </Flex>
-                </>
             </div>
             <Flex gap={24} style={{ marginTop: 16 }}>
               <Flex align="center" gap={8}>
