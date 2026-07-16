@@ -38,7 +38,7 @@ function buildColumns(
     title: (
       <Flex align="center" gap={4}>
         {humanizeLabel(key)}
-        <ArrowUpDown size={10} style={{ color: "rgba(0,0,0,0.25)" }} />
+        <ArrowUpDown size={10} style={{ color: "var(--admin-muted-light)" }} />
       </Flex>
     ),
     dataIndex: key,

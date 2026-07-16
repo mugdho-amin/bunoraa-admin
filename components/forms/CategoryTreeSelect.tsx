@@ -115,7 +115,7 @@ function highlightMatch(text: string, query: string): ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <span style={{ background: "rgba(15,118,110,0.18)", borderRadius: 2, fontWeight: 600 }}>
+      <span style={{ background: "var(--admin-brand-light)", borderRadius: 2, fontWeight: 600 }}>
         {text.slice(idx, idx + query.length)}
       </span>
       {text.slice(idx + query.length)}
@@ -231,8 +231,8 @@ export function CategoryTreeSelect({
         width: 18,
         height: 18,
         borderRadius: multiple ? 4 : "50%",
-        border: checked ? "none" : "2px solid rgba(0,0,0,0.25)",
-        background: checked ? "#0f766e" : "transparent",
+        border: checked ? "none" : "2px solid var(--admin-muted-light)",
+        background: checked ? "var(--admin-brand)" : "transparent",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -265,14 +265,14 @@ export function CategoryTreeSelect({
           gap: 10,
           padding: "10px 12px",
           cursor: "pointer",
-          background: checked ? "rgba(15,118,110,0.08)" : "transparent",
+          background: checked ? "var(--admin-brand-light)" : "transparent",
           transition: "background 0.1s",
         }}
         onMouseEnter={(e) => {
-          if (!checked) e.currentTarget.style.background = "rgba(0,0,0,0.04)";
+          if (!checked) e.currentTarget.style.background = "var(--admin-hover-bg)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = checked ? "rgba(15,118,110,0.08)" : "transparent";
+          e.currentTarget.style.background = checked ? "var(--admin-brand-light)" : "transparent";
         }}
       >
         <button
@@ -317,11 +317,11 @@ export function CategoryTreeSelect({
             gap: 2,
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(0,0,0,0.85)" }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--admin-ink)" }}>
             {opts?.highlight ? highlightMatch(cat.name, opts.highlight) : cat.name}
           </span>
           {opts?.path && (
-            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.4)" }}>{opts.path}</span>
+            <span style={{ fontSize: 11, color: "var(--admin-muted)" }}>{opts.path}</span>
           )}
         </button>
 
@@ -334,14 +334,14 @@ export function CategoryTreeSelect({
             }}
             style={{
               border: "none",
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--admin-hover-bg)",
               borderRadius: 999,
               padding: "2px 8px",
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
               cursor: "pointer",
-              color: "rgba(0,0,0,0.45)",
+              color: "var(--admin-muted)",
               fontSize: 11,
               fontWeight: 600,
               flexShrink: 0,
@@ -380,9 +380,9 @@ export function CategoryTreeSelect({
           minHeight: 44,
           padding: "8px 12px",
           borderRadius: 12,
-          border: `1px solid ${error ? "#be123c" : open ? "#0f766e" : "rgba(0,0,0,0.12)"}`,
-          background: disabled ? "rgba(0,0,0,0.03)" : "#fff",
-          boxShadow: open ? "0 0 0 2px rgba(15,118,110,0.2)" : "none",
+          border: `1px solid ${error ? "var(--admin-danger)" : open ? "var(--admin-brand)" : "var(--admin-border)"}`,
+          background: disabled ? "var(--admin-hover-bg)" : "var(--admin-surface)",
+          boxShadow: open ? "0 0 0 2px var(--admin-brand-light)" : "none",
           cursor: disabled ? "not-allowed" : "pointer",
           opacity: disabled ? 0.6 : 1,
           transition: "border-color 0.15s, box-shadow 0.15s",
@@ -399,7 +399,7 @@ export function CategoryTreeSelect({
           }}
         >
           {selectedNames.length === 0 ? (
-            <span style={{ fontSize: 14, color: "rgba(0,0,0,0.4)" }}>
+            <span style={{ fontSize: 14, color: "var(--admin-muted)" }}>
               {placeholder || defaultPlaceholder}
             </span>
           ) : multiple ? (
@@ -413,8 +413,8 @@ export function CategoryTreeSelect({
                     gap: 4,
                     padding: "2px 8px",
                     borderRadius: 999,
-                    background: "rgba(15,118,110,0.1)",
-                    color: "#0f766e",
+                    background: "var(--admin-brand-light)",
+                    color: "var(--admin-brand)",
                     fontSize: 12,
                     fontWeight: 600,
                     maxWidth: 180,
@@ -438,7 +438,7 @@ export function CategoryTreeSelect({
                       background: "none",
                       padding: 0,
                       cursor: "pointer",
-                      color: "#0f766e",
+                      color: "var(--admin-brand)",
                       display: "flex",
                       lineHeight: 1,
                       fontSize: 14,
@@ -449,13 +449,13 @@ export function CategoryTreeSelect({
                 </span>
               ))}
               {selectedNames.length > maxPills && (
-                <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                <span style={{ fontSize: 12, color: "var(--admin-muted)", fontWeight: 500 }}>
                   +{selectedNames.length - maxPills} more
                 </span>
               )}
             </>
           ) : (
-            <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(0,0,0,0.85)" }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "var(--admin-ink)" }}>
               {selectedNames[0]?.name}
             </span>
           )}
@@ -465,14 +465,14 @@ export function CategoryTreeSelect({
           style={{
             transform: open ? "rotate(-90deg)" : "rotate(90deg)",
             transition: "transform 0.15s",
-            color: "rgba(0,0,0,0.35)",
+            color: "var(--admin-muted-light)",
             flexShrink: 0,
           }}
         />
       </div>
 
       {error && (
-        <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500, marginTop: 6, display: "block" }}>
+        <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500, marginTop: 6, display: "block" }}>
           {error}
         </span>
       )}
@@ -489,10 +489,10 @@ export function CategoryTreeSelect({
             top: "calc(100% + 4px)",
             zIndex: 50,
             maxHeight: 420,
-            background: "#fff",
-            border: "1px solid rgba(0,0,0,0.1)",
+            background: "var(--admin-panel)",
+            border: "1px solid var(--admin-border)",
             borderRadius: 12,
-            boxShadow: "0 12px 28px rgba(0,0,0,0.14), 0 2px 4px rgba(0,0,0,0.08)",
+            boxShadow: "var(--admin-shadow-lg)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -505,7 +505,7 @@ export function CategoryTreeSelect({
               alignItems: "center",
               gap: 8,
               padding: 12,
-              borderBottom: "1px solid rgba(0,0,0,0.08)",
+              borderBottom: "1px solid var(--admin-border)",
             }}
           >
             <div
@@ -514,13 +514,13 @@ export function CategoryTreeSelect({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                background: "rgba(0,0,0,0.04)",
+                background: "var(--admin-hover-bg)",
                 borderRadius: 999,
                 padding: "0 12px",
                 height: 36,
               }}
             >
-              <Search size={14} color="rgba(0,0,0,0.35)" />
+              <Search size={14} color="var(--admin-muted-light)" />
               <input
                 ref={searchRef}
                 value={query}
@@ -545,12 +545,12 @@ export function CategoryTreeSelect({
                 height: 32,
                 borderRadius: "50%",
                 border: "none",
-                background: "rgba(0,0,0,0.05)",
+                background: "var(--admin-hover-bg)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "rgba(0,0,0,0.45)",
+                color: "var(--admin-muted)",
               }}
             >
               <X size={14} />
@@ -565,7 +565,7 @@ export function CategoryTreeSelect({
                 alignItems: "center",
                 gap: 4,
                 padding: "8px 12px",
-                borderBottom: "1px solid rgba(0,0,0,0.08)",
+                borderBottom: "1px solid var(--admin-border)",
                 overflowX: "auto",
                 fontSize: 13,
               }}
@@ -577,7 +577,7 @@ export function CategoryTreeSelect({
                   border: "none",
                   background: "none",
                   cursor: "pointer",
-                  color: "#0f766e",
+                  color: "var(--admin-brand)",
                   padding: "2px 6px",
                   borderRadius: 4,
                   display: "flex",
@@ -591,7 +591,7 @@ export function CategoryTreeSelect({
                 const isLast = idx === breadcrumb.length - 1;
                 return (
                   <span key={crumb.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ color: "rgba(0,0,0,0.3)" }}>›</span>
+                    <span style={{ color: "var(--admin-muted-light)" }}>›</span>
                     <button
                       type="button"
                       onClick={() => !isLast && goToBreadcrumb(idx)}
@@ -600,7 +600,7 @@ export function CategoryTreeSelect({
                         border: "none",
                         background: "none",
                         cursor: isLast ? "default" : "pointer",
-                        color: isLast ? "rgba(0,0,0,0.85)" : "#0f766e",
+                        color: isLast ? "var(--admin-ink)" : "var(--admin-brand)",
                         fontWeight: isLast ? 600 : 500,
                         padding: "2px 6px",
                         borderRadius: 4,
@@ -619,7 +619,7 @@ export function CategoryTreeSelect({
           <div style={{ flex: 1, overflowY: "auto", minHeight: 120, maxHeight: 280 }}>
             {query.trim() ? (
               searchMatches.length === 0 ? (
-                <div style={{ padding: 24, textAlign: "center", color: "rgba(0,0,0,0.4)", fontSize: 13 }}>
+                <div style={{ padding: 24, textAlign: "center", color: "var(--admin-muted)", fontSize: 13 }}>
                   No categories found
                 </div>
               ) : (
@@ -631,7 +631,7 @@ export function CategoryTreeSelect({
                 )
               )
             ) : levelItems.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "rgba(0,0,0,0.4)", fontSize: 13 }}>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--admin-muted)", fontSize: 13 }}>
                 No subcategories
               </div>
             ) : (
@@ -647,11 +647,11 @@ export function CategoryTreeSelect({
               justifyContent: "space-between",
               gap: 8,
               padding: "10px 12px",
-              borderTop: "1px solid rgba(0,0,0,0.08)",
-              background: "rgba(0,0,0,0.015)",
+              borderTop: "1px solid var(--admin-border)",
+              background: "var(--admin-hover-bg)",
             }}
           >
-            <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+            <span style={{ fontSize: 12, color: "var(--admin-muted)", fontWeight: 500 }}>
               {multiple
                 ? `${selectedSet.size} selected`
                 : selectedSet.size
@@ -663,7 +663,7 @@ export function CategoryTreeSelect({
               onClick={close}
               style={{
                 border: "none",
-                background: "#0f766e",
+                background: "var(--admin-brand)",
                 color: "#fff",
                 borderRadius: 8,
                 padding: "6px 14px",

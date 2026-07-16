@@ -220,12 +220,12 @@ export function NotificationBell() {
                     padding: "10px 12px",
                     cursor: "pointer",
                     background: item.is_read ? "transparent" : "rgba(15, 118, 110, 0.04)",
-                    borderBottom: "1px solid rgba(0,0,0,0.04)",
+                    borderBottom: "1px solid var(--admin-border)",
                     transition: "background 0.15s",
                   }}
                   onClick={() => markAsRead(item.id)}
-                  onMouseEnter={(e) => { if (item.is_read) e.currentTarget.style.background = "rgba(0,0,0,0.02)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = item.is_read ? "transparent" : "rgba(15, 118, 110, 0.04)"; }}
+                  onMouseEnter={(e) => { if (item.is_read) e.currentTarget.style.background = "var(--admin-hover-bg)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = item.is_read ? "transparent" : "var(--admin-brand-light)"; }}
                 >
                   <Flex vertical gap={2} style={{ width: "100%" }}>
                     <Flex align="center" justify="space-between">
@@ -243,7 +243,7 @@ export function NotificationBell() {
                     <Typography.Text type="secondary" style={{ fontSize: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {item.message}
                     </Typography.Text>
-                    <Typography.Text style={{ fontSize: 11, color: "rgba(0,0,0,0.35)" }}>
+                    <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted-light)" }}>
                       {new Date(item.created_at).toLocaleString()}
                     </Typography.Text>
                   </Flex>

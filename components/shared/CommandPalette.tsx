@@ -67,7 +67,7 @@ export function CommandPalette({ items, onClose, onNavigate }: CommandPalettePro
               color: "var(--admin-ink)",
             }}
           />
-          <kbd style={{ fontSize: 10, color: "var(--admin-muted)", background: "rgba(0,0,0,0.04)", padding: "2px 6px", borderRadius: 4, fontFamily: "inherit" }}>
+          <kbd style={{ fontSize: 10, color: "var(--admin-muted)", background: "var(--admin-hover-bg)", padding: "2px 6px", borderRadius: 4, fontFamily: "inherit" }}>
             ESC
           </kbd>
         </div>
@@ -89,7 +89,7 @@ export function CommandPalette({ items, onClose, onNavigate }: CommandPalettePro
                   width: "100%",
                   padding: "10px 16px",
                   border: "none",
-                  background: i === selectedIndex ? "rgba(15,118,110,0.08)" : "transparent",
+                  background: i === selectedIndex ? "var(--admin-brand-light)" : "transparent",
                   cursor: "pointer",
                   textAlign: "left",
                   fontSize: 14,
@@ -104,9 +104,9 @@ export function CommandPalette({ items, onClose, onNavigate }: CommandPalettePro
           )}
         </div>
         <div style={{ padding: "8px 16px", borderTop: "1px solid var(--admin-border)", display: "flex", gap: 16, fontSize: 11, color: "var(--admin-muted)" }}>
-          <span><kbd style={{ background: "rgba(0,0,0,0.04)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>↑↓</kbd> Navigate</span>
-          <span><kbd style={{ background: "rgba(0,0,0,0.04)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>↵</kbd> Open</span>
-          <span><kbd style={{ background: "rgba(0,0,0,0.04)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>Esc</kbd> Close</span>
+          <span><kbd style={{ background: "var(--admin-hover-bg)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>↑↓</kbd> Navigate</span>
+          <span><kbd style={{ background: "var(--admin-hover-bg)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>↵</kbd> Open</span>
+          <span><kbd style={{ background: "var(--admin-hover-bg)", padding: "1px 4px", borderRadius: 3, fontFamily: "inherit" }}>Esc</kbd> Close</span>
         </div>
       </div>
     </div>

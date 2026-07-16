@@ -230,10 +230,10 @@ export function AdminNotificationsPage() {
       width: 60,
       render: (is_read: boolean) =>
         is_read ? (
-          <BellOff size={16} color="rgba(0,0,0,0.25)" />
+          <BellOff size={16} style={{ color: "var(--admin-muted-light)" }} />
         ) : (
           <Badge dot offset={[-2, 2]}>
-            <Bell size={16} color="#0f766e" />
+            <Bell size={16} style={{ color: "var(--admin-brand)" }} />
           </Badge>
         ),
     },
@@ -357,7 +357,7 @@ export function AdminNotificationsPage() {
               title="Unread"
               value={unreadCount}
               prefix={<Bell size={16} />}
-              valueStyle={{ fontSize: 22, color: "#0f766e" }}
+              valueStyle={{ fontSize: 22, color: "var(--admin-brand)" }}
             />
           </Card>
         </Col>
@@ -493,9 +493,9 @@ export function AdminNotificationsPage() {
                     <Flex align="center" justify="space-between">
                       <Space size={8}>
                         {group.unread_count > 0 ? (
-                          <Bell size={16} color="#0f766e" />
+                          <Bell size={16} style={{ color: "var(--admin-brand)" }} />
                         ) : (
-                          <BellOff size={16} color="rgba(0,0,0,0.25)" />
+                          <BellOff size={16} style={{ color: "var(--admin-muted-light)" }} />
                         )}
                         <Typography.Text strong>{group.type_display}</Typography.Text>
                       </Space>
@@ -524,7 +524,7 @@ export function AdminNotificationsPage() {
                         {group.latest.message}
                       </Typography.Text>
                       <Typography.Text
-                        style={{ fontSize: 11, color: "rgba(0,0,0,0.35)" }}
+                        style={{ fontSize: 11, color: "var(--admin-muted-light)" }}
                       >
                         {new Date(group.latest.created_at).toLocaleString()}
                       </Typography.Text>
