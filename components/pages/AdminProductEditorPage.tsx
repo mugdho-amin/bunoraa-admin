@@ -664,16 +664,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         {/* ── Left Column: Product Info ── */}
         <Flex vertical gap={isMobile ? 16 : 20} style={{ minWidth: 0 }}>
           <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
-            <Flex vertical gap={4}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Name *</label>
-              <input value={form.name} onChange={(e) => handleNameChange(e.target.value)}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["name"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                  fontSize: 14, outline: "none", background: fieldErrors["name"] ? "rgba(190,18,60,0.04)" : "#fff",
-                }} />
-              {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
-            </Flex>
-            <div style={{ display: "grid", gridTemplateColumns: hasVariants || isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Name *</label>
+                <input value={form.name} onChange={(e) => handleNameChange(e.target.value)}
+                  style={{
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["name"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["name"] ? "rgba(190,18,60,0.04)" : "#fff",
+                  }} />
+                {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
+              </Flex>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
@@ -684,40 +684,40 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }} />
                 {fieldErrors["slug"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["slug"]}</span>}
               </Flex>
-              {!hasVariants && (
-                <>
-                  <Flex vertical gap={4}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
-                    <div style={{ position: "relative" }}>
-                      <input type="text" value={form.variants[0]?.sku ?? ""}
-                        onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
-                        style={{
-                          width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
-                          border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                          fontSize: 14, outline: "none",
-                        }} />
-                      <button onClick={() => generateSingleSku(0)}
-                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                        <WandSparkles size={14} />
-                      </button>
-                    </div>
-                    {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
-                  </Flex>
-                  <Flex vertical gap={4}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
-                    <div style={{ position: "relative" }}>
-                      <input type="text" value={form.variants[0]?.barcode ?? ""}
-                        onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                        style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
-                      <button onClick={() => generateSingleBarcode(0)}
-                        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
-                        <WandSparkles size={14} />
-                      </button>
-                    </div>
-                  </Flex>
-                </>
-              )}
             </div>
+            {!hasVariants && (
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
+                  <div style={{ position: "relative" }}>
+                    <input type="text" value={form.variants[0]?.sku ?? ""}
+                      onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
+                      style={{
+                        width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
+                        border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                        fontSize: 14, outline: "none",
+                      }} />
+                    <button onClick={() => generateSingleSku(0)}
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                      <WandSparkles size={14} />
+                    </button>
+                  </div>
+                  {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
+                </Flex>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
+                  <div style={{ position: "relative" }}>
+                    <input type="text" value={form.variants[0]?.barcode ?? ""}
+                      onChange={(e) => updateVariant(0, "barcode", e.target.value)}
+                      style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                    <button onClick={() => generateSingleBarcode(0)}
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                      <WandSparkles size={14} />
+                    </button>
+                  </div>
+                </Flex>
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Description</label>

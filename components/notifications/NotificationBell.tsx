@@ -37,25 +37,45 @@ function notifyListeners(count: number) {
 let globalWs: WebSocket | null = null;
 let globalWsUrl: string | null = null;
 
+function normalizeWsUrl(url: string) {
+  if (url.startsWith("ws://") || url.startsWith("wss://")) return url;
+  if (url.startsWith("http://")) return `ws://${url.slice("http://".length)}`;
+  if (url.startsWith("https://")) return `wss://${url.slice("https://".length)}`;
+  return url;
+}
+
 function setupGlobalWebSocket(wsUrlOverride?: string) {
   const token = typeof window !== "undefined" ? getAccessToken() : null;
   if (!token) return;
 
   const wsUrl = wsUrlOverride || process.env.NEXT_PUBLIC_ADMIN_WS_URL;
   if (!wsUrl) return;
-  const url = `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
+  const normalized = normalizeWsUrl(wsUrl);
+  const url = `${normalized}${normalized.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
 
   if (globalWs && globalWs.readyState <= WebSocket.OPEN) {
-    if (globalWsUrl === wsUrl) return;
+    if (globalWsUrl === normalized) return;
     globalWs.close();
     globalWs = null;
   }
-  globalWsUrl = wsUrl;
+  globalWsUrl = normalized;
+
+  async function fetchLatestCount() {
+    try {
+      const res = await requestAdminEnvelope<{ count: number }>("/notifications/unread_count/");
+      notifyListeners(res.data.count);
+    } catch (err) {
+      logger.error("Failed to fetch unread count", err);
+    }
+  }
 
   function connect() {
     if (globalWs && globalWs.readyState <= WebSocket.OPEN) return;
     try {
       globalWs = new WebSocket(url);
+      globalWs.onopen = () => {
+        fetchLatestCount();
+      };
       globalWs.onmessage = (msg) => {
         try {
           const payload = JSON.parse(msg.data);
@@ -69,6 +89,9 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
           logger.warn("WS notification: parse error", err);
         }
       };
+      globalWs.onerror = () => {
+        logger.warn("WS notification: connection error");
+      };
       globalWs.onclose = () => {
         globalWs = null;
         setTimeout(connect, 5000);
@@ -78,22 +101,23 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
     }
   }
 
-  async function fetchLatestCount() {
-    try {
-      const res = await requestAdminEnvelope<{ count: number }>("/notifications/unread_count/");
-      notifyListeners(res.data.count);
-    } catch (err) {
-      logger.error("Failed to fetch unread count", err);
-    }
-  }
-
   connect();
+}
+
+async function fetchUnreadCount() {
+  try {
+    const res = await requestAdminEnvelope<{ count: number }>("/notifications/unread_count/");
+    notifyListeners(res.data.count);
+  } catch (err) {
+    logger.error("Failed to fetch unread count", err);
+  }
 }
 
 export function useUnreadCount(wsUrlOverride?: string) {
   const [count, setCount] = useState(globalUnreadCount);
   useEffect(() => {
     globalListeners.add(setCount);
+    fetchUnreadCount();
     setupGlobalWebSocket(wsUrlOverride);
     return () => { globalListeners.delete(setCount); };
   }, [wsUrlOverride]);
