@@ -264,8 +264,8 @@ export function AdminProductListPage() {
                 <Flex key={i} align="center" gap={12} style={{ padding: "12px 8px", borderBottom: "1px solid var(--admin-border)" }}>
                   <Skeleton.Avatar active size={40} shape="square" style={{ borderRadius: 8 }} />
                   <Flex vertical gap={4} style={{ flex: 1 }}>
-                    <Skeleton active paragraph={false} title={{ width: `${50 + Math.random() * 30}%` }} />
-                    <Skeleton active paragraph={false} title={{ width: `${20 + Math.random() * 20}%` }} />
+                    <Skeleton active paragraph={false} title={{ width: `${[55, 70, 60, 80, 50, 65][i % 6]}%` }} />
+                    <Skeleton active paragraph={false} title={{ width: `${[25, 35, 20, 30, 40, 28][i % 6]}%` }} />
                   </Flex>
                 </Flex>
               ))}

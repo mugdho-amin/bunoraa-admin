@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Select, Switch } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Select, Switch } from "antd";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, Eye, ArrowLeft, Check, FolderTree } from "lucide-react";
 import type { BaseKey, BaseRecord } from "@refinedev/core";
@@ -138,7 +138,7 @@ function CategoryListView() {
     [deleteCategory, message, refetch],
   );
 
-  const categories = listResult?.data ?? [];
+  const categories = useMemo(() => listResult?.data ?? [], [listResult?.data]);
   const total = listResult?.total ?? 0;
   const stats = useMemo(() => ({
     total,
@@ -266,7 +266,7 @@ function CategoryListView() {
           {Array.from({ length: 5 }).map((_, i) => (
             <Flex key={i} align="center" gap={12} style={{ padding: "16px 8px", borderBottom: "1px solid var(--admin-border)" }}>
               <Skeleton.Avatar active size={20} />
-              <Skeleton active paragraph={false} title={{ width: `${40 + Math.random() * 40}%` }} />
+              <Skeleton active paragraph={false} title={{ width: `${[35, 55, 40, 60, 45][i % 5]}%` }} />
             </Flex>
           ))}
         </Flex>
@@ -400,7 +400,7 @@ function CategoryShowView({ id }: { id: BaseKey }) {
           {record.image && (
             <Flex vertical gap={4}>
               <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Image</Typography.Text>
-              <img src={record.image} alt={record.name} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: "cover" }} />
+              <Image src={record.image} alt={record.name} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: "cover" }} preview={false} />
             </Flex>
           )}
           {record.description && (
@@ -743,7 +743,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               }}
             />
             {form.image && (
-              <img src={form.image} alt="Category preview" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 4 }} />
+              <Image src={form.image} alt="Category preview" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 4 }} preview={false} />
             )}
           </Flex>
 
