@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDelete, useList } from "@refinedev/core";
 import { useRouter } from "next/navigation";
 import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, notification } from "antd";
+import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
 import type { ColumnsType } from "antd/es/table";
@@ -30,6 +31,8 @@ type ProductRecord = BaseRecord & {
   short_description: string;
 };
 
+const ROW_HOVER = { background: "var(--admin-hover-bg)" };
+
 export function AdminProductListPage() {
   const router = useRouter();
   const screens = Grid.useBreakpoint();
@@ -37,6 +40,23 @@ export function AdminProductListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const searchRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        router.push("/catalog/products/create");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [router]);
 
   const filters = useMemo(() => {
     const f: Array<{ field: string; operator: "contains"; value: string }> = [];
@@ -108,8 +128,9 @@ export function AdminProductListPage() {
             width={isMobile ? 32 : 48}
             height={isMobile ? 32 : 48}
             style={{ borderRadius: 8, objectFit: "cover" }}
+            fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' fill='%23e5e7eb'%3E%3Crect width='48' height='48' rx='8'/%3E%3C/svg%3E"
           />
-          <Flex vertical gap={0}>
+          <Flex vertical gap={1}>
             <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }} ellipsis={{ tooltip: record.name }}>
               {record.name}
             </Typography.Text>
@@ -216,22 +237,37 @@ export function AdminProductListPage() {
 
       <Card className="admin-soft-panel" variant="borderless">
         <Flex vertical gap={16}>
+
+          <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
             <Input
-            placeholder="Search products..."
-            prefix={<Search size={16} style={{ color: "var(--admin-muted-light)" }} />}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            allowClear
-            style={{ maxWidth: 400 }}
-          />
+              ref={searchRef}
+              placeholder="Search products...  (Press / to focus)"
+              prefix={<Search size={16} style={{ color: "var(--admin-muted-light)" }} />}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              allowClear
+              style={{ maxWidth: 400 }}
+            />
+            {!isLoading && products.length > 0 && (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {search ? `${products.length} of ${total} products` : `${total} products`}
+              </Typography.Text>
+            )}
+          </Flex>
 
           {isLoading ? (
-            <Flex vertical gap={12}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} active avatar paragraph={{ rows: 1 }} />
+            <Flex vertical gap={1}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Flex key={i} align="center" gap={12} style={{ padding: "12px 8px", borderBottom: "1px solid var(--admin-border)" }}>
+                  <Skeleton.Avatar active size={40} shape="square" style={{ borderRadius: 8 }} />
+                  <Flex vertical gap={4} style={{ flex: 1 }}>
+                    <Skeleton active paragraph={false} title={{ width: `${50 + Math.random() * 30}%` }} />
+                    <Skeleton active paragraph={false} title={{ width: `${20 + Math.random() * 20}%` }} />
+                  </Flex>
+                </Flex>
               ))}
             </Flex>
           ) : products.length === 0 ? (
@@ -261,9 +297,12 @@ export function AdminProductListPage() {
                 },
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50", "100"],
+                showTotal: (t) => `${t} products`,
               }}
-              onRow={() => ({
-                style: { cursor: "default" },
+              onRow={(record) => ({
+                onDoubleClick: () => router.push(`/catalog/products/edit/${record.id}`),
+                onMouseEnter: (e) => { (e.currentTarget as HTMLElement).style.background = ROW_HOVER.background; },
+                onMouseLeave: (e) => { (e.currentTarget as HTMLElement).style.background = ""; },
               })}
             />
           )}

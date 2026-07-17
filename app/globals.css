@@ -51,6 +51,27 @@
   --admin-scrollbar-thumb-hover-dark: rgba(148, 163, 184, 0.3);
   --admin-chart-grid-dark: rgba(255, 255, 255, 0.06);
   --admin-chart-tooltip-bg-dark: #1e293b;
+
+  /* ── Brand text on brand bg ── */
+  --admin-text-on-brand: #ffffff;
+  --admin-text-on-danger: #ffffff;
+
+  /* ── Input text color ── */
+  --admin-input-color: #0f172a;
+
+  /* ── Divider / separator ── */
+  --admin-divider: rgba(16, 24, 40, 0.06);
+
+  /* ── Muted alpha helpers ── */
+  --admin-muted-alpha-55: rgba(15, 23, 42, 0.55);
+  --admin-muted-alpha-20: rgba(15, 23, 42, 0.2);
+  --admin-muted-alpha-15: rgba(15, 23, 42, 0.15);
+  --admin-muted-alpha-12: rgba(15, 23, 42, 0.12);
+  --admin-muted-alpha-10: rgba(15, 23, 42, 0.1);
+
+  /* ── Brand with alpha ── */
+  --admin-brand-alpha-15: rgba(15, 118, 110, 0.15);
+  --admin-brand-alpha-08: rgba(15, 118, 110, 0.08);
 }
 
 [data-theme="dark"] {
@@ -74,6 +95,17 @@
   --admin-scrollbar-thumb-hover: var(--admin-scrollbar-thumb-hover-dark);
   --admin-chart-grid: var(--admin-chart-grid-dark);
   --admin-chart-tooltip-bg: var(--admin-chart-tooltip-bg-dark);
+
+  /* ── Dark overrides for new vars ── */
+  --admin-input-color: #e8edf5;
+  --admin-divider: rgba(255, 255, 255, 0.06);
+  --admin-muted-alpha-55: rgba(232, 237, 245, 0.55);
+  --admin-muted-alpha-20: rgba(232, 237, 245, 0.2);
+  --admin-muted-alpha-15: rgba(232, 237, 245, 0.15);
+  --admin-muted-alpha-12: rgba(232, 237, 245, 0.12);
+  --admin-muted-alpha-10: rgba(232, 237, 245, 0.1);
+  --admin-brand-alpha-15: rgba(15, 118, 110, 0.15);
+  --admin-brand-alpha-08: rgba(15, 118, 110, 0.08);
 }
 
 * { box-sizing: border-box; }
@@ -367,6 +399,11 @@ button, input, select, textarea { font: inherit; }
   background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .admin-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
 }
 
 /* ── Status dots ── */

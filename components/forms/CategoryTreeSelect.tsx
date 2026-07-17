@@ -243,10 +243,10 @@ export function CategoryTreeSelect({
       {checked && (
         multiple ? (
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2.5 6L5 8.5L9.5 3.5" stroke="var(--admin-text-on-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--admin-text-on-brand)" }} />
         )
       )}
     </span>
@@ -664,7 +664,7 @@ export function CategoryTreeSelect({
               style={{
                 border: "none",
                 background: "var(--admin-brand)",
-                color: "#fff",
+                color: "var(--admin-text-on-brand)",
                 borderRadius: 8,
                 padding: "6px 14px",
                 fontSize: 12,

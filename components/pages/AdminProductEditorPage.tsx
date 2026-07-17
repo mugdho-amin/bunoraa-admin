@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Grid, Typography, message, Spin, Tag } from "antd";
+import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch } from "antd";
 import Image from "next/image";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
@@ -37,7 +37,9 @@ interface ProductForm {
   stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean; tax_included: boolean;
   weight: number | null; length: number | null; width: number | null; height: number | null; free_shipping: boolean;
   variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
-  is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean;
+  is_active: boolean; is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean; can_be_customized: boolean;
+  tags: string[];
+  publish_from: string; publish_until: string;
   meta_title: string; meta_description: string; meta_keywords: string;
 }
 
@@ -88,7 +90,9 @@ const emptyForm: ProductForm = {
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
   stock_quantity: 0, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
-  is_featured: false, is_bestseller: false, is_new_arrival: false,
+  is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: false,
+  tags: [],
+  publish_from: "", publish_until: "",
   meta_title: "", meta_description: "", meta_keywords: "",
 };
 
@@ -186,9 +190,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             ?? product.primary_category
             ?? "",
         ),
+        is_active: product.is_active ?? true,
         is_featured: product.is_featured ?? false,
         is_bestseller: product.is_bestseller ?? false,
         is_new_arrival: product.is_new_arrival ?? false,
+        can_be_customized: product.can_be_customized ?? false,
+        tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.id ?? "")),
+        publish_from: product.publish_from ?? "",
+        publish_until: product.publish_until ?? "",
         meta_title: product.meta_title ?? "",
         meta_description: product.meta_description ?? "",
         meta_keywords: product.meta_keywords ?? "",
@@ -565,9 +574,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       categories: form.categoryIds,
       primary_category: form.primaryCategoryId || null,
       primary_category_id: form.primaryCategoryId || null,
+      is_active: form.is_active,
       is_featured: form.is_featured,
       is_bestseller: form.is_bestseller,
       is_new_arrival: form.is_new_arrival,
+      can_be_customized: form.can_be_customized,
+      tags: form.tags,
+      publish_from: form.publish_from || null,
+      publish_until: form.publish_until || null,
       meta_title: (form.meta_title || form.name || "").trim(),
       meta_description: (form.meta_description || form.short_description || "").trim(),
       meta_keywords: (form.meta_keywords || "").trim(),
@@ -632,13 +646,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       {/* Product Type Toggle */}
       <Card className="admin-soft-panel" variant="borderless" style={{ padding: "12px 0" }}>
         <Flex align="center" gap={16} wrap="wrap">
-          <div style={{ display: "flex", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", overflow: "hidden" }}>
+          <div style={{ display: "flex", borderRadius: 12, border: "1px solid var(--admin-input-border)", overflow: "hidden" }}>
             <button onClick={() => { if (hasVariants) toggleVariants(); }}
               style={{
                 padding: "8px 20px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em",
                 border: "none", cursor: "pointer", transition: "all 0.15s",
-                background: !hasVariants ? "#0f766e" : "transparent",
-                color: !hasVariants ? "#fff" : "rgba(0,0,0,0.45)",
+                background: !hasVariants ? "var(--admin-brand)" : "transparent",
+                color: !hasVariants ? "var(--admin-text-on-brand)" : "var(--admin-muted)",
               }}>
               Simple Product
             </button>
@@ -646,8 +660,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               style={{
                 padding: "8px 20px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em",
                 border: "none", cursor: "pointer", transition: "all 0.15s",
-                background: hasVariants ? "#0f766e" : "transparent",
-                color: hasVariants ? "#fff" : "rgba(0,0,0,0.45)",
+                background: hasVariants ? "var(--admin-brand)" : "transparent",
+                color: hasVariants ? "var(--admin-text-on-brand)" : "var(--admin-muted)",
               }}>
               Has Variants
             </button>
@@ -666,52 +680,52 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Name *</label>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Name *</label>
                 <input value={form.name} onChange={(e) => handleNameChange(e.target.value)}
                   style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["name"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["name"] ? "rgba(190,18,60,0.04)" : "#fff",
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["name"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["name"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
                   }} />
-                {fieldErrors["name"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
+                {fieldErrors["name"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Slug *</label>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
                   onFocus={() => slugManuallyEdited.current = true}
                   style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["slug"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["slug"] ? "rgba(190,18,60,0.04)" : "#fff",
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["slug"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["slug"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
                   }} />
-                {fieldErrors["slug"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["slug"]}</span>}
+                {fieldErrors["slug"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["slug"]}</span>}
               </Flex>
             </div>
             {!hasVariants && (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
+                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU</label>
                   <div style={{ position: "relative" }}>
                     <input type="text" value={form.variants[0]?.sku ?? ""}
                       onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
                       style={{
                         width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
-                        border: `1px solid ${fieldErrors["variants.0.sku"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                        border: `1px solid ${fieldErrors["variants.0.sku"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
                         fontSize: 14, outline: "none",
                       }} />
                     <button onClick={() => generateSingleSku(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                       <WandSparkles size={14} />
                     </button>
                   </div>
-                  {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
+                  {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
                 </Flex>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
+                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Barcode / EAN</label>
                   <div style={{ position: "relative" }}>
                     <input type="text" value={form.variants[0]?.barcode ?? ""}
                       onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                      style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                     <button onClick={() => generateSingleBarcode(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.35)" }}>
+                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                       <WandSparkles size={14} />
                     </button>
                   </div>
@@ -720,16 +734,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             )}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Description</label>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Description</label>
                 <textarea value={form.description} onChange={(e) => updateField("description", e.target.value)}
                   rows={isMobile ? 4 : 5}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }} />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Short Description</label>
+                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Short Description</label>
                 <textarea value={form.short_description} onChange={(e) => updateField("short_description", e.target.value)}
                   rows={isMobile ? 4 : 5}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }} />
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }} />
               </Flex>
             </div>
           </Card>
@@ -740,7 +754,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8 }}>
                 <label style={{
                   display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 8,
-                  padding: "8px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, color: "rgba(0,0,0,0.45)",
+                  padding: "8px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 12, color: "var(--admin-muted)",
                 }}>
                   <Upload size={14} /> Choose File
                   <input key={`primary-${imageUploadKey}`} type="file" accept="image/*" style={{ display: "none" }}
@@ -749,25 +763,25 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 <input value={form.primaryImage} onChange={(e) => { clearFieldError("primaryImage"); updateField("primaryImage", e.target.value); }}
                   placeholder="https://cdn.bunoraa.com/images/product.jpg"
                   style={{
-                    width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                    width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
                     fontSize: 13, outline: "none",
                   }} />
               </div>
-              {fieldErrors["primaryImage"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["primaryImage"]}</span>}
+              {fieldErrors["primaryImage"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["primaryImage"]}</span>}
               {form.primaryImage && (
                 <div style={{ position: "relative", display: "inline-block", marginTop: 8 }}>
-                  <Image src={form.primaryImage} alt="Primary" width={64} height={80} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
+                  <Image src={form.primaryImage} alt="Primary" width={64} height={80} unoptimized style={{ borderRadius: 8, border: "1px solid var(--admin-input-border)", objectFit: "cover" }} />
                   <button onClick={() => updateField("primaryImage", "")}
-                    style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--admin-danger)", color: "var(--admin-input-bg)", fontSize: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     ×
                   </button>
                 </div>
               )}
               <Flex vertical gap={4} style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Alt Text</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Alt Text</label>
                 <input value={form.primaryImageAlt} onChange={(e) => updateField("primaryImageAlt", e.target.value)}
                   placeholder="Descriptive text for accessibility and SEO"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 13, outline: "none" }} />
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 13, outline: "none" }} />
               </Flex>
             </Card>
             <Card className="admin-soft-panel" variant="borderless" title="Gallery Images" style={{ flex: "1 1 300px", minWidth: 0 }}>
@@ -776,7 +790,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   {form.gallery.map((img, i) => (
                     <div key={img._id}
                       style={{
-                        borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", padding: 12,
+                        borderRadius: 12, border: "1px solid var(--admin-input-border)", padding: 12,
                         opacity: galleryDragIndex === i ? 0.5 : 1,
                       }}
                       draggable
@@ -795,18 +809,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       onDragEnd={() => setGalleryDragIndex(null)}
                     >
                       <Flex gap={12} align="start">
-                        <div style={{ cursor: "grab", color: "rgba(0,0,0,0.2)", marginTop: 4 }}>
+                        <div style={{ cursor: "grab", color: "var(--admin-muted-alpha-20)", marginTop: 4 }}>
                           <GripVertical size={16} />
                         </div>
                         <div style={{ position: "relative", flexShrink: 0 }}>
-                          <Image src={img.url} alt={`Gallery ${i}`} width={48} height={64} unoptimized style={{ borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover" }} />
+                          <Image src={img.url} alt={`Gallery ${i}`} width={48} height={64} unoptimized style={{ borderRadius: 8, border: "1px solid var(--admin-input-border)", objectFit: "cover" }} />
                           <button onClick={() => handleRemoveGalleryImage(i)}
-                            style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#be123c", color: "#fff", fontSize: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "var(--admin-danger)", color: "var(--admin-input-bg)", fontSize: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             ×
                           </button>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <Typography.Text style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(0,0,0,0.45)" }} ellipsis>{img.url}</Typography.Text>
+                          <Typography.Text style={{ fontSize: 11, fontFamily: "monospace", color: "var(--admin-muted)" }} ellipsis>{img.url}</Typography.Text>
                           {hasVariants && form.variants.length > 1 && (
                             <Flex wrap="wrap" gap={4} style={{ marginTop: 6 }}>
                               {form.variants.map((v, vi) => {
@@ -815,9 +829,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <label key={vi} style={{
                                     display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, border: "1px solid",
                                     fontSize: 10, cursor: "pointer", transition: "all 0.15s",
-                                    background: checked ? "#0f766e" : "transparent",
-                                    color: checked ? "#fff" : "rgba(0,0,0,0.45)",
-                                    borderColor: checked ? "#0f766e" : "rgba(0,0,0,0.12)",
+                                    background: checked ? "var(--admin-brand)" : "transparent",
+                                    color: checked ? "var(--admin-text-on-brand)" : "var(--admin-muted)",
+                                    borderColor: checked ? "var(--admin-brand)" : "var(--admin-input-border)",
                                   }}>
                                     <input type="checkbox" checked={checked} onChange={() => {
                                       setForm((p) => {
@@ -848,7 +862,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                             });
                           }}
                             placeholder="Alt text"
-                            style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 11, outline: "none", marginTop: 6 }} />
+                            style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 11, outline: "none", marginTop: 6 }} />
                         </div>
                       </Flex>
                     </div>
@@ -859,10 +873,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); handleMultipleGalleryUpload(e.dataTransfer.files); }}>
                 <button onClick={handleAddGalleryUrl}
-                  style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", background: "none" }}>
+                  style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
                   + Add URL
                 </button>
-                <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)", fontSize: 11, color: "rgba(0,0,0,0.45)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   <Upload size={14} /> Upload Files
                   <input key={`gallery-${imageUploadKey}`} type="file" accept="image/*" multiple style={{ display: "none" }}
                     onChange={(e) => { handleMultipleGalleryUpload(e.target.files); setImageUploadKey((k) => k + 1); }} />
@@ -877,7 +891,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Primary Category *
                     </label>
                     <CategoryTreeSelect
@@ -893,7 +907,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </Typography.Text>
                   </Flex>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Additional Categories
                     </label>
                     <CategoryTreeSelect
@@ -906,6 +920,20 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     />
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                       Secondary categories for cross-listing and filtering.
+                    </Typography.Text>
+                  </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      Tags
+                    </label>
+                    <input
+                      value={form.tags.join(", ")}
+                      onChange={(e) => updateField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))}
+                      placeholder="Comma-separated tags, e.g. handmade, cotton, eco-friendly"
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Tags help customers find your product through search and filtering.
                     </Typography.Text>
                   </Flex>
                 </Flex>
@@ -915,7 +943,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Listing Price (shown on collections)">
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr" : "1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -935,19 +963,19 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     }));
                   }}
                   style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "rgba(190,18,60,0.04)" : "#fff",
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
                   }}
                 />
-                {fieldErrors["price"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
+                {fieldErrors["price"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
                 {hasVariants && form.variants.length > 1 && form.price !== null && (
-                  <button onClick={applyBasePriceToVariants} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "#0f766e", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                  <button onClick={applyBasePriceToVariants} style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--admin-brand)", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
                     Apply to all variants
                   </button>
                 )}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sale Price</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -955,13 +983,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   min="0"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Currency</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Currency</label>
                 <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", background: "#fff" }}>
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}>
                   {CURRENCY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -970,28 +998,46 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               {!hasVariants && (
                 <>
                   <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
                     <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                   </Flex>
                   <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
                     <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                   </Flex>
                 </>
               )}
             </div>
-            <Flex gap={24} style={{ marginTop: 16 }}>
+            <Flex gap={24} style={{ marginTop: 16 }} wrap="wrap" align="center">
               <Flex align="center" gap={8}>
-                <input type="checkbox" id="tax_included" checked={form.tax_included} onChange={(e) => updateField("tax_included", e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                <label htmlFor="tax_included" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Tax Included</label>
+                <Switch checked={form.is_active} onChange={(c) => updateField("is_active", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Active</Typography.Text>
               </Flex>
               <Flex align="center" gap={8}>
-                <input type="checkbox" id="allow_backorder" checked={form.allow_backorder} onChange={(e) => updateField("allow_backorder", e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                <label htmlFor="allow_backorder" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Allow Backorders</label>
+                <Switch checked={form.tax_included} onChange={(c) => updateField("tax_included", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Tax Included</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.allow_backorder} onChange={(c) => updateField("allow_backorder", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Allow Backorders</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.can_be_customized} onChange={(c) => updateField("can_be_customized", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Can Be Customized</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_featured} onChange={(c) => updateField("is_featured", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Featured</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_bestseller} onChange={(c) => updateField("is_bestseller", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Best Seller</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_new_arrival} onChange={(c) => updateField("is_new_arrival", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>New Arrival</Typography.Text>
               </Flex>
             </Flex>
           </Card>
@@ -1001,7 +1047,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Primary Category *
                     </label>
                     <CategoryTreeSelect
@@ -1017,7 +1063,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </Typography.Text>
                   </Flex>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Additional Categories
                     </label>
                     <CategoryTreeSelect
@@ -1032,12 +1078,26 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       Secondary categories for cross-listing and filtering.
                     </Typography.Text>
                   </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      Tags
+                    </label>
+                    <input
+                      value={form.tags.join(", ")}
+                      onChange={(e) => updateField("tags", e.target.value.split(",").map((t) => t.trim()).filter(Boolean))}
+                      placeholder="Comma-separated tags, e.g. handmade, cotton, eco-friendly"
+                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Tags help customers find your product through search and filtering.
+                    </Typography.Text>
+                  </Flex>
                 </Flex>
               </Card>
               <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price *</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -1057,14 +1117,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     }));
                   }}
                   style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"] ? "#be123c" : "rgba(0,0,0,0.1)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "rgba(190,18,60,0.04)" : "#fff",
+                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
+                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
                   }}
                 />
-                {fieldErrors["price"] && <span style={{ fontSize: 10, color: "#be123c", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
+                {fieldErrors["price"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sale Price</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -1072,13 +1132,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   min="0"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Currency</label>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Currency</label>
                 <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", background: "#fff" }}>
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}>
                   {CURRENCY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -1086,27 +1146,45 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Flex>
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", gridColumn: "1 / -1" }}>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
                   <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                 </Flex>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
                   <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                 </Flex>
               </div>
             </div>
-            <Flex gap={24} style={{ marginTop: 16 }}>
+            <Flex gap={24} style={{ marginTop: 16 }} wrap="wrap" align="center">
               <Flex align="center" gap={8}>
-                <input type="checkbox" id="tax_included" checked={form.tax_included} onChange={(e) => updateField("tax_included", e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                <label htmlFor="tax_included" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Tax Included</label>
+                <Switch checked={form.is_active} onChange={(c) => updateField("is_active", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Active</Typography.Text>
               </Flex>
               <Flex align="center" gap={8}>
-                <input type="checkbox" id="allow_backorder" checked={form.allow_backorder} onChange={(e) => updateField("allow_backorder", e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                <label htmlFor="allow_backorder" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Allow Backorders</label>
+                <Switch checked={form.tax_included} onChange={(c) => updateField("tax_included", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Tax Included</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.allow_backorder} onChange={(c) => updateField("allow_backorder", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Allow Backorders</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.can_be_customized} onChange={(c) => updateField("can_be_customized", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Can Be Customized</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_featured} onChange={(c) => updateField("is_featured", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Featured</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_bestseller} onChange={(c) => updateField("is_bestseller", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Best Seller</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_new_arrival} onChange={(c) => updateField("is_new_arrival", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>New Arrival</Typography.Text>
               </Flex>
             </Flex>
               </Card>
@@ -1127,7 +1205,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       Leave blank to derive from product name and short description.
                     </Typography.Text>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                         Meta Title
                       </label>
                       <input
@@ -1135,14 +1213,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         onChange={(e) => updateField("meta_title", e.target.value)}
                         placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
                         maxLength={255}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                       />
-                      <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                      <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
                         {(form.meta_title || form.name || "").length}/255
                       </span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                         Meta Description
                       </label>
                       <textarea
@@ -1151,14 +1229,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
                         rows={3}
                         maxLength={500}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none", resize: "vertical" }}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }}
                       />
-                      <span style={{ fontSize: 10, color: "rgba(0,0,0,0.35)" }}>
+                      <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
                         {(form.meta_description || form.short_description || "").length}/500
                       </span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                         Meta Keywords
                       </label>
                       <input
@@ -1166,8 +1244,36 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         onChange={(e) => updateField("meta_keywords", e.target.value)}
                         placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
                         maxLength={500}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                       />
+                    </Flex>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                        Publish From
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
+                        onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        Schedule when the product becomes visible on your store.
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                        Publish Until
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
+                        onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        Automatically unpublish the product after this date.
+                      </Typography.Text>
                     </Flex>
                   </Flex>
                 </div>
@@ -1183,30 +1289,29 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   <div style={{ padding: "0 20px 20px" }}>
                     <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Weight (kg)</label>
                         <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Length (cm)</label>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Length (cm)</label>
                         <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Width (cm)</label>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Width (cm)</label>
                         <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Height (cm)</label>
+                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Height (cm)</label>
                         <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", fontSize: 14, outline: "none" }} />
+                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
                       </Flex>
                     </div>
                     <Flex align="center" gap={8} style={{ marginTop: 12 }}>
-                      <input type="checkbox" id="free_shipping" checked={form.free_shipping} onChange={(e) => updateField("free_shipping", e.target.checked)}
-                        style={{ width: 16, height: 16, accentColor: "#0f766e" }} />
-                      <label htmlFor="free_shipping" style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", cursor: "pointer" }}>Free Shipping</label>
+                      <Switch checked={form.free_shipping} onChange={(c) => updateField("free_shipping", c)} size="small" />
+                      <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Free Shipping</Typography.Text>
                     </Flex>
                   </div>
                 )}
@@ -1222,9 +1327,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <div style={{ padding: "16px 24px" }}>
                 <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
                   <Flex align="center" gap={8}>
-                    <Package size={16} color="rgba(0,0,0,0.45)" />
+                    <Package size={16} color="var(--admin-muted)" />
                     <Typography.Text strong style={{ textTransform: "uppercase", letterSpacing: "0.3em", fontSize: 13 }}>
-                      Variants <span style={{ color: "rgba(0,0,0,0.35)", fontWeight: 400 }}>({form.variants.length})</span>
+                      Variants <span style={{ color: "var(--admin-muted-light)", fontWeight: 400 }}>({form.variants.length})</span>
                     </Typography.Text>
                   </Flex>
                   <Flex gap={6}>
@@ -1236,39 +1341,39 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
               {/* Matrix Generator */}
               {matrixOpen && (
-                <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: 20, background: "rgba(0,0,0,0.02)" }}>
+                <div style={{ borderTop: "1px solid var(--admin-divider)", padding: 20, background: "var(--admin-hover-bg)" }}>
                   <Flex align="center" gap={8}>
-                    <Grid3X3 size={16} color="rgba(0,0,0,0.35)" />
-                    <Typography.Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.5)" }}>Variant Matrix Generator</Typography.Text>
+                    <Grid3X3 size={16} color="var(--admin-muted-light)" />
+                    <Typography.Text style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted-alpha-55)" }}>Variant Matrix Generator</Typography.Text>
                   </Flex>
                   <Typography.Text type="secondary" style={{ fontSize: 12, display: "block", margin: "8px 0" }}>
                     Generate all size × color combinations at once. Comma-separated values or click presets.
                   </Typography.Text>
                   <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                     <div>
-                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Sizes</label>
+                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Sizes</label>
                       <input value={matrixSizes} onChange={(e) => setMatrixSizes(e.target.value)}
                         placeholder="S, M, L, XL, XXL"
-                        style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", fontSize: 13, outline: "none", marginTop: 4 }} />
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "1px solid var(--admin-input-border)", fontSize: 13, outline: "none", marginTop: 4 }} />
                       <Flex wrap="wrap" gap={4} style={{ marginTop: 6 }}>
                         {SIZE_PRESETS.map((s) => (
                           <button key={s} onClick={() => setMatrixSizes((prev) => (prev ? `${prev}, ${s}` : s))}
-                            style={{ padding: "2px 8px", fontSize: 10, borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: "none", color: "rgba(0,0,0,0.45)" }}>
+                            style={{ padding: "2px 8px", fontSize: 10, borderRadius: 6, border: "1px solid var(--admin-input-border)", cursor: "pointer", background: "none", color: "var(--admin-muted)" }}>
                             {s}
                           </button>
                         ))}
                       </Flex>
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Colors</label>
+                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Colors</label>
                       <input value={matrixColors} onChange={(e) => setMatrixColors(e.target.value)}
                         placeholder="Black, White, Red, Blue"
-                        style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.1)", fontSize: 13, outline: "none", marginTop: 4 }} />
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "1px solid var(--admin-input-border)", fontSize: 13, outline: "none", marginTop: 4 }} />
                       <Flex wrap="wrap" gap={4} style={{ marginTop: 6 }}>
                         {COLOR_PRESETS.slice(0, 12).map((c) => (
                           <button key={c.name} onClick={() => setMatrixColors((prev) => (prev ? `${prev}, ${c.name}` : c.name))}
                             title={c.name}
-                            style={{ width: 20, height: 20, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: c.hex }} />
+                            style={{ width: 20, height: 20, borderRadius: "50%", border: "1px solid var(--admin-input-border)", cursor: "pointer", background: c.hex }} />
                         ))}
                       </Flex>
                     </div>
@@ -1281,14 +1386,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               )}
 
               {/* Search */}
-              <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "8px 24px", background: "rgba(0,0,0,0.015)" }}>
+              <div style={{ borderTop: "1px solid var(--admin-divider)", padding: "8px 24px", background: "var(--admin-hover-bg)" }}>
                 <Flex align="center" gap={8}>
-                  <Search size={14} color="rgba(0,0,0,0.3)" />
+                  <Search size={14} color="var(--admin-muted-light)" />
                   <input value={variantSearch} onChange={(e) => setVariantSearch(e.target.value)}
                     placeholder="Search by SKU, size, color, barcode..."
                     style={{ flex: 1, border: "none", background: "none", fontSize: 12, outline: "none" }} />
                   {variantSearch && (
-                    <button onClick={() => setVariantSearch("")} style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}>
+                    <button onClick={() => setVariantSearch("")} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                       <X size={12} />
                     </button>
                   )}
@@ -1296,25 +1401,25 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </div>
 
               {/* Sort */}
-              <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "8px 24px" }}>
+              <div style={{ borderTop: "1px solid var(--admin-divider)", padding: "8px 24px" }}>
                 <Flex align="center" gap={4} wrap="wrap">
-                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, marginRight: 4 }}>Sort:</span>
+                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, marginRight: 4 }}>Sort:</span>
                   {(["size", "color", "price", "stock", "sku"] as const).map((key) => (
                     <button key={key} onClick={() => sortVariantsBy(key)}
-                      style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 8px", borderRadius: 8, border: "none", cursor: "pointer", color: "rgba(0,0,0,0.45)", background: "none" }}>
+                      style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 8px", borderRadius: 8, border: "none", cursor: "pointer", color: "var(--admin-muted)", background: "none" }}>
                       {key}
                     </button>
                   ))}
-                  <span style={{ color: "rgba(0,0,0,0.15)", margin: "0 4px" }}>|</span>
+                  <span style={{ color: "var(--admin-border-strong)", margin: "0 4px" }}>|</span>
                   <button onClick={clearAllVariants}
-                    style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 8px", borderRadius: 8, border: "none", cursor: "pointer", color: "rgba(190,18,60,0.5)", background: "none" }}>
+                    style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 8px", borderRadius: 8, border: "none", cursor: "pointer", color: "var(--admin-danger)", background: "none" }}>
                     Clear
                   </button>
                 </Flex>
               </div>
 
               {/* Variant Cards */}
-              <div ref={variantContainerRef} style={{ maxHeight: 600, overflowY: "auto", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <div ref={variantContainerRef} style={{ maxHeight: 600, overflowY: "auto", borderTop: "1px solid var(--admin-divider)" }}>
                 {(variantSearch ? filteredVariants : form.variants).map((variant, displayIdx) => {
                   const actualIdx = form.variants.indexOf(variant);
                   const isExpanded = expandedVariants.has(displayIdx);
@@ -1323,7 +1428,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     <div key={displayIdx}
                       style={{
                         opacity: variant.enabled ? 1 : 0.5,
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
+                        borderBottom: "1px solid var(--admin-divider)",
                         transition: "all 0.15s",
                       }}
                       draggable
@@ -1333,14 +1438,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     >
                       <div style={{ padding: "16px 24px" }}>
                         <Flex gap={8} align="start">
-                          <div style={{ cursor: "grab", color: "rgba(0,0,0,0.2)", marginTop: 6 }}>
+                          <div style={{ cursor: "grab", color: "var(--admin-muted-alpha-20)", marginTop: 6 }}>
                             <GripVertical size={16} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <Flex justify="space-between" align="center" gap={8} wrap="wrap">
                               <Flex align="center" gap={8} wrap="wrap">
                                 <Typography.Text code style={{ fontSize: 12, fontWeight: 600 }}>
-                                  {variant.sku || <span style={{ fontStyle: "italic", color: "rgba(0,0,0,0.35)" }}>No SKU</span>}
+                                  {variant.sku || <span style={{ fontStyle: "italic", color: "var(--admin-muted-light)" }}>No SKU</span>}
                                 </Typography.Text>
                                 {variant.barcode && (
                                   <Typography.Text type="secondary" style={{ fontSize: 10, fontFamily: "monospace" }}>
@@ -1351,16 +1456,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                               </Flex>
                               <Flex gap={4}>
                                 <button onClick={() => toggleVariantExpand(displayIdx)}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}>
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </button>
                                 <button onClick={() => duplicateVariant(actualIdx)}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}
                                   title="Duplicate">
                                   <Copy size={14} />
                                 </button>
                                 <button onClick={() => toggleVariantEnabled(actualIdx)}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}
                                   title={variant.enabled ? "Disable" : "Enable"}>
                                   {variant.enabled ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
@@ -1392,95 +1497,95 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
                             {/* Expanded Form */}
                             {isExpanded && (
-                              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--admin-divider)" }}>
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>SKU</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.sku} onChange={(e) => updateVariant(actualIdx, "sku", e.target.value)}
-                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                       <button onClick={() => generateSingleSku(actualIdx)}
-                                        style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}>
+                                        style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                                         <WandSparkles size={12} />
                                       </button>
                                     </div>
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Barcode / EAN</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Barcode / EAN</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.barcode} onChange={(e) => updateVariant(actualIdx, "barcode", e.target.value)}
-                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                       <button onClick={() => generateSingleBarcode(actualIdx)}
-                                        style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "rgba(0,0,0,0.3)" }}>
+                                        style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                                         <WandSparkles size={12} />
                                       </button>
                                     </div>
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Weight (kg)</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Weight (kg)</label>
                                     <input type="number" step="0.01" value={variant.weight ?? ""} onChange={(e) => updateVariant(actualIdx, "weight", e.target.value ? Number(e.target.value) : null)}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                   </Flex>
                                 </div>
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Size</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Size</label>
                                     <input type="text" value={variant.size} onChange={(e) => updateVariant(actualIdx, "size", e.target.value)}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                     <Flex wrap="wrap" gap={4}>
                                       {SIZE_PRESETS.slice(0, 5).map((s) => (
                                         <button key={s} onClick={() => updateVariant(actualIdx, "size", s)}
-                                          style={{ padding: "4px 8px", fontSize: 10, borderRadius: 6, border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: variant.size === s ? "#0f766e" : "none", color: variant.size === s ? "#fff" : "rgba(0,0,0,0.45)" }}>
+                                          style={{ padding: "4px 8px", fontSize: 10, borderRadius: 6, border: "1px solid var(--admin-input-border)", cursor: "pointer", background: variant.size === s ? "var(--admin-brand)" : "none", color: variant.size === s ? "var(--admin-text-on-brand)" : "var(--admin-muted)" }}>
                                           {s}
                                         </button>
                                       ))}
                                     </Flex>
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Color</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Color</label>
                                     <input type="text" value={variant.color} onChange={(e) => updateVariant(actualIdx, "color", e.target.value)}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                     <Flex wrap="wrap" gap={4}>
                                       {COLOR_PRESETS.slice(0, 12).map((c) => (
                                         <button key={c.name} onClick={() => updateVariant(actualIdx, "color", c.name)}
                                           title={c.name}
-                                          style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid #0f766e" : "1px solid rgba(0,0,0,0.1)", cursor: "pointer", background: c.hex }} />
+                                          style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid #0f766e" : "1px solid var(--admin-input-border)", cursor: "pointer", background: c.hex }} />
                                       ))}
                                     </Flex>
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Variant Image</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Variant Image</label>
                                     <div style={{ display: "flex", gap: 4 }}>
                                       <input type="text" value={variant.image} onChange={(e) => updateVariant(actualIdx, "image", e.target.value)}
                                         placeholder="Image URL"
-                                        style={{ flex: 1, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
-                                      <label style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                                        style={{ flex: 1, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
+                                      <label style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid var(--admin-input-border)", cursor: "pointer", display: "flex", alignItems: "center" }}>
                                         <Upload size={12} />
                                         <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVariantImageUpload(actualIdx, f); e.target.value = ""; }} />
                                       </label>
                                     </div>
                                     {variant.image && (
-                                      <Image src={variant.image} alt="Variant" width={48} height={48} unoptimized style={{ borderRadius: 6, objectFit: "cover", border: "1px solid rgba(0,0,0,0.1)", marginTop: 4 }} />
+                                      <Image src={variant.image} alt="Variant" width={48} height={48} unoptimized style={{ borderRadius: 6, objectFit: "cover", border: "1px solid var(--admin-input-border)", marginTop: 4 }} />
                                     )}
                                   </Flex>
                                 </div>
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Stock</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
                                     <input type="number" value={variant.stock ?? ""} onChange={(e) => updateVariant(actualIdx, "stock", e.target.value ? Number(e.target.value) : null)}
                                       style={{
                                         width: "100%", padding: "6px 10px", borderRadius: 8,
-                                        border: `1px solid ${variant.stock !== null && variant.stock <= 0 ? "#be123c" : "rgba(0,0,0,0.1)"}`,
+                                        border: `1px solid ${variant.stock !== null && variant.stock <= 0  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
                                         fontSize: 12, outline: "none",
                                       }} />
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
                                     <input type="number" value={variant.lowStockThreshold} onChange={(e) => updateVariant(actualIdx, "lowStockThreshold", Number(e.target.value))}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }} />
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Price</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price</label>
                                     <input
                                       type="number"
                                       inputMode="decimal"
@@ -1488,11 +1593,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                       min="0"
                                       value={variant.price ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "price", parseDecimal(e.target.value))}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}
                                     />
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(0,0,0,0.45)", fontWeight: 500 }}>Compare At</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                                     <input
                                       type="number"
                                       inputMode="decimal"
@@ -1500,7 +1605,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                       min="0"
                                       value={variant.compareAt ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "compareAt", parseDecimal(e.target.value))}
-                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", fontSize: 12, outline: "none" }}
+                                      style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}
                                     />
                                   </Flex>
                                 </div>
@@ -1515,10 +1620,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </div>
 
               {/* Footer */}
-              <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ borderTop: "1px solid var(--admin-divider)", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                 <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                   {form.variants.length} variants · {enabledCount} enabled · {totalStock} total stock
-                  {outOfStockCount > 0 && <span style={{ color: "#be123c" }}> · {outOfStockCount} out of stock</span>}
+                  {outOfStockCount > 0 && <span style={{ color: "var(--admin-danger)" }}> · {outOfStockCount} out of stock</span>}
                 </Typography.Text>
                 <Flex gap={6}>
                   <Button size="small" onClick={generateAllSkus}>Generate all SKUs</Button>

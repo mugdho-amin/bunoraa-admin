@@ -21,6 +21,9 @@ const AdminProductEditorPage = dynamic(() => import("@/components/pages/AdminPro
 const AdminProductListPage = dynamic(() => import("@/components/pages/AdminProductListPage").then((m) => ({ default: m.AdminProductListPage })), {
   loading: () => <FullScreenLoader message="Loading products..." />,
 });
+const AdminCategoryEditorPage = dynamic(() => import("@/components/pages/AdminCategoryEditorPage").then((m) => ({ default: m.AdminCategoryEditorPage })), {
+  loading: () => <FullScreenLoader message="Loading categories..." />,
+});
 const AdminNotificationsPage = dynamic(() => import("@/components/pages/AdminNotificationsPage").then((m) => ({ default: m.AdminNotificationsPage })), {
   loading: () => <FullScreenLoader message="Loading notifications..." />,
 });
@@ -45,6 +48,10 @@ function renderProductPage(action: string, id?: BaseKey) {
     default:
       return <AdminNotFoundPage />;
   }
+}
+
+function renderCategoryPage(action: string, id?: BaseKey) {
+  return <AdminCategoryEditorPage action={action as "list" | "create" | "edit" | "show"} id={id} />;
 }
 
 function renderCustomPage(path: string) {
@@ -103,7 +110,9 @@ export function AdminRouteRenderer({ slug }: { slug: string[] }) {
           : route.type === "resource"
             ? route.resource.name === "catalog/products"
               ? renderProductPage(route.action, route.id)
-              : (
+              : route.resource.name === "catalog/categories"
+                ? renderCategoryPage(route.action, route.id)
+                : (
                   <GenericResourcePage
                     resource={route.resource}
                     action={route.action}
