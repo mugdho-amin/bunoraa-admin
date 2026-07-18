@@ -140,17 +140,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
     const cleanVariants = data.variants.map((v, i) => ({
       sku: v.sku.trim(),
-      size: v.size || null,
-      color: v.color || null,
       stock_quantity: Number(v.stock ?? 0),
       price: v.price === null || v.price === undefined ? null : Number(v.price),
-      compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
-      weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
-      barcode: v.barcode?.trim() || null,
-      image: v.image || null,
+      image_url: v.image || null,
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
-      sort_order: i,
     }));
 
     return {
@@ -161,7 +155,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       description: data.description,
       primary_image: data.primaryImage || null,
       primary_image_alt: data.primaryImageAlt || null,
-      images: data.gallery.map((g) => ({ url: g.url, alt: g.alt, variant_ids: g.variantIds })),
+      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds })),
       price: Number(data.price ?? 0),
       sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
@@ -175,10 +169,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: data.width === null || data.width === undefined ? null : Number(data.width),
       height: data.height === null || data.height === undefined ? null : Number(data.height),
       free_shipping: data.free_shipping,
-      variants: hasVariants ? cleanVariants : [],
-      categories: data.categoryIds,
+      variants_data: hasVariants ? cleanVariants : [],
+      category_ids: data.categoryIds,
       primary_category: data.primaryCategoryId || null,
-      primary_category_id: data.primaryCategoryId || null,
       is_active: false,
       is_featured: data.is_featured,
       is_bestseller: data.is_bestseller,
@@ -214,10 +207,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       formInitialized.current = true;
       slugManuallyEdited.current = true;
       const rawGallery = product.images ?? [];
-      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variantIds?: string[]; alt?: string }) => {
-        if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
-        return { _id: galleryId(), url: item.image || item.url || "", variantIds: item.variantIds ?? [], alt: item.alt ?? "" };
-      });
       const variants: VariantForm[] = (product.variants ?? []).map((v: Record<string, unknown>, i: number) => ({
         sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
         stock: (v.stock_quantity ?? v.stock ?? null) as number | null, price: (v.price as number) ?? null,
@@ -226,6 +215,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         lowStockThreshold: (v.low_stock_threshold ?? v.lowStockThreshold ?? 5) as number,
         enabled: (v.is_active ?? v.enabled ?? true) as boolean, sortOrder: (v.sort_order ?? v.sortOrder ?? i) as number,
       }));
+      const variantUuidToIndex: Record<string, string> = {};
+      variants.forEach((_, i) => {
+        const v = (product.variants ?? [])[i];
+        if (v?.id) variantUuidToIndex[String(v.id)] = String(i);
+      });
+      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variant_ids?: string[]; alt?: string }) => {
+        if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
+        const ids = (item.variant_ids ?? []).map((uuid: string) => variantUuidToIndex[uuid]).filter(Boolean);
+        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: item.alt ?? "" };
+      });
       const hasOptions = variants.some((v) => v.size || v.color);
       setHasVariants(hasOptions);
       setForm({
@@ -607,17 +606,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     const cleanVariants = form.variants.map((v, i) => ({
       sku: v.sku.trim(),
-      size: v.size || null,
-      color: v.color || null,
       stock_quantity: Number(v.stock ?? 0),
       price: v.price === null || v.price === undefined ? null : Number(v.price),
-      compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
-      weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
-      barcode: v.barcode?.trim() || null,
-      image: v.image || null,
+      image_url: v.image || null,
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
-      sort_order: i,
     }));
 
     const values = {
@@ -626,9 +619,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       sku: hasVariants ? null : (form.variants[0]?.sku || null),
       short_description: form.short_description,
       description: form.description,
-      primary_image: form.primaryImage || null,
-      primary_image_alt: form.primaryImageAlt || null,
-      images: form.gallery.map((g) => ({ url: g.url, alt: g.alt, variant_ids: g.variantIds })),
+      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
@@ -642,10 +633,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: form.width === null || form.width === undefined ? null : Number(form.width),
       height: form.height === null || form.height === undefined ? null : Number(form.height),
       free_shipping: form.free_shipping,
-      variants: hasVariants ? cleanVariants : [],
-      categories: form.categoryIds,
+      variants_data: hasVariants ? cleanVariants : [],
+      category_ids: form.categoryIds,
       primary_category: form.primaryCategoryId || null,
-      primary_category_id: form.primaryCategoryId || null,
       is_active: form.is_active,
       is_featured: form.is_featured,
       is_bestseller: form.is_bestseller,
