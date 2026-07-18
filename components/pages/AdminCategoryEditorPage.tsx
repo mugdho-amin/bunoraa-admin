@@ -8,6 +8,7 @@ import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, Eye, ArrowLeft, Check, FolderTree } from "lucide-react";
 import type { BaseKey, BaseRecord } from "@refinedev/core";
 import type { ColumnsType } from "antd/es/table";
+import { useAutoSave } from "@/lib/admin/useAutoSave";
 
 type CategoryRecord = BaseRecord & {
   id: string;
@@ -459,6 +460,37 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     queryOptions: { enabled: action === "edit" && !!id },
   });
 
+  const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
+
+  const getCategoryPayload = useCallback((data: CategoryFormData): Record<string, unknown> => ({
+    name: data.name,
+    slug: data.slug,
+    parent_id: data.parent_id || null,
+    description: data.description,
+    sort_order: data.sort_order,
+    is_active: false,
+    is_visible: data.is_visible,
+    is_featured: data.is_featured,
+    meta_title: data.meta_title,
+    meta_description: data.meta_description,
+    meta_keywords: data.meta_keywords,
+    image: data.image || null,
+    icon: data.icon,
+    aspect_ratio: data.aspect_ratio,
+    aspect_width: data.aspect_width,
+    aspect_height: data.aspect_height,
+    category_type: data.category_type,
+  }), []);
+
+  const autoSave = useAutoSave({
+    resource: "catalog/categories",
+    formData: form,
+    id: currentId,
+    enabled: !saving && !existingQuery.isLoading,
+    getPayload: getCategoryPayload,
+    onCreated: (newId) => { setCurrentId(newId); },
+  });
+
   const { mutate: createCategory } = useCreate();
   const { mutate: updateCategory } = useUpdate();
 
@@ -493,7 +525,10 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
   }, [action, existing]);
 
   useEffect(() => {
-    const timer = setTimeout(() => initForm(), 0);
+    const timer = setTimeout(() => {
+      initForm();
+      autoSave.resetSnapshot();
+    }, 0);
     return () => clearTimeout(timer);
   }, [initForm]);
 
@@ -524,6 +559,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
       return;
     }
     setSaving(true);
+    autoSave.flush();
     try {
       const values = {
         name: form.name.trim(),
@@ -544,14 +580,15 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_height: form.aspect_height,
         category_type: form.category_type,
       };
-      if (action === "create") {
+      const effectiveId = currentId || id;
+      if (action === "create" && !effectiveId) {
         await createCategory(
           { resource: "catalog/categories", values },
           { onSuccess: () => { message.success("Category created"); router.push("/catalog/categories"); } },
         );
       } else {
         await updateCategory(
-          { resource: "catalog/categories", id: id as BaseKey, values },
+          { resource: "catalog/categories", id: (effectiveId ?? id) as BaseKey, values },
           { onSuccess: () => { message.success("Category updated"); router.push("/catalog/categories"); } },
         );
       }
@@ -575,9 +612,23 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
             {action === "create" ? "Create Category" : "Edit Category"}
           </Typography.Title>
         </Flex>
-        <Button type="primary" icon={<Check size={16} />} onClick={handleSave} loading={saving}>
-          {action === "create" ? "Create" : "Save"}
-        </Button>
+        <Flex align="center" gap={8}>
+          {autoSave.status !== "idle" && (
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: autoSave.status === "saving" ? "var(--admin-muted)"
+                : autoSave.status === "saved" ? "var(--admin-success)"
+                : "var(--admin-danger)",
+            }}>
+              {autoSave.status === "saving" ? "Saving draft..."
+                : autoSave.status === "saved" ? "Draft saved"
+                : "Draft save failed"}
+            </span>
+          )}
+          <Button type="primary" icon={<Check size={16} />} onClick={handleSave} loading={saving}>
+            {action === "create" ? "Create" : "Save"}
+          </Button>
+        </Flex>
       </Flex>
 
       <Card className="admin-soft-panel" bordered={false}>

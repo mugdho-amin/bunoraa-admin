@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
+import { useAutoSave } from "@/lib/admin/useAutoSave";
 
 interface VariantForm {
   sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -134,6 +135,73 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     [categoriesResult],
   );
 
+  const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
+
+  const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
+    const cleanVariants = data.variants.map((v, i) => ({
+      sku: v.sku.trim(),
+      size: v.size || null,
+      color: v.color || null,
+      stock_quantity: Number(v.stock ?? 0),
+      price: v.price === null || v.price === undefined ? null : Number(v.price),
+      compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
+      weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
+      barcode: v.barcode?.trim() || null,
+      image: v.image || null,
+      low_stock_threshold: v.lowStockThreshold ?? 5,
+      is_active: v.enabled,
+      sort_order: i,
+    }));
+
+    return {
+      name: data.name,
+      slug: data.slug,
+      sku: hasVariants ? null : (data.variants[0]?.sku || null),
+      short_description: data.short_description,
+      description: data.description,
+      primary_image: data.primaryImage || null,
+      primary_image_alt: data.primaryImageAlt || null,
+      images: data.gallery.map((g) => ({ url: g.url, alt: g.alt, variant_ids: g.variantIds })),
+      price: Number(data.price ?? 0),
+      sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
+      cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
+      currency: data.currency,
+      stock_quantity: hasVariants ? 0 : Number(data.variants[0]?.stock ?? 0),
+      low_stock_threshold: data.low_stock_threshold,
+      allow_backorder: data.allow_backorder,
+      tax_included: data.tax_included,
+      weight: data.weight === null || data.weight === undefined ? null : Number(data.weight),
+      length: data.length === null || data.length === undefined ? null : Number(data.length),
+      width: data.width === null || data.width === undefined ? null : Number(data.width),
+      height: data.height === null || data.height === undefined ? null : Number(data.height),
+      free_shipping: data.free_shipping,
+      variants: hasVariants ? cleanVariants : [],
+      categories: data.categoryIds,
+      primary_category: data.primaryCategoryId || null,
+      primary_category_id: data.primaryCategoryId || null,
+      is_active: false,
+      is_featured: data.is_featured,
+      is_bestseller: data.is_bestseller,
+      is_new_arrival: data.is_new_arrival,
+      can_be_customized: data.can_be_customized,
+      tags: data.tags,
+      publish_from: data.publish_from || null,
+      publish_until: data.publish_until || null,
+      meta_title: (data.meta_title || data.name || "").trim(),
+      meta_description: (data.meta_description || data.short_description || "").trim(),
+      meta_keywords: (data.meta_keywords || "").trim(),
+    };
+  }, [hasVariants]);
+
+  const autoSave = useAutoSave({
+    resource: "catalog/products",
+    formData: form,
+    id: currentId,
+    enabled: !saving && !loadingProduct,
+    getPayload: getProductPayload,
+    onCreated: (newId) => { setCurrentId(newId); },
+  });
+
   const { mutate: createProduct } = useCreate();
   const { mutate: updateProduct } = useUpdate();
   const product = existing;
@@ -208,7 +276,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }, [id, product]);
 
   useEffect(() => {
-    const timer = setTimeout(() => initForm(), 0);
+    const timer = setTimeout(() => {
+      initForm();
+      autoSave.resetSnapshot();
+    }, 0);
     return () => clearTimeout(timer);
   }, [initForm]);
 
@@ -532,6 +603,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     setFieldErrors({});
     setSaving(true);
+    autoSave.flush();
 
     const cleanVariants = form.variants.map((v, i) => ({
       sku: v.sku.trim(),
@@ -587,10 +659,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       meta_keywords: (form.meta_keywords || "").trim(),
     };
 
+    const effectiveId = currentId || id;
+
     try {
-      if (id) {
+      if (effectiveId) {
         updateProduct(
-          { resource: "catalog/products", id, values },
+          { resource: "catalog/products", id: effectiveId, values },
           {
             onSuccess: () => { message.success("Product updated"); router.push("/catalog/products"); },
             onError: (err) => message.error(err?.message || "Failed to update product"),
@@ -638,9 +712,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             {id ? "Edit Product" : "Create Product"}
           </Typography.Title>
         </Flex>
-        <Button type="primary" icon={<Check size={16} />} onClick={handleSave} loading={saving}>
-          Save
-        </Button>
+        <Flex align="center" gap={8}>
+          {autoSave.status !== "idle" && (
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: autoSave.status === "saving" ? "var(--admin-muted)"
+                : autoSave.status === "saved" ? "var(--admin-success)"
+                : "var(--admin-danger)",
+            }}>
+              {autoSave.status === "saving" ? "Saving draft..."
+                : autoSave.status === "saved" ? "Draft saved"
+                : "Draft save failed"}
+            </span>
+          )}
+          <Button type="primary" icon={<Check size={16} />} onClick={handleSave} loading={saving}>
+            Save
+          </Button>
+        </Flex>
       </Flex>
 
       {/* Product Type Toggle */}
