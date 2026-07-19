@@ -21,6 +21,7 @@ import {
   ChevronRight,
   LogOut,
   Menu as MenuIcon,
+  Monitor,
   Moon,
   RefreshCcw,
   Search,
@@ -160,8 +161,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
     items: [
       {
         key: "theme",
-        icon: mode === "dark" ? <Sun size={16} /> : <Moon size={16} />,
-        label: mode === "dark" ? "Light mode" : mode === "system" ? "System theme" : "Dark mode",
+        icon: mode === "light" ? <Sun size={16} /> : mode === "dark" ? <Moon size={16} /> : <Monitor size={16} />,
+        label: mode === "light" ? "Switch to dark mode" : mode === "dark" ? "Switch to system theme" : "Switch to light mode",
         onClick: toggleTheme,
       },
       {
@@ -217,18 +218,15 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 Bunoraa
               </Tag>
               <Typography.Text strong style={{ fontSize: 15 }}>
-                Admin v2
+                Admin
               </Typography.Text>
             </Flex>
-            <Tooltip title={mode === "dark" ? "Light mode" : "Dark mode"}>
-              <button
-                className="theme-toggle-btn"
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-              >
-                {mode === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-              </button>
-            </Tooltip>
+            <Button
+              type="text"
+              icon={<ChevronLeft size={16} />}
+              onClick={() => setSidebarCollapsed(true)}
+              style={{ color: "var(--admin-muted)", flexShrink: 0 }}
+            />
           </Flex>
         )}
       </div>
@@ -253,6 +251,18 @@ export function AdminShell({ route, children }: AdminShellProps) {
         />
       </div>
 
+      {sidebarCollapsed && (
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
+          <Tooltip title="Expand sidebar" placement="right">
+            <Button
+              type="text"
+              icon={<ChevronRight size={18} />}
+              onClick={() => setSidebarCollapsed(false)}
+              style={{ color: "var(--admin-muted)" }}
+            />
+          </Tooltip>
+        </div>
+      )}
       <div
         style={{
           borderTop: "1px solid var(--admin-border)",
@@ -366,14 +376,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           >
             <Flex align="center" justify="space-between" gap={12}>
               <Flex align="center" gap={10} style={{ minWidth: 0 }}>
-                {isDesktop ? (
-                  <Button
-                    type="text"
-                    icon={sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    style={{ color: "var(--admin-muted)", flexShrink: 0, marginLeft: -4 }}
-                  />
-                ) : (
+                {!isDesktop && (
                   <Button
                     type="text"
                     icon={<MenuIcon size={18} />}
@@ -422,6 +425,19 @@ export function AdminShell({ route, children }: AdminShellProps) {
               </Flex>
 
               <Space size={8} wrap>
+                <Tooltip title={
+                  mode === "light" ? "Switch to dark mode" :
+                  mode === "dark" ? "Switch to system theme" :
+                  "Switch to light mode"
+                }>
+                  <Button
+                    type="text"
+                    icon={mode === "light" ? <Sun size={18} /> : mode === "dark" ? <Moon size={18} /> : <Monitor size={18} />}
+                    onClick={toggleTheme}
+                    aria-label="Toggle theme"
+                    style={{ color: "var(--admin-muted)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  />
+                </Tooltip>
                 <NotificationBell />
                 <Dropdown menu={userMenu} trigger={["click"]}>
                   <Button

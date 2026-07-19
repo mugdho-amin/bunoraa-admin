@@ -19,7 +19,7 @@ export function FullScreenLoader({
       <div className="admin-glass-card" style={{ padding: 32, minWidth: 280, textAlign: "center" }}>
         <Spin size="large" />
         <Typography.Title level={4} className="admin-display" style={{ marginTop: 18, marginBottom: 8 }}>
-          Bunoraa Admin v2
+          Bunoraa
         </Typography.Title>
         <Typography.Text type="secondary">{message}</Typography.Text>
       </div>

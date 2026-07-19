@@ -10,7 +10,7 @@ import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
   Copy, ChevronDown, ChevronUp, Package,
   Eye, EyeOff, Search, Grid3X3, ArrowLeft,
-  Clock, FileText, Calendar,
+  FileText, Calendar,
 } from "lucide-react";
 import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
@@ -106,7 +106,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>('publish');
+  const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>(() => {
+    if (typeof window === 'undefined') return 'publish';
+    const saved = localStorage.getItem('admin_save_action') as 'publish' | 'draft' | 'schedule' | null;
+    return (saved === 'publish' || saved === 'draft' || saved === 'schedule') ? saved : 'publish';
+  });
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [schedulePickDate, setSchedulePickDate] = useState('');
   const [expandedVariants, setExpandedVariants] = useState<Set<number>>(new Set([0]));
@@ -143,7 +147,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
 
   const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
-    const cleanVariants = data.variants.map((v, i) => ({
+    const cleanVariants = data.variants.map((v) => ({
       id: v.id || undefined,
       sku: v.sku.trim(),
       stock_quantity: Number(v.stock ?? 0),
@@ -285,21 +289,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     }
   }, [id, product]);
 
+  const resetSnapshotRef = useRef(autoSave.resetSnapshot);
+  resetSnapshotRef.current = autoSave.resetSnapshot;
+
   useEffect(() => {
     const timer = setTimeout(() => {
       initForm();
-      autoSave.resetSnapshot();
+      resetSnapshotRef.current();
     }, 0);
     return () => clearTimeout(timer);
   }, [initForm]);
 
   // Persist save action preference
-  useEffect(() => {
-    const saved = localStorage.getItem('admin_save_action') as 'publish' | 'draft' | 'schedule' | null;
-    if (saved === 'publish' || saved === 'draft' || saved === 'schedule') {
-      setSaveAction(saved);
-    }
-  }, []);
   useEffect(() => {
     localStorage.setItem('admin_save_action', saveAction);
   }, [saveAction]);
@@ -668,7 +669,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     setSaving(true);
     autoSave.flush();
 
-    const cleanVariants = form.variants.map((v, i) => ({
+    const cleanVariants = form.variants.map((v) => ({
       id: v.id || undefined,
       sku: v.sku.trim(),
       stock_quantity: Number(v.stock ?? 0),

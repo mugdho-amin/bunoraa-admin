@@ -26,11 +26,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Bunoraa Admin v2",
-    template: "%s | Bunoraa Admin v2",
+    default: "Bunoraa",
+    template: "%s | Bunoraa",
   },
   description: "Enterprise-grade administrative workspace for Bunoraa operations.",
-  applicationName: "Bunoraa Admin v2",
+  applicationName: "Bunoraa",
   robots: { index: false, follow: false },
   manifest: "/manifest.json",
   appleWebApp: {

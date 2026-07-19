@@ -83,7 +83,7 @@ export function LoginScreen() {
         <div className="admin-glass-card admin-shell-gradient" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <Flex align="center" gap={8} style={{ marginBottom: 24 }}>
             <Tag bordered={false} color="cyan" style={{ paddingInline: 12, borderRadius: 999 }}>
-              Bunoraa Admin v2
+              Bunoraa Admin
             </Tag>
           </Flex>
           <Typography.Title level={1} className="admin-display" style={{ marginTop: 0, marginBottom: 16, fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
