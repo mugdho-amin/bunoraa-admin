@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDelete, useList } from "@refinedev/core";
+import { useDelete, useList, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, notification } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
@@ -19,16 +19,22 @@ type ProductRecord = BaseRecord & {
   sale_price: string | null;
   current_price: string;
   currency: string;
+  stock_quantity: number;
   is_in_stock: boolean;
   primary_image: string | null;
   primary_category_name: string;
   discount_percentage: number;
+  is_active: boolean;
   is_on_sale: boolean;
   is_featured: boolean;
   is_bestseller: boolean;
   is_new_arrival: boolean;
   average_rating: number;
   reviews_count: number;
+  views_count: number;
+  order_count: number;
+  cart_count: number;
+  publish_from: string | null;
   short_description: string;
 };
 
@@ -43,7 +49,9 @@ export function AdminProductListPage() {
   const [pageSize, setPageSize] = useState(20);
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const searchRef = useRef<InputRef>(null);
+  const { mutate: updateProduct } = useUpdate();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -115,6 +123,58 @@ export function AdminProductListPage() {
     [deleteProduct],
   );
 
+  const handleCellSave = useCallback(
+    (id: string, field: string, value: string | number | boolean) => {
+      updateProduct(
+        { resource: "catalog/products", id, values: { [field]: value } },
+        {
+          onSuccess: () => {
+            notification.success({ message: `${field.replace(/_/g, " ")} updated` });
+            setEditingCell(null);
+          },
+          onError: (err) => {
+            notification.error({ message: `Failed to update ${field}`, description: err?.message });
+          },
+        },
+      );
+    },
+    [updateProduct],
+  );
+
+  const inlineInput = (record: ProductRecord, field: string, value: string | number) => {
+    const isEditing = editingCell?.id === record.id && editingCell?.field === field;
+    if (isEditing) {
+      return (
+        <Input
+          size="small"
+          type={typeof value === "number" ? "number" : "text"}
+          defaultValue={value}
+          autoFocus
+          onBlur={(e) => {
+            const v = e.target.value;
+            if (v !== String(value)) handleCellSave(record.id, field, typeof value === "number" ? Number(v) : v);
+            else setEditingCell(null);
+          }}
+          onPressEnter={(e) => {
+            const v = (e.target as HTMLInputElement).value;
+            if (v !== String(value)) handleCellSave(record.id, field, typeof value === "number" ? Number(v) : v);
+            else setEditingCell(null);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "100%" }}
+        />
+      );
+    }
+    return (
+      <span
+        onClick={(e) => { e.stopPropagation(); setEditingCell({ id: record.id, field }); }}
+        style={{ cursor: "pointer", minHeight: 22, display: "inline-block" }}
+      >
+        {value ?? "—"}
+      </span>
+    );
+  };
+
   const products = listResult?.data ?? [];
   const total = listResult?.total ?? 0;
 
@@ -151,11 +211,11 @@ export function AdminProductListPage() {
       dataIndex: "price",
       key: "price",
       sorter: true,
-      width: isMobile ? "20%" : "15%",
+      width: isMobile ? "18%" : "12%",
       render: (_, record) => (
         <Flex vertical gap={0}>
           <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }}>
-            {record.current_price}
+            {inlineInput(record, "price", record.price)}
           </Typography.Text>
           {record.is_on_sale && record.sale_price && (
             <Typography.Text delete type="secondary" style={{ fontSize: 11 }}>
@@ -166,15 +226,81 @@ export function AdminProductListPage() {
       ),
     },
     {
+      title: "Sale",
+      dataIndex: "sale_price",
+      key: "sale_price",
+      width: isMobile ? "auto" : "10%",
+      responsive: ["md" as const],
+      render: (_, record) => inlineInput(record, "sale_price", record.sale_price ?? ""),
+    },
+    {
       title: "Stock",
-      key: "stock",
-      width: isMobile ? "auto" : "12%",
+      dataIndex: "stock_quantity",
+      key: "stock_quantity",
+      sorter: true,
+      width: isMobile ? "auto" : "10%",
       render: (_, record) => (
-        isMobile
-          ? <span style={{ color: record.is_in_stock ? "var(--admin-success)" : "var(--admin-danger)", fontSize: 18 }}>{record.is_in_stock ? "✓" : "✗"}</span>
-          : record.is_in_stock
-            ? <Tag color="green">In Stock</Tag>
-            : <Tag color="red">Out of stock</Tag>
+        <Flex align="center" gap={6}>
+          {inlineInput(record, "stock_quantity", record.stock_quantity ?? 0)}
+          {record.is_in_stock
+            ? <Tag color="green" style={{ fontSize: 10, lineHeight: "16px" }}>In</Tag>
+            : <Tag color="red" style={{ fontSize: 10, lineHeight: "16px" }}>Out</Tag>}
+        </Flex>
+      ),
+    },
+    {
+      title: "Views",
+      dataIndex: "views_count",
+      key: "views_count",
+      sorter: true,
+      width: "8%",
+      responsive: ["lg" as const],
+      render: (_, record) => record.views_count ?? 0,
+    },
+    {
+      title: "Orders",
+      dataIndex: "order_count",
+      key: "order_count",
+      sorter: true,
+      width: "8%",
+      responsive: ["lg" as const],
+      render: (_, record) => record.order_count ?? 0,
+    },
+    {
+      title: "Cart",
+      dataIndex: "cart_count",
+      key: "cart_count",
+      sorter: true,
+      width: "8%",
+      responsive: ["lg" as const],
+      render: (_, record) => record.cart_count ?? 0,
+    },
+    {
+      title: "Published",
+      dataIndex: "publish_from",
+      key: "publish_from",
+      sorter: true,
+      width: "14%",
+      responsive: ["md" as const],
+      render: (_, record) => record.publish_from
+        ? new Date(record.publish_from).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : <Typography.Text type="secondary">—</Typography.Text>,
+    },
+    {
+      title: "Active",
+      dataIndex: "is_active",
+      key: "is_active",
+      width: "8%",
+      responsive: ["md" as const],
+      render: (_, record) => (
+        <Switch
+          size="small"
+          checked={record.is_active}
+          onChange={(checked, e) => {
+            e.stopPropagation();
+            handleCellSave(record.id, "is_active", checked);
+          }}
+        />
       ),
     },
     {

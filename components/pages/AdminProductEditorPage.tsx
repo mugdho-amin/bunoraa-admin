@@ -6,6 +6,7 @@ import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
 import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropdown, Modal, Space } from "antd";
 import type { MenuProps } from "antd";
 import Image from "next/image";
+import { uploadImage } from "@/lib/upload";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
   Copy, ChevronDown, ChevronUp, Package,
@@ -20,6 +21,7 @@ interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
   compareAt: number | null; image: string; weight: number | null; barcode: string;
   lowStockThreshold: number; enabled: boolean; sortOrder: number;
+  _imageKey?: string;
 }
 
 interface GalleryImage {
@@ -27,6 +29,7 @@ interface GalleryImage {
   url: string;
   variantIds: string[];
   alt: string;
+  _storageKey?: string;
 }
 
 let galleryIdCounter = 0;
@@ -123,6 +126,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [hasVariants, setHasVariants] = useState(false);
   const [seoCollapsed, setSeoCollapsed] = useState(true);
   const [shippingCollapsed, setShippingCollapsed] = useState(true);
+  const [scheduleCollapsed, setScheduleCollapsed] = useState(true);
   const [imageUploadKey, setImageUploadKey] = useState(0);
   const slugManuallyEdited = useRef(false);
   const variantContainerRef = useRef<HTMLDivElement>(null);
@@ -160,6 +164,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
+      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
     }));
 
     return {
@@ -170,7 +175,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       description: data.description,
       primary_image: data.primaryImage || null,
       primary_image_alt: data.primaryImageAlt || null,
-      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds })),
+      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
       price: Number(data.price ?? 0),
       sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
@@ -534,48 +539,35 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   };
   const handleDragEnd = () => { setDragIndex(null); };
 
-  const handleFileUpload = (key: "primaryImage" | "gallery", file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (key === "primaryImage") {
+  const handleFileUpload = async (target: "primaryImage" | "gallery", file: File) => {
+    try {
+      const { url, key } = await uploadImage(file);
+      if (target === "primaryImage") {
         clearFieldError("primaryImage");
-        updateField("primaryImage", dataUrl);
+        updateField("primaryImage", url);
       } else {
-        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { _id: galleryId(), url: dataUrl, variantIds: [], alt: "" }] }));
+        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { _id: galleryId(), url, _storageKey: key, variantIds: [], alt: "" }] }));
       }
-    };
-    reader.onerror = () => message.error("Failed to read file");
-    reader.readAsDataURL(file);
+    } catch {
+      message.error("Failed to upload image");
+    }
   };
 
-  const handleMultipleGalleryUpload = (files: FileList | null) => {
+  const handleMultipleGalleryUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const results: { dataUrl: string; index: number }[] = [];
-    let completed = 0;
+    const uploads = Array.from(files).map((f) => uploadImage(f));
+    const results = await Promise.allSettled(uploads);
+    const items: GalleryImage[] = [];
     let failed = 0;
-    for (let i = 0; i < files.length; i++) {
-      const reader = new FileReader();
-      const idx = i;
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        if (dataUrl) results.push({ dataUrl, index: idx });
-        completed++;
-        if (completed === files.length) {
-          results.sort((a, b) => a.index - b.index);
-          if (results.length > 0) {
-            const newGalleryItems = results.map((r) => ({ _id: galleryId(), url: r.dataUrl, variantIds: [], alt: "" }));
-            setForm((prev) => ({
-              ...prev,
-              gallery: [...prev.gallery, ...newGalleryItems],
-            }));
-          }
-          if (failed > 0) message.warning(`${failed} file(s) failed to upload.`);
-        }
-      };
-      reader.onerror = () => { completed++; failed++; };
-      reader.readAsDataURL(files[i]);
+    for (const r of results) {
+      if (r.status === "fulfilled") items.push({ _id: galleryId(), url: r.value.url, _storageKey: r.value.key, variantIds: [], alt: "" });
+      else failed++;
     }
+    if (items.length > 0) {
+      setForm((prev) => ({ ...prev, gallery: [...prev.gallery, ...items] }));
+    }
+    if (failed > 0) message.warning(`${failed} file(s) failed to upload.`);
+    if (items.length > 0) message.success(`${items.length} file(s) uploaded successfully.`);
   };
 
   const handleAddGalleryUrl = () => {
@@ -642,10 +634,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     });
   };
 
-  const handleVariantImageUpload = (index: number, file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => updateVariant(index, "image", e.target?.result as string);
-    reader.readAsDataURL(file);
+  const handleVariantImageUpload = async (index: number, file: File) => {
+    try {
+      const { url, key } = await uploadImage(file);
+      updateVariant(index, "image", url);
+      updateVariant(index, "_imageKey", key);
+    } catch {
+      message.error("Failed to upload variant image");
+    }
   };
 
   const handleSave = async () => {
@@ -685,6 +681,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
+      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
     }));
 
     const values: Record<string, unknown> = {
@@ -693,7 +690,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       sku: hasVariants ? null : (form.variants[0]?.sku || null),
       short_description: form.short_description,
       description: form.description,
-      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds })),
+      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
@@ -1462,42 +1459,47 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
             {/* ── Scheduling (always visible) ── */}
             <Card className="admin-soft-panel" variant="borderless">
-              <Flex align="center" gap={8} style={{ marginBottom: 14 }}>
-                <Calendar size={16} color="var(--admin-muted)" />
-                <Typography.Text strong style={{ textTransform: "uppercase", letterSpacing: "0.3em", fontSize: 13 }}>
-                  Scheduling
-                </Typography.Text>
-              </Flex>
-              <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                    Publish From
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
-                    onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                    Schedule when the product becomes visible on your store.
-                  </Typography.Text>
+              <div onClick={() => setScheduleCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+                <Flex align="center" gap={8}>
+                  <Calendar size={16} color="var(--admin-muted)" />
+                  <Typography.Text strong style={{ fontSize: 13 }}>Scheduling</Typography.Text>
                 </Flex>
-                <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                    Publish Until
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
-                    onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-                  />
-                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                    Automatically unpublish the product after this date.
-                  </Typography.Text>
-                </Flex>
+                {scheduleCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               </div>
+              {!scheduleCollapsed && (
+                <div style={{ padding: "0 20px 20px" }}>
+                  <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                        Publish From
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
+                        onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        Schedule when the product becomes visible on your store.
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap={4}>
+                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                        Publish Until
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
+                        onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
+                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        Automatically unpublish the product after this date.
+                      </Typography.Text>
+                    </Flex>
+                  </div>
+                </div>
+              )}
             </Card>
           </Flex>
         </Flex>
