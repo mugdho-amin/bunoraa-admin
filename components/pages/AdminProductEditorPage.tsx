@@ -15,7 +15,7 @@ import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/Catego
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 
 interface VariantForm {
-  sku: string; size: string; color: string; stock: number | null; price: number | null;
+  id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
   compareAt: number | null; image: string; weight: number | null; barcode: string;
   lowStockThreshold: number; enabled: boolean; sortOrder: number;
 }
@@ -139,6 +139,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
     const cleanVariants = data.variants.map((v, i) => ({
+      id: v.id || undefined,
       sku: v.sku.trim(),
       stock_quantity: Number(v.stock ?? 0),
       price: v.price === null || v.price === undefined ? null : Number(v.price),
@@ -208,7 +209,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       slugManuallyEdited.current = true;
       const rawGallery = product.images ?? [];
       const variants: VariantForm[] = (product.variants ?? []).map((v: Record<string, unknown>, i: number) => ({
-        sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
+        id: (v.id as string) ?? undefined, sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
         stock: (v.stock_quantity ?? v.stock ?? null) as number | null, price: (v.price as number) ?? null,
         compareAt: (v.compare_at_price ?? v.compareAt ?? null) as number | null, image: (v.image as string) ?? "",
         weight: (v.weight as number) ?? null, barcode: (v.barcode as string) ?? "",
