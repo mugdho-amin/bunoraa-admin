@@ -1459,48 +1459,48 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 )}
               </Card>
             )}
+
+            {/* ── Scheduling (always visible) ── */}
+            <Card className="admin-soft-panel" variant="borderless">
+              <Flex align="center" gap={8} style={{ marginBottom: 14 }}>
+                <Calendar size={16} color="var(--admin-muted)" />
+                <Typography.Text strong style={{ textTransform: "uppercase", letterSpacing: "0.3em", fontSize: 13 }}>
+                  Scheduling
+                </Typography.Text>
+              </Flex>
+              <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                    Publish From
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
+                    onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    Schedule when the product becomes visible on your store.
+                  </Typography.Text>
+                </Flex>
+                <Flex vertical gap={4}>
+                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                    Publish Until
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
+                    onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
+                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                  />
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    Automatically unpublish the product after this date.
+                  </Typography.Text>
+                </Flex>
+              </div>
+            </Card>
           </Flex>
         </Flex>
-
-        {/* ── Scheduling (always visible) ── */}
-        <Card className="admin-soft-panel" variant="borderless">
-          <Flex align="center" gap={8} style={{ marginBottom: 14 }}>
-            <Calendar size={16} color="var(--admin-muted)" />
-            <Typography.Text strong style={{ textTransform: "uppercase", letterSpacing: "0.3em", fontSize: 13 }}>
-              Scheduling
-            </Typography.Text>
-          </Flex>
-          <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-            <Flex vertical gap={4}>
-              <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Publish From
-              </label>
-              <input
-                type="datetime-local"
-                value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
-                onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                Schedule when the product becomes visible on your store.
-              </Typography.Text>
-            </Flex>
-            <Flex vertical gap={4}>
-              <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Publish Until
-              </label>
-              <input
-                type="datetime-local"
-                value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
-                onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                Automatically unpublish the product after this date.
-              </Typography.Text>
-            </Flex>
-          </div>
-        </Card>
 
         {/* ── Right Column: Variants (only when toggle is ON) ── */}
         {hasVariants && (
