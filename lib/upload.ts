@@ -11,7 +11,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await requestAdminEnvelope<{ url: string; key: string }>("upload-image/", {
+  const res = await requestAdminEnvelope<{ url: string; key: string }>("admin/upload-image/", {
     method: "POST",
     body: formData,
   });
