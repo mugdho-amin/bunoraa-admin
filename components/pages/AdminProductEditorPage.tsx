@@ -606,6 +606,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     autoSave.flush();
 
     const cleanVariants = form.variants.map((v, i) => ({
+      id: v.id || undefined,
       sku: v.sku.trim(),
       stock_quantity: Number(v.stock ?? 0),
       price: v.price === null || v.price === undefined ? null : Number(v.price),
