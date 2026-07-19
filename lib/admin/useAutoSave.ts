@@ -27,7 +27,7 @@ export function useAutoSave<T>({
   const [draftId, setDraftId] = useState<string | number | null>(id ?? null);
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<number | null>(null);
-  const lastSnapshot = useRef<string>("");
+  const lastSnapshot = useRef<string>(JSON.stringify(formData));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
   const mounted = useRef(true);

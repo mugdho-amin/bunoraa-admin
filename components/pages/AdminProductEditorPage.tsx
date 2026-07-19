@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch } from "antd";
+import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropdown, Modal, Space } from "antd";
+import type { MenuProps } from "antd";
 import Image from "next/image";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
   Copy, ChevronDown, ChevronUp, Package,
   Eye, EyeOff, Search, Grid3X3, ArrowLeft,
+  Clock, FileText, Calendar,
 } from "lucide-react";
 import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
@@ -104,6 +106,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>('publish');
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [schedulePickDate, setSchedulePickDate] = useState('');
   const [expandedVariants, setExpandedVariants] = useState<Set<number>>(new Set([0]));
   const [variantSearch, setVariantSearch] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -147,6 +152,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
       weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
+      barcode: v.barcode || '',
+      compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
     }));
@@ -286,6 +293,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     return () => clearTimeout(timer);
   }, [initForm]);
 
+  // Persist save action preference
+  useEffect(() => {
+    const saved = localStorage.getItem('admin_save_action') as 'publish' | 'draft' | 'schedule' | null;
+    if (saved === 'publish' || saved === 'draft' || saved === 'schedule') {
+      setSaveAction(saved);
+    }
+  }, []);
+  useEffect(() => {
+    localStorage.setItem('admin_save_action', saveAction);
+  }, [saveAction]);
+
   const slugify = (text: string) =>
     text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 
@@ -378,18 +396,60 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     });
   };
 
+  const saveMenuItems: MenuProps['items'] = [
+    { key: 'publish', label: 'Publish now', icon: <Check size={14} /> },
+    { key: 'draft', label: 'Save as Draft', icon: <FileText size={14} /> },
+    { type: 'divider' },
+    { key: 'schedule', label: 'Schedule for later...', icon: <Calendar size={14} /> },
+  ];
+
+  const handleSaveMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'schedule') {
+      const next = new Date(Date.now() + 3600000);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      setSchedulePickDate(`${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`);
+      setScheduleOpen(true);
+    } else {
+      setSaveAction(key as 'publish' | 'draft');
+    }
+  };
+
+  const handleScheduleConfirm = () => {
+    if (!schedulePickDate) return;
+    updateField('publish_from', schedulePickDate + ':00Z');
+    setSaveAction('schedule');
+    setScheduleOpen(false);
+  };
+
+  const saveLabel = useMemo(() => {
+    if (saveAction === 'draft') return 'Save as Draft';
+    if (saveAction === 'schedule') {
+      const d = form.publish_from;
+      if (d) {
+        try {
+          return `Schedule (${new Date(d).toLocaleDateString()})`;
+        } catch { /* ignore */ }
+      }
+      return 'Schedule';
+    }
+    return 'Publish';
+  }, [saveAction, form.publish_from]);
+
   const handlePrimaryCategoryChange = (ids: string[]) => {
     clearFieldError("primaryCategoryId");
     clearFieldError("categoryIds");
     const primaryId = ids[0] ?? "";
     setForm((p) => {
       const nextCategories = new Set(p.categoryIds);
-      // Drop previous primary if it was only present as primary auto-add.
-      if (p.primaryCategoryId && p.primaryCategoryId !== primaryId) {
-        // Keep old primary if user explicitly selected it among categories
-        // (still in categoryIds intentionally) — only ensure new primary is added.
+      if (primaryId) {
+        nextCategories.add(primaryId);
+        const catMap = new Map(categories.map((c) => [c.id, c]));
+        let current = catMap.get(primaryId);
+        while (current?.parent_id) {
+          nextCategories.add(current.parent_id);
+          current = catMap.get(current.parent_id);
+        }
       }
-      if (primaryId) nextCategories.add(primaryId);
       return {
         ...p,
         primaryCategoryId: primaryId,
@@ -617,11 +677,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
       weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
+      barcode: v.barcode || '',
+      compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
     }));
 
-    const values = {
+    const values: Record<string, unknown> = {
       name: form.name,
       slug: form.slug,
       sku: hasVariants ? null : (form.variants[0]?.sku || null),
@@ -644,18 +706,27 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       variants_data: hasVariants ? cleanVariants : [],
       category_ids: form.categoryIds,
       primary_category: form.primaryCategoryId || null,
-      is_active: form.is_active,
       is_featured: form.is_featured,
       is_bestseller: form.is_bestseller,
       is_new_arrival: form.is_new_arrival,
       can_be_customized: form.can_be_customized,
       tags: form.tags,
-      publish_from: form.publish_from || null,
       publish_until: form.publish_until || null,
       meta_title: (form.meta_title || form.name || "").trim(),
       meta_description: (form.meta_description || form.short_description || "").trim(),
       meta_keywords: (form.meta_keywords || "").trim(),
     };
+
+    if (saveAction === 'publish') {
+      values.is_active = true;
+      values.publish_from = null;
+    } else if (saveAction === 'draft') {
+      values.is_active = false;
+      values.publish_from = null;
+    } else {
+      values.is_active = true;
+      values.publish_from = form.publish_from || null;
+    }
 
     const effectiveId = currentId || id;
 
@@ -723,9 +794,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 : "Draft save failed"}
             </span>
           )}
-          <Button type="primary" icon={<Check size={16} />} onClick={handleSave} loading={saving}>
-            Save
-          </Button>
+          <Space.Compact>
+            <Button type="primary" onClick={() => {
+              if (saveAction === 'schedule' && !form.publish_from) { setScheduleOpen(true); return; }
+              handleSave();
+            }} loading={saving} style={{ paddingInline: 20 }}>
+              {saveLabel}
+            </Button>
+            <Dropdown menu={{ items: saveMenuItems, onClick: handleSaveMenuClick }} trigger={['click']}>
+              <Button type="primary" icon={<ChevronDown size={14} />} />
+            </Dropdown>
+          </Space.Compact>
         </Flex>
       </Flex>
 
@@ -1333,34 +1412,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                       />
                     </Flex>
-                    <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                        Publish From
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
-                        onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-                      />
-                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                        Schedule when the product becomes visible on your store.
-                      </Typography.Text>
-                    </Flex>
-                    <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                        Publish Until
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
-                        onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
-                      />
-                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                        Automatically unpublish the product after this date.
-                      </Typography.Text>
-                    </Flex>
+
                   </Flex>
                 </div>
               )}
@@ -1405,6 +1457,46 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             )}
           </Flex>
         </Flex>
+
+        {/* ── Scheduling (always visible) ── */}
+        <Card className="admin-soft-panel" variant="borderless">
+          <Flex align="center" gap={8} style={{ marginBottom: 14 }}>
+            <Calendar size={16} color="var(--admin-muted)" />
+            <Typography.Text strong style={{ textTransform: "uppercase", letterSpacing: "0.3em", fontSize: 13 }}>
+              Scheduling
+            </Typography.Text>
+          </Flex>
+          <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+            <Flex vertical gap={4}>
+              <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                Publish From
+              </label>
+              <input
+                type="datetime-local"
+                value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
+                onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
+                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+              />
+              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                Schedule when the product becomes visible on your store.
+              </Typography.Text>
+            </Flex>
+            <Flex vertical gap={4}>
+              <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                Publish Until
+              </label>
+              <input
+                type="datetime-local"
+                value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
+                onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
+                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+              />
+              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                Automatically unpublish the product after this date.
+              </Typography.Text>
+            </Flex>
+          </div>
+        </Card>
 
         {/* ── Right Column: Variants (only when toggle is ON) ── */}
         {hasVariants && (
@@ -1720,6 +1812,34 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           </Flex>
         )}
       </div>
+
+      <Modal
+        title={<Flex align="center" gap={8}><Calendar size={18} /> Schedule Publication</Flex>}
+        open={scheduleOpen}
+        onCancel={() => setScheduleOpen(false)}
+        onOk={handleScheduleConfirm}
+        okText="Schedule"
+        okButtonProps={{ disabled: !schedulePickDate }}
+        width={400}
+        destroyOnClose
+      >
+        <Flex vertical gap={12} style={{ marginTop: 8 }}>
+          <Typography.Text strong style={{ fontSize: 13 }}>Publish on:</Typography.Text>
+          <input
+            type="datetime-local"
+            value={schedulePickDate}
+            onChange={(e) => setSchedulePickDate(e.target.value)}
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: 8,
+              border: '1px solid var(--admin-border)', fontSize: 14,
+              background: 'var(--admin-surface)', color: 'var(--admin-ink)',
+            }}
+          />
+          <Typography.Text style={{ fontSize: 12, color: 'var(--admin-muted)' }}>
+            The product will be published automatically on this date and time.
+          </Typography.Text>
+        </Flex>
+      </Modal>
     </Flex>
   );
 }
