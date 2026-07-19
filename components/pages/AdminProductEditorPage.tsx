@@ -176,7 +176,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       variants_data: hasVariants ? cleanVariants : [],
       category_ids: data.categoryIds,
       primary_category: data.primaryCategoryId || null,
-      is_active: false,
+      is_active: data.is_active,
       is_featured: data.is_featured,
       is_bestseller: data.is_bestseller,
       is_new_arrival: data.is_new_arrival,
