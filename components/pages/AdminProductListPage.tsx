@@ -7,7 +7,8 @@ import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typog
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
-import type { ColumnsType } from "antd/es/table";
+import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
+import type { SorterResult } from "antd/es/table/interface";
 
 type ProductRecord = BaseRecord & {
   id: string;
@@ -40,6 +41,8 @@ export function AdminProductListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortField, setSortField] = useState("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const searchRef = useRef<InputRef>(null);
 
   useEffect(() => {
@@ -70,7 +73,7 @@ export function AdminProductListPage() {
     resource: "catalog/products",
     pagination: { currentPage: page, pageSize },
     filters,
-    sorters: [{ field: "-created_at", order: "desc" }],
+    sorters: [{ field: sortField, order: sortOrder }],
   });
   const isLoading = listQuery.isLoading;
   const isError = listQuery.isError;
@@ -118,7 +121,9 @@ export function AdminProductListPage() {
   const columns: ColumnsType<ProductRecord> = [
     {
       title: "Product",
+      dataIndex: "name",
       key: "product",
+      sorter: true,
       width: isMobile ? "50%" : "30%",
       render: (_, record) => (
         <Flex align="center" gap={isMobile ? 8 : 12}>
@@ -143,7 +148,9 @@ export function AdminProductListPage() {
     },
     {
       title: "Price",
+      dataIndex: "price",
       key: "price",
+      sorter: true,
       width: isMobile ? "20%" : "15%",
       render: (_, record) => (
         <Flex vertical gap={0}>
@@ -298,6 +305,17 @@ export function AdminProductListPage() {
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50", "100"],
                 showTotal: (t) => `${t} products`,
+              }}
+              onChange={(_pagination: TablePaginationConfig, _filters: Record<string, unknown>, sorter: SorterResult<ProductRecord> | SorterResult<ProductRecord>[]) => {
+                const s = Array.isArray(sorter) ? sorter[0] : sorter;
+                if (s.order && s.field) {
+                  setSortField(String(s.field));
+                  setSortOrder(s.order === "ascend" ? "asc" : "desc");
+                } else {
+                  setSortField("created_at");
+                  setSortOrder("desc");
+                }
+                setPage(1);
               }}
               onRow={(record) => ({
                 onDoubleClick: () => router.push(`/catalog/products/edit/${record.id}`),

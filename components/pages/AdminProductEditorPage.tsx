@@ -290,7 +290,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }, [id, product]);
 
   const resetSnapshotRef = useRef(autoSave.resetSnapshot);
-  resetSnapshotRef.current = autoSave.resetSnapshot;
+
+  useEffect(() => {
+    resetSnapshotRef.current = autoSave.resetSnapshot;
+  }, [autoSave.resetSnapshot]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

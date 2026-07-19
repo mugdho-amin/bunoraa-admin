@@ -83,12 +83,28 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const pathname = usePathname();
   const screens = Grid.useBreakpoint();
   const isDesktop = Boolean(screens.lg);
-  const isMobile = Boolean(screens.xs) || (!isDesktop && Boolean(screens.sm));
+  const isTablet = !isDesktop && Boolean(screens.md);
+  const isMobile = Boolean(screens.xs) || (!isDesktop && !isTablet && Boolean(screens.sm));
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+  });
   const [commandOpen, setCommandOpen] = useState(false);
   const { mode, setMode } = useThemeStore();
+
+  // Persist sidebar state
+  useEffect(() => {
+    localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  // Auto-collapse sidebar on tablet (below lg)
+  useEffect(() => {
+    if (!isDesktop) {
+      setSidebarCollapsed(true);
+    }
+  }, [isDesktop]);
 
   const toggleTheme = useCallback(() => {
     const next: Record<string, ThemeMode> = { light: "dark", dark: "system", system: "light" };
@@ -204,13 +220,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
         }}
       >
         {sidebarCollapsed ? (
-          <Tag
-            color="cyan"
-            bordered={false}
-            style={{ borderRadius: 999, paddingInline: 8, fontSize: 11, lineHeight: "20px" }}
-          >
-            B
-          </Tag>
+          <Tooltip title="Expand sidebar" placement="right">
+            <Button
+              type="text"
+              icon={<ChevronRight size={20} />}
+              onClick={() => setSidebarCollapsed(false)}
+              style={{ color: "var(--admin-muted)", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+            />
+          </Tooltip>
         ) : (
           <Flex align="center" gap={8} justify="space-between">
             <Flex align="center" gap={8}>
@@ -251,18 +268,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
         />
       </div>
 
-      {sidebarCollapsed && (
-        <div style={{ textAlign: "center", padding: "8px 0" }}>
-          <Tooltip title="Expand sidebar" placement="right">
-            <Button
-              type="text"
-              icon={<ChevronRight size={18} />}
-              onClick={() => setSidebarCollapsed(false)}
-              style={{ color: "var(--admin-muted)" }}
-            />
-          </Tooltip>
-        </div>
-      )}
       <div
         style={{
           borderTop: "1px solid var(--admin-border)",
@@ -326,13 +331,13 @@ export function AdminShell({ route, children }: AdminShellProps) {
   return (
     <>
       <Layout className="admin-page" style={{ background: "transparent", paddingBottom: isMobile ? 64 : 0 }}>
-        {isDesktop ? (
+        {isDesktop || isTablet ? (
           <Sider
             width={280}
             collapsedWidth={72}
             collapsible
-            collapsed={sidebarCollapsed}
-            onCollapse={setSidebarCollapsed}
+            collapsed={!isDesktop || sidebarCollapsed}
+            onCollapse={(v) => isDesktop && setSidebarCollapsed(v)}
             trigger={null}
             style={{ background: "transparent", padding: 16 }}
           >
@@ -367,7 +372,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
         <Layout style={{ background: "transparent", overflow: "hidden" }}>
           <Header
             style={{
-              padding: isDesktop ? "16px 24px 0 0" : "12px",
+              padding: isDesktop || isTablet ? "16px 24px 0 0" : "12px",
               background: "transparent",
               height: "auto",
               lineHeight: "inherit",
@@ -376,7 +381,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           >
             <Flex align="center" justify="space-between" gap={12}>
               <Flex align="center" gap={10} style={{ minWidth: 0 }}>
-                {!isDesktop && (
+                {isMobile && (
                   <Button
                     type="text"
                     icon={<MenuIcon size={18} />}
@@ -442,12 +447,12 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 <Dropdown menu={userMenu} trigger={["click"]}>
                   <Button
                     type="text"
-                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                   >
                     <Avatar
-                      size={26}
+                      size={28}
                       shape="circle"
-                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)", borderRadius: "50%", overflow: "hidden", lineHeight: "28px", fontSize: 15, fontWeight: 700 }}
                     >
                       {nameInitial}
                     </Avatar>
