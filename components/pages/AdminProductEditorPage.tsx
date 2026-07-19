@@ -146,6 +146,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       image_url: v.image || null,
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
+      weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
+      size: v.size || '',
+      color: v.color || '',
     }));
 
     return {
@@ -613,6 +616,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       image_url: v.image || null,
       low_stock_threshold: v.lowStockThreshold ?? 5,
       is_active: v.enabled,
+      weight: v.weight === null || v.weight === undefined ? null : Number(v.weight),
+      size: v.size || '',
+      color: v.color || '',
     }));
 
     const values = {
