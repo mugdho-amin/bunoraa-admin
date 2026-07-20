@@ -262,6 +262,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         lowStockThreshold: (v.low_stock_threshold ?? v.lowStockThreshold ?? 5) as number,
         enabled: (v.is_active ?? v.enabled ?? true) as boolean, sortOrder: (v.sort_order ?? v.sortOrder ?? i) as number,
       }));
+      const primaryCategoryId = String(
+        product.primary_category?.id
+          ?? product.primary_category_id
+          ?? product.primary_category
+          ?? "",
+      );
+      const categoryAspectDefault = categories.find((c) => c.id === primaryCategoryId)?.aspect_ratio ?? "";
       const variantUuidToIndex: Record<string, string> = {};
       variants.forEach((_, i) => {
         const v = (product.variants ?? [])[i];
@@ -299,18 +306,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         free_shipping: product.free_shipping ?? false,
         variants: variants.length ? variants : [emptyVariant(0)],
         categoryIds: (product.categories ?? []).map((c: { id?: string; category?: { id?: string } }) => c.id ?? c.category?.id).filter(Boolean) as string[],
-        primaryCategoryId: String(
-          product.primary_category?.id
-            ?? product.primary_category_id
-            ?? product.primary_category
-            ?? "",
-        ),
+        primaryCategoryId,
         is_active: product.is_active ?? true,
         is_featured: product.is_featured ?? false,
         is_bestseller: product.is_bestseller ?? false,
         is_new_arrival: product.is_new_arrival ?? false,
         can_be_customized: product.can_be_customized ?? false,
-        aspect_ratio: product.aspect_ratio ?? "",
+        aspect_ratio: product.aspect_ratio || categoryAspectDefault || "",
         tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.id ?? "")),
         publish_from: product.publish_from ?? "",
         publish_until: product.publish_until ?? "",
