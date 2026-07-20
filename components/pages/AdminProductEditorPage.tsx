@@ -1582,7 +1582,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       </label>
                       <input
                         type="datetime-local"
-                        value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
+                        value={form.publish_from ? form.publish_from.slice(0, 16) : "2000-01-01T00:00"}
                         onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
                         style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
                       />
@@ -1596,7 +1596,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       </label>
                       <input
                         type="datetime-local"
-                        value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
+                        value={form.publish_until ? form.publish_until.slice(0, 16) : "2000-01-01T00:00"}
                         onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
                         style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
                       />
@@ -1938,7 +1938,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           <Typography.Text strong style={{ fontSize: 13 }}>Publish on:</Typography.Text>
           <input
             type="datetime-local"
-            value={schedulePickDate}
+            value={schedulePickDate || "2000-01-01T00:00"}
             onChange={(e) => setSchedulePickDate(e.target.value)}
             style={{
               width: '100%', padding: '8px 12px', borderRadius: 8,

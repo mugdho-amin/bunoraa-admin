@@ -156,6 +156,40 @@ function serializeBody(body: unknown) {
   return formData;
 }
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const json = typeof window !== "undefined" ? window.atob(padded) : Buffer.from(padded, "base64").toString("binary");
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function getTokenExpiryMs(token: string): number | null {
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== "number") return null;
+  return payload.exp * 1000;
+}
+
+async function getFreshAccessToken() {
+  const token = getAccessToken();
+  if (!token) {
+    return null;
+  }
+
+  const expiryMs = getTokenExpiryMs(token);
+  const refreshWindowMs = 60_000;
+  if (expiryMs && Date.now() >= expiryMs - refreshWindowMs) {
+    return refreshAccessToken();
+  }
+
+  return token;
+}
+
 async function refreshAccessToken() {
   const refresh = getRefreshToken();
   if (!refresh) {
@@ -216,7 +250,7 @@ async function requestInternal<T>(path: string, options: RequestOptions = {}): P
     withCredentials = !skipAuth,
   } = options;
 
-  const token = skipAuth ? null : getAccessToken();
+  const token = skipAuth ? null : await getFreshAccessToken();
   const serializedBody = method === "GET" || method === "OPTIONS" ? undefined : serializeBody(body);
   const isFormData = typeof FormData !== "undefined" && serializedBody instanceof FormData;
 
