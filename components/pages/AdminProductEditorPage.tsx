@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropdown, Modal, Space } from "antd";
+import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropdown, Modal, Space, Select } from "antd";
 import type { MenuProps } from "antd";
 import Image from "next/image";
 import { uploadImage } from "@/lib/upload";
@@ -16,6 +16,7 @@ import {
 import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
+import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 
 interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -45,6 +46,7 @@ interface ProductForm {
   variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
   is_active: boolean; is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean; can_be_customized: boolean;
   tags: string[];
+  aspect_ratio: string;
   publish_from: string; publish_until: string;
   meta_title: string; meta_description: string; meta_keywords: string;
 }
@@ -96,8 +98,9 @@ const emptyForm: ProductForm = {
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
   stock_quantity: 0, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
-  is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: false,
+  is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: true,
   tags: [],
+  aspect_ratio: "",
   publish_from: "", publish_until: "",
   meta_title: "", meta_description: "", meta_keywords: "",
 };
@@ -147,6 +150,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     () => (categoriesResult?.data ?? []) as CategoryNode[],
     [categoriesResult],
   );
+
+  const { bootstrap } = useAdminBootstrap();
+  const aspectChoices = useMemo(() => bootstrap?.aspect_ratio_choices ?? [], [bootstrap]);
+  const categoryAspectRatio = useMemo(() => {
+    if (!form.primaryCategoryId) return "";
+    const cat = categories.find((c) => c.id === form.primaryCategoryId);
+    return cat?.aspect_ratio ?? "";
+  }, [form.primaryCategoryId, categories]);
 
   const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
 
@@ -199,6 +210,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       is_new_arrival: data.is_new_arrival,
       can_be_customized: data.can_be_customized,
       tags: data.tags,
+      aspect_ratio: data.aspect_ratio || "",
       publish_from: data.publish_from || null,
       publish_until: data.publish_until || null,
       meta_title: (data.meta_title || data.name || "").trim(),
@@ -298,6 +310,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         is_bestseller: product.is_bestseller ?? false,
         is_new_arrival: product.is_new_arrival ?? false,
         can_be_customized: product.can_be_customized ?? false,
+        aspect_ratio: product.aspect_ratio ?? "",
         tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.id ?? "")),
         publish_from: product.publish_from ?? "",
         publish_until: product.publish_until ?? "",
@@ -466,6 +479,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     const primaryId = ids[0] ?? "";
     setForm((p) => {
       const nextCategories = new Set(p.categoryIds);
+      let newAspect = p.aspect_ratio;
       if (primaryId) {
         nextCategories.add(primaryId);
         const catMap = new Map(categories.map((c) => [c.id, c]));
@@ -474,11 +488,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           nextCategories.add(current.parent_id);
           current = catMap.get(current.parent_id);
         }
+        if (!p.aspect_ratio) {
+          const cat = catMap.get(primaryId);
+          if (cat?.aspect_ratio) newAspect = cat.aspect_ratio;
+        }
       }
       return {
         ...p,
         primaryCategoryId: primaryId,
         categoryIds: Array.from(nextCategories),
+        aspect_ratio: newAspect,
       };
     });
   };
@@ -818,7 +837,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           )}
           <Space.Compact>
             <Button type="primary" onClick={() => {
-              if (saveAction === 'schedule' && !form.publish_from) { setScheduleOpen(true); return; }
+              if (saveAction === 'schedule' && !form.publish_from) {
+                const next = new Date(Date.now() + 3600000);
+                const pad = (n: number) => String(n).padStart(2, '0');
+                setSchedulePickDate(`${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`);
+                setScheduleOpen(true); return;
+              }
               handleSave();
             }} loading={saving} style={{ paddingInline: 20 }}>
               {saveLabel}
@@ -1135,14 +1159,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
               {/* Base Price + Stock */}
               <Card className="admin-soft-panel" variant="borderless" title="Listing Price (shown on collections)">
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr" : "1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr 1fr") }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.price ?? ""}
                   onChange={(e) => {
                     const val = parseDecimal(e.target.value);
@@ -1171,10 +1193,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1183,10 +1203,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.compare_at_price ?? ""}
                   onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1298,6 +1316,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       Tags help customers find your product through search and filtering.
                     </Typography.Text>
                   </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      Aspect Ratio
+                    </label>
+                    <Select
+                      value={form.aspect_ratio || undefined}
+                      onChange={(v) => updateField("aspect_ratio", v ?? "")}
+                      placeholder="Select aspect ratio"
+                      allowClear
+                      style={{ width: "100%" }}
+                      options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Image display ratio for product cards.
+                      {categoryAspectRatio && !form.aspect_ratio ? ` (Category default: ${categoryAspectRatio})` : ""}
+                    </Typography.Text>
+                  </Flex>
                 </Flex>
               </Card>
               <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
@@ -1305,10 +1340,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.price ?? ""}
                   onChange={(e) => {
                     const val = parseDecimal(e.target.value);
@@ -1324,7 +1357,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }}
                   style={{
                     width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
+                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light" : "var(--admin-input-bg)",
                   }}
                 />
                 {fieldErrors["price"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
@@ -1332,10 +1365,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1344,10 +1375,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
                   value={form.compare_at_price ?? ""}
                   onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1510,7 +1539,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             )}
 
             {/* ── Scheduling (always visible) ── */}
-            <Card className="admin-soft-panel" variant="borderless">
+            <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
               <div onClick={() => setScheduleCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
                 <Flex align="center" gap={8}>
                   <Calendar size={16} color="var(--admin-muted)" />
@@ -1823,10 +1852,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price</label>
                                     <input
-                                      type="number"
+                                      type="text"
                                       inputMode="decimal"
-                                      step="0.01"
-                                      min="0"
                                       value={variant.price ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "price", parseDecimal(e.target.value))}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}
@@ -1835,10 +1862,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                                     <input
-                                      type="number"
+                                      type="text"
                                       inputMode="decimal"
-                                      step="0.01"
-                                      min="0"
                                       value={variant.compareAt ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "compareAt", parseDecimal(e.target.value))}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}

@@ -99,6 +99,7 @@ export type AdminBootstrap = {
     }>;
   }>;
   generated_at: string;
+  aspect_ratio_choices: Array<{ code: string; label: string }>;
 };
 
 export type AdminApiEnvelope<T> = {

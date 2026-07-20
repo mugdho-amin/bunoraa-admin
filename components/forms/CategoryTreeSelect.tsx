@@ -21,6 +21,7 @@ export type CategoryNode = {
   sort_order?: number | null;
   children_count?: number;
   has_children?: boolean;
+  aspect_ratio?: string;
 };
 
 type NormalizedCategory = {

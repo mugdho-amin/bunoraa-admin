@@ -99,10 +99,11 @@ export function AdminShell({ route, children }: AdminShellProps) {
     localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  // Auto-collapse sidebar on tablet (below lg)
+  // Sidebar is always expanded on desktop, drawer on mobile
   useEffect(() => {
     if (!isDesktop) {
       setSidebarCollapsed(true);
+      setMobileNavOpen(false);
     }
   }, [isDesktop]);
 
@@ -176,12 +177,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const userMenu = {
     items: [
       {
-        key: "theme",
-        icon: mode === "light" ? <Sun size={16} /> : mode === "dark" ? <Moon size={16} /> : <Monitor size={16} />,
-        label: mode === "light" ? "Switch to dark mode" : mode === "dark" ? "Switch to system theme" : "Switch to light mode",
-        onClick: toggleTheme,
-      },
-      {
         key: "command",
         icon: <Search size={16} />,
         label: "Command palette",
@@ -219,7 +214,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           transition: "padding 0.2s, text-align 0.2s",
         }}
       >
-        {sidebarCollapsed ? (
+        {isDesktop && sidebarCollapsed ? (
           <Tooltip title="Expand sidebar" placement="right">
             <Button
               type="text"
@@ -229,7 +224,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
             />
           </Tooltip>
         ) : (
-          <Flex align="center" gap={8} justify="space-between">
+          <Flex align="center" gap={8} justify={isDesktop ? "space-between" : "center"}>
             <Flex align="center" gap={8}>
               <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 8 }}>
                 Bunoraa
@@ -238,12 +233,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 Admin
               </Typography.Text>
             </Flex>
-            <Button
-              type="text"
-              icon={<ChevronLeft size={16} />}
-              onClick={() => setSidebarCollapsed(true)}
-              style={{ color: "var(--admin-muted)", flexShrink: 0 }}
-            />
+            {isDesktop && (
+              <Button
+                type="text"
+                icon={<ChevronLeft size={16} />}
+                onClick={() => setSidebarCollapsed(true)}
+                style={{ color: "var(--admin-muted)", flexShrink: 0 }}
+              />
+            )}
           </Flex>
         )}
       </div>
@@ -390,35 +387,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   />
                 )}
                 <Flex vertical gap={0} style={{ minWidth: 0 }}>
-                  {isDesktop ? (
-                    <Space size={6} wrap>
-                      <Typography.Text
-                        type="secondary"
-                        style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
-                      >
-                        <Tag
-                          color="blue"
-                          bordered={false}
-                          style={{ fontSize: 11, lineHeight: "18px", paddingInline: 6 }}
-                        >
-                          {route.type === "resource"
-                            ? route.resource.group
-                            : route.type === "page"
-                              ? route.page.group
-                              : "System"}
-                        </Tag>
-                        <span style={{ color: "var(--admin-muted)", opacity: 0.5, userSelect: "none" }}>/</span>
-                        <span style={{ color: "var(--admin-muted)", opacity: 0.6 }}>{title}</span>
-                      </Typography.Text>
-                      <Tag
-                        color={bootstrap?.app.environment === "production" ? "green" : "gold"}
-                        bordered={false}
-                        style={{ fontSize: 10, lineHeight: "16px", paddingInline: 5 }}
-                      >
-                        {bootstrap?.app.environment ?? "unknown"}
-                      </Tag>
-                    </Space>
-                  ) : null}
                   <Typography.Title
                     level={4}
                     className="admin-display"

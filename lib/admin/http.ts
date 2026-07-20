@@ -187,7 +187,12 @@ async function refreshAccessToken() {
       null;
 
     if (access) {
-      setTokens(access, envelope?.data?.refresh ?? refresh);
+      const payloadRecord = payload as Record<string, unknown> | null;
+      const newRefresh =
+        (payloadRecord?.refresh as string | undefined) ??
+        ((payloadRecord?.data as Record<string, unknown> | undefined)?.refresh as string | undefined) ??
+        refresh;
+      setTokens(access, newRefresh);
       return access;
     }
 

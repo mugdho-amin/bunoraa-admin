@@ -33,7 +33,7 @@ type ProductRecord = BaseRecord & {
   average_rating: number;
   reviews_count: number;
   views_count: number;
-  order_count: number;
+  sales_count: number;
   cart_count: number;
   publish_from: string | null;
   short_description: string;
@@ -249,11 +249,11 @@ export function AdminProductListPage() {
       sorter: true,
       width: isMobile ? "auto" : "10%",
       render: (_, record) => (
-        <Flex align="center" gap={6}>
+        <Flex align="center" gap={4}>
           {inlineInput(record, "stock_quantity", record.stock_quantity ?? 0)}
-          {record.is_in_stock
-            ? <Tag color="green" style={{ fontSize: 10, lineHeight: "16px" }}>In</Tag>
-            : <Tag color="red" style={{ fontSize: 10, lineHeight: "16px" }}>Out</Tag>}
+          {record.stock_quantity === 0 && (
+            <Tag color="red" style={{ fontSize: 10, lineHeight: "16px" }}>Out</Tag>
+          )}
         </Flex>
       ),
     },
@@ -267,13 +267,13 @@ export function AdminProductListPage() {
       render: (_, record) => record.views_count ?? 0,
     },
     {
-      title: "Orders",
-      dataIndex: "order_count",
-      key: "order_count",
+      title: "Sales",
+      dataIndex: "sales_count",
+      key: "sales_count",
       sorter: true,
       width: "8%",
       responsive: ["lg" as const],
-      render: (_, record) => record.order_count ?? 0,
+      render: (_, record) => record.sales_count ?? 0,
     },
     {
       title: "Cart",
@@ -429,19 +429,22 @@ export function AdminProductListPage() {
               dataSource={products}
               columns={columns}
               rowKey="id"
+              scroll={{ x: "max-content" }}
               pagination={{
                 current: page,
                 pageSize,
                 total,
-                onChange: (p, ps) => {
-                  setPage(p);
-                  setPageSize(ps);
-                },
                 showSizeChanger: true,
                 pageSizeOptions: ["10", "20", "50", "100"],
                 showTotal: (t) => `${t} products`,
               }}
-              onChange={(_pagination: TablePaginationConfig, _filters: Record<string, unknown>, sorter: SorterResult<ProductRecord> | SorterResult<ProductRecord>[]) => {
+              onChange={(pagination: TablePaginationConfig, _filters: Record<string, unknown>, sorter: SorterResult<ProductRecord> | SorterResult<ProductRecord>[]) => {
+                if (pagination.current && pagination.current !== page) {
+                  setPage(pagination.current);
+                }
+                if (pagination.pageSize && pagination.pageSize !== pageSize) {
+                  setPageSize(pagination.pageSize);
+                }
                 const s = Array.isArray(sorter) ? sorter[0] : sorter;
                 if (s.order && s.field) {
                   setSortField(String(s.field));
