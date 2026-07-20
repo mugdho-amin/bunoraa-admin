@@ -291,9 +291,17 @@ export function AdminProductListPage() {
       sorter: true,
       width: "14%",
       responsive: ["md" as const],
-      render: (_, record) => record.publish_from
-        ? new Date(record.publish_from).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-        : <Typography.Text type="secondary">—</Typography.Text>,
+      render: (_, record) => {
+        if (record.publish_from) {
+          return new Date(record.publish_from).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        }
+
+        if (record.is_active) {
+          return <Tag color="green">Published</Tag>;
+        }
+
+        return <Typography.Text type="secondary">Draft</Typography.Text>;
+      },
     },
     {
       title: "Active",

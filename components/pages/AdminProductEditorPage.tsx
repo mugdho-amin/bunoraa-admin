@@ -88,7 +88,7 @@ const parseDecimal = (raw: string): number | null => {
 };
 
 const emptyVariant = (sortOrder = 0): VariantForm => ({
-  sku: "", size: "", color: "", stock: null, price: null,
+  sku: "", size: "", color: "", stock: 1, price: null,
   compareAt: null, image: "", weight: null, barcode: "",
   lowStockThreshold: 5, enabled: true, sortOrder,
 });
@@ -96,7 +96,7 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
 const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", short_description: "", description: "",
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
-  stock_quantity: 0, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
+  stock_quantity: 1, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
   is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: true,
   tags: [],
@@ -252,7 +252,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (formInitialized.current) return;
     if (id && product) {
       formInitialized.current = true;
-      slugManuallyEdited.current = true;
+      slugManuallyEdited.current = false;
       const rawGallery = product.images ?? [];
       const variants: VariantForm[] = (product.variants ?? []).map((v: Record<string, unknown>, i: number) => ({
         id: (v.id as string) ?? undefined, sku: (v.sku as string) ?? "", size: (v.size as string) ?? "", color: (v.color as string) ?? "",
@@ -323,7 +323,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     } else if (!id) {
       formInitialized.current = true;
     }
-  }, [id, product]);
+  }, [id, product, categories]);
 
   const resetSnapshotRef = useRef(autoSave.resetSnapshot);
 
@@ -1157,6 +1157,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       Tags help customers find your product through search and filtering.
                     </Typography.Text>
                   </Flex>
+                  <Flex vertical gap={6}>
+                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      Aspect Ratio
+                    </label>
+                    <Select
+                      value={form.aspect_ratio || undefined}
+                      onChange={(v) => updateField("aspect_ratio", v ?? "")}
+                      placeholder="Select aspect ratio"
+                      allowClear
+                      style={{ width: "100%" }}
+                      options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                      Image display ratio for product cards.
+                      {categoryAspectRatio && !form.aspect_ratio ? ` (Category default: ${categoryAspectRatio})` : ""}
+                    </Typography.Text>
+                  </Flex>
                 </Flex>
               </Card>
 
@@ -1166,8 +1183,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.price ?? ""}
                   onChange={(e) => {
                     const val = parseDecimal(e.target.value);
@@ -1196,8 +1214,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1206,8 +1225,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.compare_at_price ?? ""}
                   onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1343,8 +1363,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.price ?? ""}
                   onChange={(e) => {
                     const val = parseDecimal(e.target.value);
@@ -1360,7 +1381,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }}
                   style={{
                     width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["price"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light" : "var(--admin-input-bg)",
+                    fontSize: 14, outline: "none", background: fieldErrors["price"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
                   }}
                 />
                 {fieldErrors["price"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
@@ -1368,8 +1389,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1378,8 +1400,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="text"
+                  type="number"
                   inputMode="decimal"
+                  step="0.01"
                   value={form.compare_at_price ?? ""}
                   onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
@@ -1687,7 +1710,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </div>
 
               {/* Variant Cards */}
-              <div ref={variantContainerRef} style={{ maxHeight: 600, overflowY: "auto", borderTop: "1px solid var(--admin-divider)" }}>
+              <div ref={variantContainerRef} style={{ maxHeight: 720, overflowY: "auto", borderTop: "1px solid var(--admin-divider)" }}>
                 {(variantSearch ? filteredVariants : form.variants).map((variant, displayIdx) => {
                   const actualIdx = form.variants.indexOf(variant);
                   const isExpanded = expandedVariants.has(displayIdx);
@@ -1837,7 +1860,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     )}
                                   </Flex>
                                 </div>
-                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
+                                <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", marginTop: 12 }}>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
                                     <input type="number" value={variant.stock ?? ""} onChange={(e) => updateVariant(actualIdx, "stock", e.target.value ? Number(e.target.value) : null)}
@@ -1855,8 +1878,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price</label>
                                     <input
-                                      type="text"
+                                      type="number"
                                       inputMode="decimal"
+                                      step="0.01"
                                       value={variant.price ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "price", parseDecimal(e.target.value))}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}
@@ -1865,8 +1889,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                                     <input
-                                      type="text"
+                                      type="number"
                                       inputMode="decimal"
+                                      step="0.01"
                                       value={variant.compareAt ?? ""}
                                       onChange={(e) => updateVariant(actualIdx, "compareAt", parseDecimal(e.target.value))}
                                       style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }}
