@@ -243,7 +243,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variant_ids?: string[]; alt?: string }) => {
         if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
         const ids = (item.variant_ids ?? []).map((uuid: string) => variantUuidToIndex[uuid]).filter(Boolean);
-        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: item.alt ?? "" };
+        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text || item.alt ?? "" };
       });
       const hasOptions = variants.some((v) => v.size || v.color);
       setHasVariants(hasOptions);
@@ -545,6 +545,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       if (target === "primaryImage") {
         clearFieldError("primaryImage");
         updateField("primaryImage", url);
+        setForm((prev) => {
+          if (prev.gallery.some((g) => g.url === url)) return prev;
+          return { ...prev, gallery: [{ _id: galleryId(), url, _storageKey: key, variantIds: [], alt: prev.primaryImageAlt }, ...prev.gallery] };
+        });
       } else {
         setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { _id: galleryId(), url, _storageKey: key, variantIds: [], alt: "" }] }));
       }
@@ -926,7 +930,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   <input key={`primary-${imageUploadKey}`} type="file" accept="image/*" style={{ display: "none" }}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleFileUpload("primaryImage", f); setImageUploadKey((k) => k + 1); } }} />
                 </label>
-                <input value={form.primaryImage} onChange={(e) => { clearFieldError("primaryImage"); updateField("primaryImage", e.target.value); }}
+                <input value={form.primaryImage} onChange={(e) => {
+                  clearFieldError("primaryImage");
+                  const val = e.target.value;
+                  updateField("primaryImage", val);
+                  if (val && !form.gallery.some((g) => g.url === val)) {
+                    updateField("gallery", [{ _id: galleryId(), url: val, variantIds: [], alt: form.primaryImageAlt }, ...form.gallery]);
+                  }
+                }}
                   placeholder="https://cdn.bunoraa.com/images/product.jpg"
                   style={{
                     width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
