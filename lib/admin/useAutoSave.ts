@@ -12,7 +12,7 @@ type UseAutoSaveOptions<T> = {
   enabled?: boolean;
   debounceMs?: number;
   getPayload?: (data: T) => Record<string, unknown>;
-  onCreated?: (newId: string | number) => void;
+  onCreated?: (newId: string | number, data?: Record<string, unknown>) => void;
 };
 
 export function useAutoSave<T>({
@@ -58,14 +58,14 @@ export function useAutoSave<T>({
           body: payload,
         });
       } else {
-        const data = await requestAdminData<{ id: string | number }>(
+        const data = await requestAdminData<Record<string, unknown>>(
           `/admin/${resource}`,
           { method: "POST", body: { ...payload, is_active: false } },
         );
-        const newId = data?.id;
+        const newId = data?.id as string | number | undefined;
         if (newId && mounted.current) {
           setDraftId(newId);
-          onCreated?.(newId);
+          onCreated?.(newId, data);
         }
       }
 

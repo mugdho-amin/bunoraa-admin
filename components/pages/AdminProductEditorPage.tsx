@@ -164,7 +164,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
-      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
+      ...(v._imageKey && (v.image || '').includes('/_temp/') ? { _image_key: v._imageKey } : {}),
     }));
 
     return {
@@ -175,7 +175,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       description: data.description,
       primary_image: data.primaryImage || null,
       primary_image_alt: data.primaryImageAlt || null,
-      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
+      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
       price: Number(data.price ?? 0),
       sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
@@ -212,7 +212,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     id: currentId,
     enabled: !saving && !loadingProduct,
     getPayload: getProductPayload,
-    onCreated: (newId) => { setCurrentId(newId); },
+    onCreated: (newId, data) => {
+      setCurrentId(newId);
+      if (data?.images) {
+        const serverGallery = (data.images as { image_url?: string; alt_text?: string; variant_ids?: string[] }[]).map((item, i) => ({
+          _id: galleryId(),
+          url: item.image_url || "",
+          alt: item.alt_text || "",
+          variantIds: (item.variant_ids || []).map(String),
+        }));
+        setForm((prev) => ({ ...prev, gallery: serverGallery }));
+      }
+    },
   });
 
   const { mutate: createProduct } = useCreate();
@@ -685,7 +696,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
-      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
+      ...(v._imageKey && (v.image || '').includes('/_temp/') ? { _image_key: v._imageKey } : {}),
     }));
 
     const values: Record<string, unknown> = {
@@ -694,7 +705,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       sku: hasVariants ? null : (form.variants[0]?.sku || null),
       short_description: form.short_description,
       description: form.description,
-      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
+      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
