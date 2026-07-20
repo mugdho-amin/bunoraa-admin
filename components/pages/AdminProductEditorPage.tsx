@@ -254,7 +254,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variant_ids?: string[]; alt?: string }) => {
         if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
         const ids = (item.variant_ids ?? []).map((uuid: string) => variantUuidToIndex[uuid]).filter(Boolean);
-        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text || item.alt ?? "" };
+        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text ?? item.alt ?? "" };
       });
       const hasOptions = variants.some((v) => v.size || v.color);
       setHasVariants(hasOptions);
