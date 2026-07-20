@@ -39,7 +39,7 @@ interface ProductForm {
   name: string; slug: string; sku: string;
   short_description: string; description: string;
   primaryImage: string; primaryImageAlt: string; gallery: GalleryImage[];
-  price: number | null; sale_price: number | null; cost: number | null; currency: string;
+  price: number | null; sale_price: number | null; compare_at_price: number | null; cost: number | null; currency: string;
   stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean; tax_included: boolean;
   weight: number | null; length: number | null; width: number | null; height: number | null; free_shipping: boolean;
   variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
@@ -93,7 +93,7 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
 
 const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", short_description: "", description: "",
-  primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, cost: null, currency: "BDT",
+  primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
   stock_quantity: 0, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
   is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: false,
@@ -178,6 +178,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
       price: Number(data.price ?? 0),
       sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
+      compare_at_price: data.compare_at_price === null || data.compare_at_price === undefined ? null : Number(data.compare_at_price),
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
       currency: data.currency,
       stock_quantity: hasVariants ? 0 : Number(data.variants[0]?.stock ?? 0),
@@ -215,13 +216,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     onCreated: (newId, data) => {
       setCurrentId(newId);
       if (data?.images) {
-        const serverGallery = (data.images as { image_url?: string; alt_text?: string; variant_ids?: string[] }[]).map((item, i) => ({
-          _id: galleryId(),
-          url: item.image_url || "",
-          alt: item.alt_text || "",
-          variantIds: (item.variant_ids || []).map(String),
-        }));
-        setForm((prev) => ({ ...prev, gallery: serverGallery }));
+        const serverImages = data.images as { image_url?: string; alt_text?: string; variant_ids?: string[] }[];
+        setForm((prev) => {
+          const updated = prev.gallery.map((g, i) => {
+            if (g._storageKey && g.url.includes('/_temp/') && i < serverImages.length) {
+              return { ...g, url: serverImages[i].image_url || g.url, alt: serverImages[i].alt_text || g.alt, _storageKey: undefined };
+            }
+            return g;
+          });
+          return { ...prev, gallery: updated };
+        });
       }
     },
   });
@@ -269,6 +273,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         gallery: mappedGallery,
         price: product.price ? Number(product.price) : null,
         sale_price: product.sale_price ? Number(product.sale_price) : null,
+        compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
         cost: product.cost ? Number(product.cost) : null,
         currency: product.currency ?? "BDT",
         stock_quantity: product.stock_quantity ?? 0,
@@ -708,6 +713,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
+      compare_at_price: form.compare_at_price === null || form.compare_at_price === undefined ? null : Number(form.compare_at_price),
       cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
       currency: form.currency,
       stock_quantity: hasVariants ? 0 : Number(form.variants[0]?.stock ?? 0),
@@ -1175,6 +1181,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 />
               </Flex>
               <Flex vertical gap={4}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.compare_at_price ?? ""}
+                  onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                />
+              </Flex>
+              <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Currency</label>
                 <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}>
@@ -1283,7 +1301,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </Flex>
               </Card>
               <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr" }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
@@ -1320,6 +1338,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   min="0"
                   value={form.sale_price ?? ""}
                   onChange={(e) => updateField("sale_price", parseDecimal(e.target.value))}
+                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                />
+              </Flex>
+              <Flex vertical gap={4}>
+                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={form.compare_at_price ?? ""}
+                  onChange={(e) => updateField("compare_at_price", parseDecimal(e.target.value))}
                   style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
                 />
               </Flex>

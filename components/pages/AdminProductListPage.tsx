@@ -17,6 +17,7 @@ type ProductRecord = BaseRecord & {
   sku: string;
   price: string;
   sale_price: string | null;
+  compare_at_price: string | null;
   current_price: string;
   currency: string;
   stock_quantity: number;
@@ -232,6 +233,14 @@ export function AdminProductListPage() {
       width: isMobile ? "auto" : "10%",
       responsive: ["md" as const],
       render: (_, record) => inlineInput(record, "sale_price", record.sale_price ?? ""),
+    },
+    {
+      title: "Compare At",
+      dataIndex: "compare_at_price",
+      key: "compare_at_price",
+      width: isMobile ? "auto" : "10%",
+      responsive: ["md" as const],
+      render: (_, record) => record.compare_at_price ? inlineInput(record, "compare_at_price", record.compare_at_price) : "—",
     },
     {
       title: "Stock",
