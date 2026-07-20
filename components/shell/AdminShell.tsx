@@ -333,7 +333,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
             width={280}
             collapsedWidth={72}
             collapsible
-            collapsed={!isDesktop || sidebarCollapsed}
+            collapsed={isDesktop ? sidebarCollapsed : false}
             onCollapse={(v) => isDesktop && setSidebarCollapsed(v)}
             trigger={null}
             style={{ background: "transparent", padding: 16 }}
