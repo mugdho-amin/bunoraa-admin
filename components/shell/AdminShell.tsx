@@ -99,14 +99,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
     localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  // Sidebar is always expanded on desktop, drawer on mobile
-  useEffect(() => {
-    if (!isDesktop) {
-      setSidebarCollapsed(true);
-      setMobileNavOpen(false);
-    }
-  }, [isDesktop]);
-
   const toggleTheme = useCallback(() => {
     const next: Record<string, ThemeMode> = { light: "dark", dark: "system", system: "light" };
     setMode(next[mode] as ThemeMode);
