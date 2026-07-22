@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
 import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Select, Switch } from "antd";
+import { Upload } from "lucide-react";
+import { uploadImage } from "@/lib/upload";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, Eye, ArrowLeft, Check, FolderTree } from "lucide-react";
 import type { BaseKey, BaseRecord } from "@refinedev/core";
@@ -30,6 +32,7 @@ type CategoryRecord = BaseRecord & {
   aspect_ratio: string;
   aspect_width: number | null;
   aspect_height: number | null;
+  product_count: number;
   children_count: number;
   parent_id: string | null;
   parent_name: string | null;
@@ -52,7 +55,11 @@ interface CategoryFormData {
   aspect_ratio: string;
   aspect_width: number | null;
   aspect_height: number | null;
+  aspect_unit: string;
   category_type: string;
+  apply_aspect_to_products: boolean;
+  apply_aspect_to_children: boolean;
+  set_aspect_default_for_descendants: boolean;
 }
 
 const emptyForm: CategoryFormData = {
@@ -72,7 +79,11 @@ const emptyForm: CategoryFormData = {
   aspect_ratio: "1:1",
   aspect_width: null,
   aspect_height: null,
-  category_type: "standard",
+  aspect_unit: "ratio",
+  category_type: "STANDARD",
+  apply_aspect_to_products: false,
+  apply_aspect_to_children: false,
+  set_aspect_default_for_descendants: false,
 };
 
 function CategoryListView() {
@@ -180,16 +191,34 @@ function CategoryListView() {
       title: "Depth",
       dataIndex: "depth",
       key: "depth",
-      width: 80,
+      width: 70,
       responsive: ["lg" as const],
       render: (d: number) => <Tag bordered={false} color="default">{d}</Tag>,
+    },
+    {
+      title: "Products",
+      dataIndex: "product_count",
+      key: "product_count",
+      width: 90,
+      sorter: true,
+      responsive: ["md" as const],
+      render: (count: number) => <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>{count ?? 0}</Typography.Text>,
+    },
+    {
+      title: "Subcategories",
+      dataIndex: "children_count",
+      key: "children_count",
+      width: 110,
+      responsive: ["md" as const],
+      render: (count: number) => <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted)" }}>{count ?? 0}</Typography.Text>,
     },
     {
       title: "Order",
       dataIndex: "sort_order",
       key: "sort_order",
-      width: 80,
+      width: 70,
       responsive: ["lg" as const],
+      sorter: true,
       render: (o: number) => <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted)" }}>{o}</Typography.Text>,
     },
     {
@@ -202,14 +231,6 @@ function CategoryListView() {
           {active ? "Yes" : "No"}
         </Tag>
       ),
-    },
-    {
-      title: "Subcategories",
-      dataIndex: "children_count",
-      key: "children_count",
-      width: 120,
-      responsive: ["md" as const],
-      render: (count: number) => <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted)" }}>{count ?? 0}</Typography.Text>,
     },
     {
       title: "Actions",
@@ -397,6 +418,12 @@ function CategoryShowView({ id }: { id: BaseKey }) {
                 <Typography.Text>{record.aspect_ratio}</Typography.Text>
               </Flex>
             )}
+            {record.aspect_width != null && record.aspect_height != null && (
+              <Flex vertical gap={4}>
+                <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Custom Dimensions</Typography.Text>
+                <Typography.Text>{record.aspect_width} × {record.aspect_height} {record.aspect_unit ?? "ratio"}</Typography.Text>
+              </Flex>
+            )}
           </div>
           {record.image && (
             <Flex vertical gap={4}>
@@ -468,7 +495,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     parent_id: data.parent_id || null,
     description: data.description,
     sort_order: data.sort_order,
-    is_active: false,
+    is_active: data.is_active,
     is_visible: data.is_visible,
     is_featured: data.is_featured,
     meta_title: data.meta_title,
@@ -479,7 +506,11 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     aspect_ratio: data.aspect_ratio,
     aspect_width: data.aspect_width,
     aspect_height: data.aspect_height,
+    aspect_unit: data.aspect_unit,
     category_type: data.category_type,
+    apply_aspect_to_products: data.apply_aspect_to_products,
+    apply_aspect_to_children: data.apply_aspect_to_children,
+    set_aspect_default_for_descendants: data.set_aspect_default_for_descendants,
   }), []);
 
   const autoSave = useAutoSave({
@@ -517,7 +548,8 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_ratio: existing.aspect_ratio ?? "1:1",
         aspect_width: existing.aspect_width != null ? Number(existing.aspect_width) : null,
         aspect_height: existing.aspect_height != null ? Number(existing.aspect_height) : null,
-        category_type: existing.category_type ?? "standard",
+        aspect_unit: existing.aspect_unit ?? "ratio",
+        category_type: existing.category_type ?? "STANDARD",
       });
     } else if (action === "create") {
       formInitialized.current = true;
@@ -578,7 +610,11 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_ratio: form.aspect_ratio,
         aspect_width: form.aspect_width,
         aspect_height: form.aspect_height,
+        aspect_unit: form.aspect_unit,
         category_type: form.category_type,
+        apply_aspect_to_products: form.apply_aspect_to_products,
+        apply_aspect_to_children: form.apply_aspect_to_children,
+        set_aspect_default_for_descendants: form.set_aspect_default_for_descendants,
       };
       const effectiveId = currentId || id;
       if (action === "create" && !effectiveId) {
@@ -753,11 +789,10 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
                   background: "var(--admin-input-bg)",
                 }}
               >
-                <option value="standard">Standard</option>
-                <option value="clothing">Clothing</option>
-                <option value="lifestyle">Lifestyle / Home</option>
-                <option value="technique">Technique Hub</option>
-                <option value="seasonal">Seasonal / Festive</option>
+                <option value="STANDARD">Standard Clothing</option>
+                <option value="LIFESTYLE">Lifestyle & Home</option>
+                <option value="TECHNIQUE">Artisanship / Technique Hub</option>
+                <option value="SEASONAL">Seasonal / Festive</option>
               </select>
             </Flex>
           </div>
@@ -783,16 +818,39 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
             <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
               Image URL
             </Typography.Text>
-            <input
-              value={form.image}
-              onChange={(e) => updateField("image", e.target.value)}
-              placeholder="https://example.com/category-image.jpg"
-              style={{
-                width: "100%", padding: "10px 16px", borderRadius: 12,
-                border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                background: "var(--admin-input-bg)",
-              }}
-            />
+            <Flex gap={8}>
+              <input
+                value={form.image}
+                onChange={(e) => updateField("image", e.target.value)}
+                placeholder="https://example.com/category-image.jpg"
+                style={{
+                  flex: 1, padding: "10px 16px", borderRadius: 12,
+                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
+                  background: "var(--admin-input-bg)",
+                }}
+              />
+              <label style={{ cursor: "pointer", display: "flex" }}>
+                <Button icon={<Upload size={14} />} style={{ height: 44, borderRadius: 12 }}>Upload</Button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        const { url } = await uploadImage(file);
+                        updateField("image", url);
+                        message.success("Image uploaded");
+                      } catch {
+                        message.error("Failed to upload image");
+                      }
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </Flex>
             {form.image && (
               <Image src={form.image} alt="Category preview" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 4 }} preview={false} />
             )}
@@ -847,7 +905,50 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
                 }}
               />
             </Flex>
+            <Flex vertical gap={6}>
+              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                Aspect Unit
+              </Typography.Text>
+              <select
+                value={form.aspect_unit}
+                onChange={(e) => updateField("aspect_unit", e.target.value)}
+                style={{
+                  width: "100%", padding: "10px 16px", borderRadius: 12,
+                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
+                  background: "var(--admin-input-bg)",
+                }}
+              >
+                <option value="ratio">Ratio (unitless)</option>
+                <option value="in">Inches</option>
+                <option value="ft">Feet</option>
+                <option value="cm">Centimeters</option>
+                <option value="mm">Millimeters</option>
+                <option value="px">Pixels</option>
+              </select>
+            </Flex>
           </div>
+
+          {/* Aspect Ratio Propagation */}
+          <Flex vertical gap={12} style={{ borderTop: "1px solid var(--admin-border)", paddingTop: 16 }}>
+            <Typography.Text strong style={{ fontSize: 13 }}>Aspect Ratio Propagation</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              Apply this category&apos;s aspect ratio to related entities after saving.
+            </Typography.Text>
+            <Flex vertical gap={10}>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.apply_aspect_to_products} onChange={(c) => updateField("apply_aspect_to_products", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>Apply to products</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.apply_aspect_to_children} onChange={(c) => updateField("apply_aspect_to_children", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>Apply to direct children</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.set_aspect_default_for_descendants} onChange={(c) => updateField("set_aspect_default_for_descendants", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>Set as default for all descendants</Typography.Text>
+              </Flex>
+            </Flex>
+          </Flex>
 
           {/* Icon */}
           <Flex vertical gap={6}>
