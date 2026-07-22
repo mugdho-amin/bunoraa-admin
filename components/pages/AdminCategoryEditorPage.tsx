@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Select, Switch } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Switch } from "antd";
 import { Upload } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, Eye, ArrowLeft, Check, FolderTree } from "lucide-react";
 import type { BaseKey, BaseRecord } from "@refinedev/core";
 import type { ColumnsType } from "antd/es/table";
+import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 
 type CategoryRecord = BaseRecord & {
@@ -593,15 +594,6 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const parentOptions = useMemo(() => {
-    if (action === "edit") {
-      return categories
-        .filter((c) => String(c.id) !== String(id))
-        .map((c) => ({ value: c.id, label: `${"  ".repeat(c.depth ?? 0)}${c.name}` }));
-    }
-    return categories.map((c) => ({ value: c.id, label: `${"  ".repeat(c.depth ?? 0)}${c.name}` }));
-  }, [categories, action, id]);
-
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = "Name is required";
@@ -730,18 +722,12 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                 Parent Category
               </Typography.Text>
-              <Select
-                allowClear
-                showSearch
+              <CategoryTreeSelect
+                categories={categories as unknown as CategoryNode[]}
+                value={form.parent_id ? [form.parent_id] : []}
+                onChange={(ids) => updateField("parent_id", ids[0] ?? null)}
+                multiple={false}
                 placeholder="None (top-level)"
-                value={form.parent_id}
-                onChange={(val) => updateField("parent_id", val)}
-                options={parentOptions}
-                filterOption={(input, option) =>
-                  (option?.label as string ?? "").toLowerCase().includes(input.toLowerCase())
-                }
-                style={{ width: "100%" }}
-                size="large"
               />
             </Flex>
 
