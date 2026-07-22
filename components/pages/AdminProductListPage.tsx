@@ -457,11 +457,11 @@ export function AdminProductListPage() {
                 if (s.order && s.field) {
                   setSortField(String(s.field));
                   setSortOrder(s.order === "ascend" ? "asc" : "desc");
+                  setPage(1);
                 } else {
                   setSortField("created_at");
                   setSortOrder("desc");
                 }
-                setPage(1);
               }}
               onRow={(record) => ({
                 onDoubleClick: () => router.push(`/catalog/products/edit/${record.id}`),

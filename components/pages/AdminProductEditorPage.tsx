@@ -445,7 +445,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const handleSaveMenuClick: MenuProps['onClick'] = ({ key }) => {
     if (key === 'schedule') {
-      const next = new Date(Date.now() + 3600000);
+      const next = new Date();
+      next.setDate(next.getDate() + 1);
+      next.setHours(0, 0, 0, 0);
       const pad = (n: number) => String(n).padStart(2, '0');
       setSchedulePickDate(`${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`);
       setScheduleOpen(true);
@@ -841,7 +843,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           <Space.Compact>
             <Button type="primary" onClick={() => {
               if (saveAction === 'schedule' && !form.publish_from) {
-                const next = new Date(Date.now() + 3600000);
+                const next = new Date();
+                next.setDate(next.getDate() + 1);
+                next.setHours(0, 0, 0, 0);
                 const pad = (n: number) => String(n).padStart(2, '0');
                 setSchedulePickDate(`${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(next.getHours())}:${pad(next.getMinutes())}`);
                 setScheduleOpen(true); return;
@@ -1183,7 +1187,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.price ?? ""}
@@ -1214,7 +1218,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.sale_price ?? ""}
@@ -1225,7 +1229,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.compare_at_price ?? ""}
@@ -1363,7 +1367,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.price ?? ""}
@@ -1389,7 +1393,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.sale_price ?? ""}
@@ -1400,7 +1404,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={4}>
                 <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
                   step="0.01"
                   value={form.compare_at_price ?? ""}
@@ -1878,7 +1882,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price</label>
                                     <input
-                                      type="number"
+                                      type="text"
                                       inputMode="decimal"
                                       step="0.01"
                                       value={variant.price ?? ""}
@@ -1889,7 +1893,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
                                     <input
-                                      type="number"
+                                      type="text"
                                       inputMode="decimal"
                                       step="0.01"
                                       value={variant.compareAt ?? ""}
