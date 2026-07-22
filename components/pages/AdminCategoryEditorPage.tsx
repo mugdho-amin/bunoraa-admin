@@ -178,12 +178,14 @@ function CategoryListView() {
       dataIndex: "slug",
       key: "slug",
       ellipsis: true,
+      sorter: true,
       render: (slug: string) => <Typography.Text code style={{ fontSize: 11 }}>{slug}</Typography.Text>,
     },
     {
       title: "Parent",
       dataIndex: "parent_name",
       key: "parent_name",
+      sorter: true,
       responsive: ["md" as const],
       render: (val: string | null) => val ? <Tag bordered={false}>{val}</Tag> : <Typography.Text type="secondary" style={{ fontSize: 12 }}>—</Typography.Text>,
     },
@@ -192,6 +194,7 @@ function CategoryListView() {
       dataIndex: "depth",
       key: "depth",
       width: 70,
+      sorter: true,
       responsive: ["lg" as const],
       render: (d: number) => <Tag bordered={false} color="default">{d}</Tag>,
     },
@@ -209,6 +212,7 @@ function CategoryListView() {
       dataIndex: "children_count",
       key: "children_count",
       width: 110,
+      sorter: true,
       responsive: ["md" as const],
       render: (count: number) => <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted)" }}>{count ?? 0}</Typography.Text>,
     },
@@ -226,9 +230,23 @@ function CategoryListView() {
       dataIndex: "is_active",
       key: "is_active",
       width: 80,
+      sorter: true,
       render: (active: boolean) => (
         <Tag color={active ? "green" : "default"} bordered={false}>
           {active ? "Yes" : "No"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Featured",
+      dataIndex: "is_featured",
+      key: "is_featured",
+      width: 90,
+      sorter: true,
+      responsive: ["md" as const],
+      render: (featured: boolean) => (
+        <Tag color={featured ? "purple" : "default"} bordered={false}>
+          {featured ? "Yes" : "No"}
         </Tag>
       ),
     },
