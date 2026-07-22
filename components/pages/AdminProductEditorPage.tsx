@@ -236,7 +236,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             }
             return g;
           });
-          return { ...prev, gallery: updated };
+          const serverPrimaryImage = (data as Record<string, unknown>).primary_image as string | undefined;
+          return {
+            ...prev,
+            gallery: updated,
+            primaryImage: serverPrimaryImage || prev.primaryImage,
+          };
         });
       }
     },
