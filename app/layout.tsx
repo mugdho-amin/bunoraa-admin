@@ -26,8 +26,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Bunoraa",
-    template: "%s | Bunoraa",
+    default: "Bunoraa Admin",
+    template: "%s | Bunoraa Admin",
   },
   description: "Enterprise-grade administrative workspace for Bunoraa operations.",
   applicationName: "Bunoraa",
