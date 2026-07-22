@@ -761,33 +761,6 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               />
             </Flex>
 
-            <Flex vertical gap={12} style={{ borderTop: "1px solid var(--admin-border)", paddingTop: 16 }}>
-              <Typography.Text strong style={{ fontSize: 13 }}>Status &amp; Flags</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Control category visibility and featured status.
-              </Typography.Text>
-              <Flex vertical gap={10}>
-                <Flex align="center" gap={8}>
-                  <Switch checked={form.is_active} onChange={(c) => updateField("is_active", c)} />
-                  <Typography.Text style={{ fontSize: 13 }}>
-                    {form.is_active ? "Active — Category is visible on the storefront" : "Active — Category is hidden"}
-                  </Typography.Text>
-                </Flex>
-                <Flex align="center" gap={8}>
-                  <Switch checked={form.is_visible} onChange={(c) => updateField("is_visible", c)} />
-                  <Typography.Text style={{ fontSize: 13 }}>
-                    {form.is_visible ? "Visible — Category appears in navigation and listings" : "Visible — Category is hidden from navigation"}
-                  </Typography.Text>
-                </Flex>
-                <Flex align="center" gap={8}>
-                  <Switch checked={form.is_featured} onChange={(c) => updateField("is_featured", c)} />
-                  <Typography.Text style={{ fontSize: 13 }}>
-                    {form.is_featured ? "Featured — Featured on storefront highlights" : "Featured — Not featured"}
-                  </Typography.Text>
-                </Flex>
-              </Flex>
-            </Flex>
-
             <Flex vertical gap={6}>
               <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                 Category Type
@@ -831,16 +804,6 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               Image URL
             </Typography.Text>
             <Flex gap={8}>
-              <input
-                value={form.image}
-                onChange={(e) => updateField("image", e.target.value)}
-                placeholder="https://example.com/category-image.jpg"
-                style={{
-                  flex: 1, padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
-              />
               <label style={{ cursor: "pointer", display: "flex" }}>
                 <Button icon={<Upload size={14} />} style={{ height: 44, borderRadius: 12 }}>Upload</Button>
                 <input
@@ -862,6 +825,16 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
                   }}
                 />
               </label>
+              <input
+                value={form.image}
+                onChange={(e) => updateField("image", e.target.value)}
+                placeholder="https://example.com/category-image.jpg"
+                style={{
+                  flex: 1, padding: "10px 16px", borderRadius: 12,
+                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
+                  background: "var(--admin-input-bg)",
+                }}
+              />
             </Flex>
             {form.image && (
               <Image src={form.image} alt="Category preview" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 4 }} preview={false} />
@@ -939,6 +912,34 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               </select>
             </Flex>
           </div>
+
+          {/* Status & Flags */}
+          <Flex vertical gap={12} style={{ borderTop: "1px solid var(--admin-border)", paddingTop: 16 }}>
+            <Typography.Text strong style={{ fontSize: 13 }}>Status &amp; Flags</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              Control category visibility and featured status.
+            </Typography.Text>
+            <Flex vertical gap={10}>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_active} onChange={(c) => updateField("is_active", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>
+                  {form.is_active ? "Active — Category is visible on the storefront" : "Active — Category is hidden"}
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_visible} onChange={(c) => updateField("is_visible", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>
+                  {form.is_visible ? "Visible — Category appears in navigation and listings" : "Visible — Category is hidden from navigation"}
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.is_featured} onChange={(c) => updateField("is_featured", c)} />
+                <Typography.Text style={{ fontSize: 13 }}>
+                  {form.is_featured ? "Featured — Featured on storefront highlights" : "Featured — Not featured"}
+                </Typography.Text>
+              </Flex>
+            </Flex>
+          </Flex>
 
           {/* Aspect Ratio Propagation */}
           <Flex vertical gap={12} style={{ borderTop: "1px solid var(--admin-border)", paddingTop: 16 }}>
