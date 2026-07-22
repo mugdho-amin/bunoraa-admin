@@ -841,6 +841,23 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
             )}
           </Flex>
 
+          {/* Icon */}
+          <Flex vertical gap={6}>
+            <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
+              Icon CSS Class
+            </Typography.Text>
+            <input
+              value={form.icon}
+              onChange={(e) => updateField("icon", e.target.value)}
+              placeholder="e.g. fa-tag, material-icons"
+              style={{
+                width: "100%", padding: "10px 16px", borderRadius: 12,
+                border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
+                background: "var(--admin-input-bg)",
+              }}
+            />
+          </Flex>
+
           {/* Aspect Ratio */}
           <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
             <Flex vertical gap={6}>
@@ -961,23 +978,6 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
                 <Typography.Text style={{ fontSize: 13 }}>Set as default for all descendants</Typography.Text>
               </Flex>
             </Flex>
-          </Flex>
-
-          {/* Icon */}
-          <Flex vertical gap={6}>
-            <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-              Icon CSS Class
-            </Typography.Text>
-            <input
-              value={form.icon}
-              onChange={(e) => updateField("icon", e.target.value)}
-              placeholder="e.g. fa-tag, material-icons"
-              style={{
-                width: "100%", padding: "10px 16px", borderRadius: 12,
-                border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                background: "var(--admin-input-bg)",
-              }}
-            />
           </Flex>
 
           {/* SEO */}
