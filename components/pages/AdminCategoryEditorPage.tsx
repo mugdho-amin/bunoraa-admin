@@ -568,6 +568,9 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_height: existing.aspect_height != null ? Number(existing.aspect_height) : null,
         aspect_unit: existing.aspect_unit ?? "ratio",
         category_type: existing.category_type ?? "STANDARD",
+        apply_aspect_to_products: false,
+        apply_aspect_to_children: false,
+        set_aspect_default_for_descendants: false,
       });
     } else if (action === "create") {
       formInitialized.current = true;
