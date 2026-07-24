@@ -511,3 +511,343 @@ pre { white-space: pre-wrap; word-break: break-word; }
   display: flex;
   flex-direction: column;
 }
+
+/* ── Full Screen Loader ── */
+.admin-loader-root {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(15, 118, 110, 0.10), transparent 30%),
+    radial-gradient(circle at 80% 20%, rgba(29, 78, 216, 0.10), transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(15, 118, 110, 0.06), transparent 30%);
+  animation: loaderBgPulse 4s ease-in-out infinite alternate;
+}
+
+[data-theme="dark"] .admin-loader-root {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(15, 118, 110, 0.12), transparent 30%),
+    radial-gradient(circle at 80% 20%, rgba(29, 78, 216, 0.12), transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(15, 118, 110, 0.08), transparent 30%);
+}
+
+@keyframes loaderBgPulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.admin-loader-card {
+  text-align: center;
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.admin-loader-ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 20px;
+}
+
+.admin-loader-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.admin-loader-arc {
+  animation: loaderSpin 1.4s ease-in-out infinite, loaderHue 3s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes loaderSpin {
+  0% { stroke-dashoffset: 180; transform: rotate(0deg); }
+  50% { stroke-dashoffset: 50; transform: rotate(180deg); }
+  100% { stroke-dashoffset: 180; transform: rotate(360deg); }
+}
+
+@keyframes loaderHue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.admin-loader-logo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0f766e, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: loaderLogoPulse 2s ease-in-out infinite;
+}
+
+@keyframes loaderLogoPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.85; }
+}
+
+.admin-loader-title {
+  margin: 0 0 16px !important;
+  background: linear-gradient(135deg, #0f766e, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.03em;
+}
+
+.admin-loader-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.admin-loader-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--admin-muted);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Notification Dropdown ── */
+.admin-notif-item {
+  transition: all 0.15s ease;
+}
+.admin-notif-item:hover {
+  background: var(--admin-hover-bg) !important;
+}
+
+.admin-notif-unread {
+  position: relative;
+}
+.admin-notif-unread::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--admin-brand);
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── Variant Cards ── */
+.admin-variant-card {
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  border: 1px solid var(--admin-border);
+  overflow: hidden;
+}
+.admin-variant-card:hover {
+  border-color: var(--admin-brand-alpha-15);
+  box-shadow: 0 2px 12px rgba(15, 118, 110, 0.08);
+}
+
+/* ── Editor section label ── */
+.admin-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--admin-muted);
+  font-weight: 500;
+}
+
+/* ── Input base styling ── */
+.admin-input {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-input-border);
+  font-size: 14px;
+  outline: none;
+  background: var(--admin-input-bg);
+  color: var(--admin-input-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.admin-input:focus {
+  border-color: var(--admin-brand);
+  box-shadow: 0 0 0 3px var(--admin-brand-alpha-08);
+}
+.admin-input.error {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-light);
+}
+.admin-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.1);
+}
+
+.admin-textarea {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-input-border);
+  font-size: 14px;
+  outline: none;
+  background: var(--admin-input-bg);
+  color: var(--admin-input-color);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.admin-textarea:focus {
+  border-color: var(--admin-brand);
+  box-shadow: 0 0 0 3px var(--admin-brand-alpha-08);
+}
+
+.admin-select {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-input-border);
+  font-size: 14px;
+  outline: none;
+  background: var(--admin-input-bg);
+  color: var(--admin-input-color);
+  transition: border-color 0.15s ease;
+}
+
+/* ── Type toggle pills ── */
+.admin-type-pill {
+  padding: 8px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.admin-type-pill:first-child {
+  border-radius: 12px 0 0 12px;
+}
+.admin-type-pill:last-child {
+  border-radius: 0 12px 12px 0;
+}
+.admin-type-pill.active {
+  background: var(--admin-brand);
+  color: var(--admin-text-on-brand);
+}
+.admin-type-pill:not(.active) {
+  background: transparent;
+  color: var(--admin-muted);
+}
+.admin-type-pill:not(.active):hover {
+  background: var(--admin-hover-brand);
+}
+
+/* ── Toggle switch pill ── */
+.admin-toggle-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.admin-toggle-chip.active {
+  background: var(--admin-brand);
+  color: var(--admin-text-on-brand);
+  border-color: var(--admin-brand);
+}
+.admin-toggle-chip:not(.active) {
+  background: transparent;
+  color: var(--admin-muted);
+  border-color: var(--admin-input-border);
+}
+.admin-toggle-chip:hover:not(.active) {
+  border-color: var(--admin-brand);
+  color: var(--admin-brand);
+}
+
+/* ── Auto-save indicator ── */
+.admin-auto-save {
+  font-size: 11px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
+.admin-auto-save--saving {
+  color: var(--admin-muted);
+}
+.admin-auto-save--saved {
+  color: var(--admin-success);
+}
+.admin-auto-save--error,
+.admin-auto-save--failed {
+  color: var(--admin-danger);
+}
+
+/* ── Color swatch ── */
+.admin-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--admin-input-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.admin-color-swatch:hover {
+  transform: scale(1.15);
+}
+.admin-color-swatch.selected {
+  border: 2px solid var(--admin-brand);
+  box-shadow: 0 0 0 2px var(--admin-brand-alpha-15);
+}
+
+/* ── Header action button ── */
+.admin-header-btn {
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--admin-muted);
+  transition: all 0.15s ease;
+}
+.admin-header-btn:hover {
+  background: var(--admin-hover-brand) !important;
+  color: var(--admin-brand) !important;
+}
+
+.admin-user-trigger {
+  width: auto !important;
+  border-radius: 12px !important;
+}
+.admin-user-trigger:hover {
+  background: var(--admin-hover-bg) !important;
+  color: var(--admin-ink-secondary) !important;
+}
+
+/* ── Section header for collapsible cards ── */
+.admin-section-header {
+  cursor: pointer;
+  padding: 16px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.admin-section-header:hover {
+  background: var(--admin-hover-bg);
+  border-radius: 12px 12px 0 0;
+}
+
+.admin-section-body {
+  padding: 0 20px 20px;
+}

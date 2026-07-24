@@ -26,6 +26,8 @@ import {
   RefreshCcw,
   Search,
   Sun,
+  Settings,
+  User,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
@@ -166,25 +168,49 @@ export function AdminShell({ route, children }: AdminShellProps) {
     router.push(key);
   };
 
+  const nameInitial = bootstrap?.identity.full_name?.slice(0, 1).toUpperCase() || "A";
+  const userName = bootstrap?.identity.full_name || "Admin";
+  const userEmail = bootstrap?.identity.email;
+
   const userMenu = {
     items: [
+      {
+        key: "profile",
+        icon: <User size={16} />,
+        label: (
+          <Flex vertical gap={2} style={{ minWidth: 160, paddingBlock: 4 }}>
+            <span style={{ fontWeight: 600, fontSize: 13 }}>{userName}</span>
+            <span style={{ fontSize: 11, color: "var(--admin-muted)" }}>{userEmail || ""}</span>
+          </Flex>
+        ),
+        disabled: true,
+        style: { cursor: "default", padding: "4px 12px", background: "none !important" },
+      },
+      { type: "divider" as const },
       {
         key: "command",
         icon: <Search size={16} />,
         label: "Command palette",
         onClick: () => setCommandOpen(true),
       },
+      {
+        key: "settings",
+        icon: <Settings size={16} />,
+        label: "Settings",
+        disabled: true,
+      },
       { type: "divider" as const },
       {
         key: "refresh",
         icon: <RefreshCcw size={16} />,
-        label: "Refresh bootstrap",
+        label: "Refresh data",
         onClick: () => void refreshBootstrap(),
       },
       {
         key: "logout",
         icon: <LogOut size={16} />,
         label: "Sign out",
+        danger: true,
         onClick: () => {
           clearAuthState();
           window.location.href = "/login";
@@ -192,10 +218,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
       },
     ],
   };
-
-  const nameInitial = bootstrap?.identity.full_name?.slice(0, 1).toUpperCase() || "A";
-  const userName = bootstrap?.identity.full_name || "Admin";
-  const userEmail = bootstrap?.identity.email;
 
   const sideMenu = (
     <Flex vertical style={{ height: "100%" }}>
@@ -277,41 +299,41 @@ export function AdminShell({ route, children }: AdminShellProps) {
             </Button>
           </Dropdown>
         ) : (
-          <Flex align="center" gap={10}>
-            <Dropdown menu={userMenu} trigger={["click"]}>
+          <Dropdown menu={userMenu} trigger={["click"]} placement="topLeft">
+            <Flex align="center" gap={10} style={{ cursor: "pointer", padding: "2px 0" }}>
               <Avatar
                 size={36}
                 shape="circle"
                 style={{
                   background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
-                  cursor: "pointer",
                   flexShrink: 0,
+                  lineHeight: "36px", fontSize: 15, fontWeight: 700,
                 }}
               >
                 {nameInitial}
               </Avatar>
-            </Dropdown>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontWeight: 600,
-                  fontSize: 13,
-                  lineHeight: 1.3,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {userName}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    fontSize: 13,
+                    lineHeight: 1.3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {userName}
+                </div>
+                <Typography.Text
+                  type="secondary"
+                  style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
+                  {userEmail}
+                </Typography.Text>
               </div>
-              <Typography.Text
-                type="secondary"
-                style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-              >
-                {userEmail}
-      </Typography.Text>
-            </div>
-          </Flex>
+            </Flex>
+          </Dropdown>
         )}
       </div>
     </Flex>
@@ -389,7 +411,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 </Flex>
               </Flex>
 
-              <Space size={8} wrap>
+              <Space size={4} wrap>
                 <Tooltip title={
                   mode === "light" ? "Switch to dark mode" :
                   mode === "dark" ? "Switch to system theme" :
@@ -400,22 +422,31 @@ export function AdminShell({ route, children }: AdminShellProps) {
                     icon={mode === "light" ? <Sun size={18} /> : mode === "dark" ? <Moon size={18} /> : <Monitor size={18} />}
                     onClick={toggleTheme}
                     aria-label="Toggle theme"
-                    style={{ color: "var(--admin-muted)", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    className="admin-header-btn"
                   />
                 </Tooltip>
                 <NotificationBell />
-                <Dropdown menu={userMenu} trigger={["click"]}>
+                <Dropdown menu={userMenu} trigger={["click"]} placement="bottomRight">
                   <Button
                     type="text"
-                    style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                    className="admin-header-btn admin-user-trigger"
+                    style={{ gap: 8, width: "auto", paddingInline: 8 }}
                   >
                     <Avatar
-                      size={28}
+                      size={26}
                       shape="circle"
-                      style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)", borderRadius: "50%", overflow: "hidden", lineHeight: "28px", fontSize: 15, fontWeight: 700 }}
+                      style={{
+                        background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
+                        lineHeight: "26px", fontSize: 13, fontWeight: 700, flexShrink: 0,
+                      }}
                     >
                       {nameInitial}
                     </Avatar>
+                    {isDesktop && (
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "var(--admin-ink-secondary)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {userName}
+                      </span>
+                    )}
                   </Button>
                 </Dropdown>
               </Space>

@@ -392,73 +392,73 @@ function CategoryShowView({ id }: { id: BaseKey }) {
         <Flex vertical gap={16}>
           <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Name</Typography.Text>
+              <Typography.Text className="admin-field-label">Name</Typography.Text>
               <Typography.Text strong>{record.name}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Slug</Typography.Text>
+              <Typography.Text className="admin-field-label">Slug</Typography.Text>
               <Typography.Text code>{record.slug}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Parent</Typography.Text>
+              <Typography.Text className="admin-field-label">Parent</Typography.Text>
               <Typography.Text>{record.parent_name ?? <Typography.Text type="secondary">—</Typography.Text>}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Depth</Typography.Text>
+              <Typography.Text className="admin-field-label">Depth</Typography.Text>
               <Typography.Text>{record.depth ?? 0}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Category Type</Typography.Text>
+              <Typography.Text className="admin-field-label">Category Type</Typography.Text>
               <Tag bordered={false}>{record.category_type ?? "standard"}</Tag>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Sort Order</Typography.Text>
+              <Typography.Text className="admin-field-label">Sort Order</Typography.Text>
               <Typography.Text>{record.sort_order ?? 0}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Subcategories</Typography.Text>
+              <Typography.Text className="admin-field-label">Subcategories</Typography.Text>
               <Typography.Text>{record.children_count ?? 0}</Typography.Text>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Active</Typography.Text>
+              <Typography.Text className="admin-field-label">Active</Typography.Text>
               <Tag color={record.is_active ? "green" : "default"}>{record.is_active ? "Yes" : "No"}</Tag>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Visible</Typography.Text>
+              <Typography.Text className="admin-field-label">Visible</Typography.Text>
               <Tag color={record.is_visible ? "blue" : "default"}>{record.is_visible ? "Yes" : "No"}</Tag>
             </Flex>
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Featured</Typography.Text>
+              <Typography.Text className="admin-field-label">Featured</Typography.Text>
               <Tag color={record.is_featured ? "purple" : "default"}>{record.is_featured ? "Yes" : "No"}</Tag>
             </Flex>
             {record.aspect_ratio && (
               <Flex vertical gap={4}>
-                <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Aspect Ratio</Typography.Text>
+                <Typography.Text className="admin-field-label">Aspect Ratio</Typography.Text>
                 <Typography.Text>{record.aspect_ratio}</Typography.Text>
               </Flex>
             )}
             {record.aspect_width != null && record.aspect_height != null && (
               <Flex vertical gap={4}>
-                <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Custom Dimensions</Typography.Text>
+                <Typography.Text className="admin-field-label">Custom Dimensions</Typography.Text>
                 <Typography.Text>{record.aspect_width} × {record.aspect_height} {record.aspect_unit ?? "ratio"}</Typography.Text>
               </Flex>
             )}
           </div>
           {record.image && (
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Image</Typography.Text>
+              <Typography.Text className="admin-field-label">Image</Typography.Text>
               <Image src={record.image} alt={record.name} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: "cover" }} preview={false} />
             </Flex>
           )}
           {record.description && (
             <Flex vertical gap={4}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Description</Typography.Text>
+              <Typography.Text className="admin-field-label">Description</Typography.Text>
               <Typography.Text>{record.description}</Typography.Text>
             </Flex>
           )}
           {(record.meta_title || record.meta_description) && (
             <Flex vertical gap={8} style={{ borderTop: "1px solid var(--admin-border)", paddingTop: 12 }}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>SEO</Typography.Text>
+              <Typography.Text className="admin-field-label">SEO</Typography.Text>
               {record.meta_title && (
                 <Flex vertical gap={2}>
                   <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted)" }}>Meta Title</Typography.Text>
@@ -684,44 +684,30 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         <Flex vertical gap={20}>
           <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Name *
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Name *</Typography.Text>
               <input
                 value={form.name}
                 onChange={(e) => {
                   updateField("name", e.target.value);
                   if (!slugManuallyEdited[0]) updateField("slug", slugify(e.target.value));
                 }}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: `1px solid ${errors.name ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                  fontSize: 14, outline: "none", background: errors.name ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
-                }}
+                className={`admin-input${errors.name ? " error" : ""}`}
               />
               {errors.name && <Typography.Text style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{errors.name}</Typography.Text>}
             </Flex>
 
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Slug *
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Slug *</Typography.Text>
               <input
                 value={form.slug}
                 onChange={(e) => { slugManuallyEdited[1](true); updateField("slug", e.target.value); }}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: `1px solid ${errors.slug ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                  fontSize: 14, outline: "none", background: errors.slug ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
-                }}
+                className={`admin-input${errors.slug ? " error" : ""}`}
               />
               {errors.slug && <Typography.Text style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{errors.slug}</Typography.Text>}
             </Flex>
 
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Parent Category
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Parent Category</Typography.Text>
               <CategoryTreeSelect
                 categories={categories as unknown as CategoryNode[]}
                 value={form.parent_id ? [form.parent_id] : []}
@@ -732,33 +718,21 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
             </Flex>
 
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Sort Order
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Sort Order</Typography.Text>
               <input
                 type="number"
                 value={form.sort_order}
                 onChange={(e) => updateField("sort_order", Number(e.target.value))}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-input"
               />
             </Flex>
 
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Category Type
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Category Type</Typography.Text>
               <select
                 value={form.category_type}
                 onChange={(e) => updateField("category_type", e.target.value)}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-select"
               >
                 <option value="STANDARD">Standard Clothing</option>
                 <option value="LIFESTYLE">Lifestyle & Home</option>
@@ -769,26 +743,18 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
           </div>
 
           <Flex vertical gap={6}>
-            <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-              Description
-            </Typography.Text>
+            <Typography.Text className="admin-field-label">Description</Typography.Text>
             <textarea
               value={form.description}
               onChange={(e) => updateField("description", e.target.value)}
               rows={4}
-              style={{
-                width: "100%", padding: "10px 16px", borderRadius: 12,
-                border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical",
-                background: "var(--admin-input-bg)",
-              }}
+              className="admin-textarea"
             />
           </Flex>
 
           {/* Image */}
           <Flex vertical gap={6}>
-            <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-              Image URL
-            </Typography.Text>
+            <Typography.Text className="admin-field-label">Image URL</Typography.Text>
             <Flex gap={8}>
               <label style={{ cursor: "pointer", display: "flex" }}>
                 <Button icon={<Upload size={14} />} style={{ height: 44, borderRadius: 12 }}>Upload</Button>
@@ -815,11 +781,8 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
                 value={form.image}
                 onChange={(e) => updateField("image", e.target.value)}
                 placeholder="https://example.com/category-image.jpg"
-                style={{
-                  flex: 1, padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-input"
+                style={{ flex: 1 }}
               />
             </Flex>
             {form.image && (
@@ -829,82 +792,52 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
 
           {/* Icon */}
           <Flex vertical gap={6}>
-            <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-              Icon CSS Class
-            </Typography.Text>
+            <Typography.Text className="admin-field-label">Icon CSS Class</Typography.Text>
             <input
               value={form.icon}
               onChange={(e) => updateField("icon", e.target.value)}
               placeholder="e.g. fa-tag, material-icons"
-              style={{
-                width: "100%", padding: "10px 16px", borderRadius: 12,
-                border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                background: "var(--admin-input-bg)",
-              }}
+              className="admin-input"
             />
           </Flex>
 
           {/* Aspect Ratio */}
           <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Aspect Ratio
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Aspect Ratio</Typography.Text>
               <input
                 value={form.aspect_ratio}
                 onChange={(e) => updateField("aspect_ratio", e.target.value)}
                 placeholder="e.g. 4:5, 1:1, original"
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-input"
               />
             </Flex>
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Aspect Width
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Aspect Width</Typography.Text>
               <input
                 type="number"
                 step="0.0001"
                 value={form.aspect_width ?? ""}
                 onChange={(e) => updateField("aspect_width", e.target.value ? Number(e.target.value) : null)}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-input"
               />
             </Flex>
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Aspect Height
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Aspect Height</Typography.Text>
               <input
                 type="number"
                 step="0.0001"
                 value={form.aspect_height ?? ""}
                 onChange={(e) => updateField("aspect_height", e.target.value ? Number(e.target.value) : null)}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-input"
               />
             </Flex>
             <Flex vertical gap={6}>
-              <Typography.Text style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Aspect Unit
-              </Typography.Text>
+              <Typography.Text className="admin-field-label">Aspect Unit</Typography.Text>
               <select
                 value={form.aspect_unit}
                 onChange={(e) => updateField("aspect_unit", e.target.value)}
-                style={{
-                  width: "100%", padding: "10px 16px", borderRadius: 12,
-                  border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none",
-                  background: "var(--admin-input-bg)",
-                }}
+                className="admin-select"
               >
                 <option value="ratio">Ratio (unitless)</option>
                 <option value="in">Inches</option>
@@ -973,42 +906,36 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
               Leave blank to derive from category name and description.
             </Typography.Text>
             <Flex vertical gap={4}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Meta Title
-              </label>
+              <label className="admin-field-label">Meta Title</label>
               <input
                 value={form.meta_title}
                 onChange={(e) => updateField("meta_title", e.target.value)}
                 placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
                 maxLength={255}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                className="admin-input"
               />
               <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>{(form.meta_title || form.name || "").length}/255</span>
             </Flex>
             <Flex vertical gap={4}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Meta Description
-              </label>
+              <label className="admin-field-label">Meta Description</label>
               <textarea
                 value={form.meta_description}
                 onChange={(e) => updateField("meta_description", e.target.value)}
                 placeholder={form.description || "Brief description for search engines (~150–160 characters)"}
                 rows={3}
                 maxLength={500}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical", background: "var(--admin-input-bg)" }}
+                className="admin-textarea"
               />
               <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>{(form.meta_description || form.description || "").length}/500</span>
             </Flex>
             <Flex vertical gap={4}>
-              <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                Meta Keywords
-              </label>
+              <label className="admin-field-label">Meta Keywords</label>
               <input
                 value={form.meta_keywords}
                 onChange={(e) => updateField("meta_keywords", e.target.value)}
                 placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
                 maxLength={500}
-                style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                className="admin-input"
               />
             </Flex>
           </Flex>

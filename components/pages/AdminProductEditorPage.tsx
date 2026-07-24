@@ -834,12 +834,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         </Flex>
         <Flex align="center" gap={8}>
           {autoSave.status !== "idle" && (
-            <span style={{
-              fontSize: 11, fontWeight: 500,
-              color: autoSave.status === "saving" ? "var(--admin-muted)"
-                : autoSave.status === "saved" ? "var(--admin-success)"
-                : "var(--admin-danger)",
-            }}>
+            <span className={`admin-auto-save admin-auto-save--${autoSave.status}`}>
               {autoSave.status === "saving" ? "Saving draft..."
                 : autoSave.status === "saved" ? "Draft saved"
                 : "Draft save failed"}
@@ -871,21 +866,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         <Flex align="center" gap={16} wrap="wrap">
           <div style={{ display: "flex", borderRadius: 12, border: "1px solid var(--admin-input-border)", overflow: "hidden" }}>
             <button onClick={() => { if (hasVariants) toggleVariants(); }}
-              style={{
-                padding: "8px 20px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em",
-                border: "none", cursor: "pointer", transition: "all 0.15s",
-                background: !hasVariants ? "var(--admin-brand)" : "transparent",
-                color: !hasVariants ? "var(--admin-text-on-brand)" : "var(--admin-muted)",
-              }}>
+              className={`admin-type-pill${!hasVariants ? " active" : ""}`}>
               Simple Product
             </button>
             <button onClick={() => { if (!hasVariants) toggleVariants(); }}
-              style={{
-                padding: "8px 20px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.2em",
-                border: "none", cursor: "pointer", transition: "all 0.15s",
-                background: hasVariants ? "var(--admin-brand)" : "transparent",
-                color: hasVariants ? "var(--admin-text-on-brand)" : "var(--admin-muted)",
-              }}>
+              className={`admin-type-pill${hasVariants ? " active" : ""}`}>
               Has Variants
             </button>
           </div>
@@ -903,37 +888,28 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Name *</label>
+                <label className="admin-field-label">Name *</label>
                 <input value={form.name} onChange={(e) => handleNameChange(e.target.value)}
-                  style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["name"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["name"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
-                  }} />
+                  className={`admin-input${fieldErrors["name"] ? " error" : ""}`} />
                 {fieldErrors["name"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["name"]}</span>}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Slug *</label>
+                <label className="admin-field-label">Slug *</label>
                 <input value={form.slug} onChange={(e) => { slugManuallyEdited.current = true; updateField("slug", e.target.value); }}
                   onFocus={() => slugManuallyEdited.current = true}
-                  style={{
-                    width: "100%", padding: "10px 16px", borderRadius: 12, border: `1px solid ${fieldErrors["slug"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                    fontSize: 14, outline: "none", background: fieldErrors["slug"] ? "var(--admin-danger-light)" : "var(--admin-input-bg)",
-                  }} />
+                  className={`admin-input${fieldErrors["slug"] ? " error" : ""}`} />
                 {fieldErrors["slug"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["slug"]}</span>}
               </Flex>
             </div>
             {!hasVariants && (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU</label>
+                  <label className="admin-field-label">SKU</label>
                   <div style={{ position: "relative" }}>
                     <input type="text" value={form.variants[0]?.sku ?? ""}
                       onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
-                      style={{
-                        width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12,
-                        border: `1px solid ${fieldErrors["variants.0.sku"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                        fontSize: 14, outline: "none",
-                      }} />
+                      className={`admin-input${fieldErrors["variants.0.sku"] ? " error" : ""}`}
+                      style={{ paddingRight: 40 }} />
                     <button onClick={() => generateSingleSku(0)}
                       style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                       <WandSparkles size={14} />
@@ -942,11 +918,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
                 </Flex>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Barcode / EAN</label>
+                  <label className="admin-field-label">Barcode / EAN</label>
                   <div style={{ position: "relative" }}>
                     <input type="text" value={form.variants[0]?.barcode ?? ""}
                       onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                      style={{ width: "100%", padding: "10px 40px 10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                      className="admin-input"
+                      style={{ paddingRight: 40 }} />
                     <button onClick={() => generateSingleBarcode(0)}
                       style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                       <WandSparkles size={14} />
@@ -957,16 +934,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             )}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Description</label>
+                <label className="admin-field-label">Description</label>
                 <textarea value={form.description} onChange={(e) => updateField("description", e.target.value)}
-                  rows={isMobile ? 4 : 5}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }} />
+                  rows={isMobile ? 4 : 5} className="admin-textarea" />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>Short Description</label>
+                <label className="admin-field-label">Short Description</label>
                 <textarea value={form.short_description} onChange={(e) => updateField("short_description", e.target.value)}
-                  rows={isMobile ? 4 : 5}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }} />
+                  rows={isMobile ? 4 : 5} className="admin-textarea" />
               </Flex>
             </div>
           </Card>
@@ -992,10 +967,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   }
                 }}
                   placeholder="https://cdn.bunoraa.com/images/product.jpg"
-                  style={{
-                    width: "100%", padding: "8px 12px", borderRadius: 12, border: `1px solid ${fieldErrors["primaryImage"]  ? "var(--admin-danger)" : "var(--admin-input-border)"}`,
-                    fontSize: 13, outline: "none",
-                  }} />
+                  className={`admin-input${fieldErrors["primaryImage"] ? " error" : ""}`} />
               </div>
               {fieldErrors["primaryImage"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["primaryImage"]}</span>}
               {form.primaryImage && (
@@ -1008,10 +980,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </div>
               )}
               <Flex vertical gap={4} style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Alt Text</label>
+                <label className="admin-field-label">Alt Text</label>
                 <input value={form.primaryImageAlt} onChange={(e) => updateField("primaryImageAlt", e.target.value)}
                   placeholder="Descriptive text for accessibility and SEO"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 13, outline: "none" }} />
+                  className="admin-input" />
               </Flex>
             </Card>
             <Card className="admin-soft-panel" variant="borderless" title="Gallery Images" style={{ flex: "1 1 300px", minWidth: 0 }}>
@@ -1092,7 +1064,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                             });
                           }}
                             placeholder="Alt text"
-                            style={{ width: "100%", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 11, outline: "none", marginTop: 6 }} />
+                            className="admin-input"
+                            style={{ fontSize: 11, padding: "6px 10px", marginTop: 6 }} />
                         </div>
                       </Flex>
                     </div>
@@ -1121,9 +1094,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                      Primary Category *
-                    </label>
+                    <label className="admin-field-label">Primary Category *</label>
                     <CategoryTreeSelect
                       categories={categories}
                       value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
@@ -1137,9 +1108,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </Typography.Text>
                   </Flex>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                      Additional Categories
-                    </label>
+                    <label className="admin-field-label">Additional Categories</label>
                     <CategoryTreeSelect
                       categories={categories}
                       value={form.categoryIds}
@@ -1190,7 +1159,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Listing Price (shown on collections)">
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Price *</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1221,7 +1190,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 )}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Sale Price</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1232,7 +1201,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Compare At</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1243,9 +1212,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Currency</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Currency</label>
                 <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}>
+                  className="admin-select">
                   {CURRENCY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -1254,14 +1223,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               {!hasVariants && (
                 <>
                   <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
-                    <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Stock</label>
+                <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
+                  className="admin-input" />
                   </Flex>
                   <Flex vertical gap={4}>
-                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
-                    <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                      style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em", whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
+                  className="admin-input" />
                   </Flex>
                 </>
               )}
@@ -1303,9 +1272,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                      Primary Category *
-                    </label>
+                    <label className="admin-field-label">Primary Category *</label>
                     <CategoryTreeSelect
                       categories={categories}
                       value={form.primaryCategoryId ? [form.primaryCategoryId] : []}
@@ -1319,9 +1286,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </Typography.Text>
                   </Flex>
                   <Flex vertical gap={6}>
-                    <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                      Additional Categories
-                    </label>
+                    <label className="admin-field-label">Additional Categories</label>
                     <CategoryTreeSelect
                       categories={categories}
                       value={form.categoryIds}
@@ -1370,7 +1335,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Price *</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Price *</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1396,7 +1361,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 {fieldErrors["price"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["price"]}</span>}
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Sale Price</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Sale Price</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1407,7 +1372,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Compare At</label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1418,9 +1383,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 />
               </Flex>
               <Flex vertical gap={4}>
-                <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Currency</label>
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Currency</label>
                 <select value={form.currency} onChange={(e) => updateField("currency", e.target.value)}
-                  style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}>
+                  className="admin-select">
                   {CURRENCY_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
@@ -1428,14 +1393,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Flex>
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", gridColumn: "1 / -1" }}>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Stock</label>
-                  <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Stock</label>
+                <input type="number" value={form.variants[0]?.stock ?? ""} onChange={(e) => updateVariant(0, "stock", e.target.value ? Number(e.target.value) : null)}
+                  className="admin-input" />
                 </Flex>
                 <Flex vertical gap={4}>
-                  <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>Low Stock Threshold</label>
+                  <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em", whiteSpace: "nowrap" }}>Low Stock Threshold</label>
                   <input type="number" value={form.variants[0]?.lowStockThreshold ?? 5} onChange={(e) => updateVariant(0, "lowStockThreshold", Number(e.target.value))}
-                    style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                    className="admin-input" />
                 </Flex>
               </div>
             </div>
@@ -1476,7 +1441,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           {/* SEO + Shipping — side by side */}
           <Flex gap={16} wrap="wrap">
             <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <div onClick={() => setSeoCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+              <div onClick={() => setSeoCollapsed((p) => !p)} className="admin-section-header">
                 <Typography.Text strong style={{ fontSize: 13 }}>Search Engine Optimization</Typography.Text>
                 {seoCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               </div>
@@ -1487,46 +1452,40 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       Leave blank to derive from product name and short description.
                     </Typography.Text>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                        Meta Title
-                      </label>
+                      <label className="admin-field-label">Meta Title</label>
                       <input
                         value={form.meta_title}
                         onChange={(e) => updateField("meta_title", e.target.value)}
                         placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
                         maxLength={255}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                        className="admin-input"
                       />
                       <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
                         {(form.meta_title || form.name || "").length}/255
                       </span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                        Meta Description
-                      </label>
+                      <label className="admin-field-label">Meta Description</label>
                       <textarea
                         value={form.meta_description}
                         onChange={(e) => updateField("meta_description", e.target.value)}
                         placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
                         rows={3}
                         maxLength={500}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", resize: "vertical" }}
+                        className="admin-textarea"
                       />
                       <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
                         {(form.meta_description || form.short_description || "").length}/500
                       </span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
-                        Meta Keywords
-                      </label>
+                      <label className="admin-field-label">Meta Keywords</label>
                       <input
                         value={form.meta_keywords}
                         onChange={(e) => updateField("meta_keywords", e.target.value)}
                         placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
                         maxLength={500}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }}
+                        className="admin-input"
                       />
                     </Flex>
 
@@ -1536,7 +1495,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
             {!hasVariants && (
               <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-                <div onClick={() => setShippingCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+                <div onClick={() => setShippingCollapsed((p) => !p)} className="admin-section-header">
                   <Typography.Text strong style={{ fontSize: 13 }}>Shipping</Typography.Text>
                   {shippingCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                 </div>
@@ -1544,24 +1503,24 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   <div style={{ padding: "0 20px 20px" }}>
                     <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Weight (kg)</label>
+                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Weight (kg)</label>
                         <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                          className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Length (cm)</label>
+                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Length (cm)</label>
                         <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                          className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Width (cm)</label>
+                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Width (cm)</label>
                         <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                          className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Height (cm)</label>
+                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Height (cm)</label>
                         <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none" }} />
+                          className="admin-input" />
                       </Flex>
                     </div>
                     <Flex align="center" gap={8} style={{ marginTop: 12 }}>
@@ -1575,7 +1534,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
             {/* ── Scheduling (always visible) ── */}
             <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <div onClick={() => setScheduleCollapsed((p) => !p)} style={{ cursor: "pointer", padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}>
+              <div onClick={() => setScheduleCollapsed((p) => !p)} className="admin-section-header">
                 <Flex align="center" gap={8}>
                   <Calendar size={16} color="var(--admin-muted)" />
                   <Typography.Text strong style={{ fontSize: 13 }}>Scheduling</Typography.Text>
@@ -1586,28 +1545,28 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 <div style={{ padding: "0 20px 20px" }}>
                   <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>
                         Publish From
                       </label>
                       <input
                         type="datetime-local"
                         value={form.publish_from ? form.publish_from.slice(0, 16) : "2000-01-01T00:00"}
                         onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                        className="admin-input"
                       />
                       <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                         Schedule when the product becomes visible on your store.
                       </Typography.Text>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>
+                      <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>
                         Publish Until
                       </label>
                       <input
                         type="datetime-local"
                         value={form.publish_until ? form.publish_until.slice(0, 16) : "2000-01-01T00:00"}
                         onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
-                        style={{ width: "100%", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--admin-input-border)", fontSize: 14, outline: "none", background: "var(--admin-input-bg)" }}
+                        className="admin-input"
                       />
                       <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                         Automatically unpublish the product after this date.
@@ -1726,10 +1685,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   const status = getStockStatus(variant.stock, variant.lowStockThreshold);
                   return (
                     <div key={displayIdx}
+                      className="admin-variant-card"
                       style={{
                         opacity: variant.enabled ? 1 : 0.5,
                         borderBottom: "1px solid var(--admin-divider)",
-                        transition: "all 0.15s",
+                        borderLeft: "none",
+                        borderRight: "none",
+                        borderTop: "none",
+                        borderRadius: 0,
                       }}
                       draggable
                       onDragStart={() => handleDragStart(displayIdx)}
@@ -1896,7 +1859,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     />
                                   </Flex>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Compare At</label>
+                                    <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Compare At</label>
                                     <input
                                       type="text"
                                       inputMode="decimal"

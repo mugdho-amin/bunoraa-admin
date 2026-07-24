@@ -73,9 +73,7 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
     if (globalWs && globalWs.readyState <= WebSocket.OPEN) return;
     try {
       globalWs = new WebSocket(url);
-      globalWs.onopen = () => {
-        fetchLatestCount();
-      };
+      globalWs.onopen = () => { fetchLatestCount(); };
       globalWs.onmessage = (msg) => {
         try {
           const payload = JSON.parse(msg.data);
@@ -85,22 +83,15 @@ function setupGlobalWebSocket(wsUrlOverride?: string) {
           if (payload.type === "unread_count" && typeof payload.count === "number") {
             notifyListeners(payload.count);
           }
-        } catch (err) {
-          logger.warn("WS notification: parse error", err);
-        }
+        } catch { /* ignore */ }
       };
-      globalWs.onerror = () => {
-        logger.warn("WS notification: connection error");
-      };
+      globalWs.onerror = () => { logger.warn("WS notification: connection error"); };
       globalWs.onclose = () => {
         globalWs = null;
         setTimeout(connect, 5000);
       };
-    } catch (err) {
-      logger.warn("WS notification: connection error", err);
-    }
+    } catch { /* ignore */ }
   }
-
   connect();
 }
 
@@ -154,9 +145,7 @@ export function NotificationBell() {
       try {
         const res = await requestAdminEnvelope<{ count: number }>("/notifications/unread_count/");
         notifyListeners(res.data.count);
-      } catch (err) {
-        logger.error("Failed to fetch latest unread count", err);
-      }
+      } catch { /* ignore */ }
     }, 500);
   }
 
@@ -183,13 +172,25 @@ export function NotificationBell() {
     }
   }, []);
 
+  const priorityColorMap: Record<string, string> = {
+    urgent: "red",
+    high: "orange",
+    normal: "default",
+    low: "default",
+  };
+
   const items = [
     {
       key: "header",
       label: (
-        <Flex align="center" justify="space-between" style={{ minWidth: 320, padding: "8px 4px 4px" }}>
-          <Typography.Text strong style={{ fontSize: 15 }}>Notifications</Typography.Text>
-          <Space size={4}>
+        <Flex align="center" justify="space-between" style={{ minWidth: 320, padding: "12px 16px 4px" }}>
+          <Flex align="center" gap={8}>
+            <Typography.Text strong style={{ fontSize: 15 }}>Notifications</Typography.Text>
+            {unreadCount > 0 && (
+              <Badge count={unreadCount} size="small" style={{ fontSize: 10, lineHeight: "14px" }} />
+            )}
+          </Flex>
+          <Space size={2}>
             {unreadCount > 0 && (
               <Button type="text" size="small" icon={<CheckCheck size={14} />} onClick={(e) => { e.stopPropagation(); markAllRead(); }}>
                 Mark all read
@@ -206,45 +207,49 @@ export function NotificationBell() {
     {
       key: "list",
       label: (
-        <div style={{ maxWidth: "calc(100vw - 32px)", width: 380, maxHeight: "min(400px, calc(100vh - 160px))", overflow: "auto" }}>
+        <div style={{ maxWidth: "calc(100vw - 32px)", width: 400, maxHeight: "min(420px, calc(100vh - 160px))", overflow: "auto" }}>
           {loading ? (
-            <Flex justify="center" style={{ padding: 24 }}><Spin size="small" /></Flex>
+            <Flex justify="center" style={{ padding: 32 }}><Spin /></Flex>
           ) : notifications.length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No new notifications" style={{ margin: "16px 0" }} />
+            <Flex vertical align="center" gap={8} style={{ padding: "32px 16px" }}>
+              <Bell size={32} style={{ color: "var(--admin-muted-light)", opacity: 0.4 }} />
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>No new notifications</Typography.Text>
+            </Flex>
           ) : (
             <List
               dataSource={notifications}
               renderItem={(item) => (
                 <List.Item
+                  className={`admin-notif-item${!item.is_read ? " admin-notif-unread" : ""}`}
                   style={{
-                    padding: "10px 12px",
+                    padding: "12px 16px",
                     cursor: "pointer",
-                    background: item.is_read ? "transparent" : "rgba(15, 118, 110, 0.04)",
-                    borderBottom: "1px solid var(--admin-border)",
-                    transition: "background 0.15s",
+                    background: item.is_read ? "transparent" : "rgba(15, 118, 110, 0.03)",
+                    borderBottom: "1px solid var(--admin-divider)",
                   }}
                   onClick={() => markAsRead(item.id)}
-                  onMouseEnter={(e) => { if (item.is_read) e.currentTarget.style.background = "var(--admin-hover-bg)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = item.is_read ? "transparent" : "var(--admin-brand-light)"; }}
                 >
-                  <Flex vertical gap={2} style={{ width: "100%" }}>
+                  <Flex vertical gap={3} style={{ width: "100%" }}>
                     <Flex align="center" justify="space-between">
                       <Space size={6}>
-                        {!item.is_read && <Circle size={8} fill="#0f766e" color="#0f766e" />}
-                        <Typography.Text strong style={{ fontSize: 13 }}>{item.title}</Typography.Text>
+                        {!item.is_read && <Circle size={8} fill="#0f766e" color="#0f766e" style={{ flexShrink: 0 }} />}
+                        <Typography.Text strong style={{ fontSize: 13, lineHeight: 1.3 }}>{item.title}</Typography.Text>
                       </Space>
                       <Tag
-                        color={item.priority === "urgent" ? "red" : item.priority === "high" ? "orange" : "default"}
+                        color={priorityColorMap[item.priority] || "default"}
                         style={{ fontSize: 10, lineHeight: "16px", padding: "0 6px", border: "none", flexShrink: 0 }}
                       >
                         {item.type_display}
                       </Tag>
                     </Flex>
-                    <Typography.Text type="secondary" style={{ fontSize: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontSize: 12, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", paddingLeft: !item.is_read ? 14 : 0 }}
+                    >
                       {item.message}
                     </Typography.Text>
-                    <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted-light)" }}>
-                      {new Date(item.created_at).toLocaleString()}
+                    <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted-light)", paddingLeft: !item.is_read ? 14 : 0 }}>
+                      {formatRelativeTime(item.created_at)}
                     </Typography.Text>
                   </Flex>
                 </List.Item>
@@ -260,14 +265,32 @@ export function NotificationBell() {
     <Dropdown menu={{ items }} trigger={["click"]} open={open} onOpenChange={handleOpenChange} placement="bottomRight">
       <Button
         type="text"
+        className="admin-header-btn"
         icon={
           <Badge count={unreadCount} size="small" offset={[-2, 2]}>
             <Bell size={18} />
           </Badge>
         }
-        style={{ height: 44, width: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
       />
     </Dropdown>
   );
+}
+
+function formatRelativeTime(dateStr: string): string {
+  try {
+    const now = Date.now();
+    const date = new Date(dateStr).getTime();
+    const diff = now - date;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString();
+  } catch {
+    return dateStr;
+  }
 }
