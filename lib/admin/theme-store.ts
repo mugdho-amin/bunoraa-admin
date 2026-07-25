@@ -24,9 +24,14 @@ function resolveTheme(mode: ThemeMode): "light" | "dark" {
   return mode;
 }
 
+const THEME_CLASSES = ["light", "dark"];
+
 function applyTheme(resolved: "light" | "dark") {
   if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-theme", resolved);
+  const root = document.documentElement;
+  root.classList.remove(...THEME_CLASSES);
+  root.classList.add(resolved);
+  root.style.colorScheme = resolved === "dark" ? "dark" : "light";
   const meta = document.querySelector("meta[name=\"theme-color\"]");
   if (meta) meta.setAttribute("content", resolved === "dark" ? THEME_COLOR_DARK : THEME_COLOR_LIGHT);
 }

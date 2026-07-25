@@ -54,7 +54,7 @@ export default function RootLayout({
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem("bunoraa-admin-v2:theme");if(t){var s=JSON.parse(t).state;if(s){var r=s.mode;if(r==="system"){r=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}document.documentElement.setAttribute("data-theme",r);var m=document.querySelector("meta[name=\\"theme-color\\"]");if(m)m.setAttribute("content",r==="dark"?"#0b1120":"#f3f5f9")}}}catch(e){}}())`,
+          __html: `(function(){try{var t=localStorage.getItem("bunoraa-admin-v2:theme");var r="light";if(t){var s=JSON.parse(t).state;if(s){r=s.mode||"light";if(r==="system"){r=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}}}var root=document.documentElement;root.classList.remove("light","dark");root.classList.add(r);root.style.colorScheme=r==="dark"?"dark":"light";var m=document.querySelector("meta[name=\\"theme-color\\"]");if(m)m.setAttribute("content",r==="dark"?"#0b1120":"#f3f5f9")}catch(e){}}())`,
         }} />
       </head>
       <body>
