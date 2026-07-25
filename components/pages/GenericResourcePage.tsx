@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
-  App, Button, Card, Descriptions, Empty, Flex, Grid, Input, Modal, Pagination,
+  Alert, App, Button, Card, Descriptions, Empty, Flex, Grid, Input, Modal, Pagination,
   Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -371,6 +371,14 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
   });
   const createOne = useCreate();
   const updateOne = useUpdate();
+
+  if (optionsQuery.isError) {
+    return (
+      <Card className="admin-soft-panel" bordered={false}>
+        <Alert type="error" showIcon message="Failed to load form schema from API." />
+      </Card>
+    );
+  }
 
   if (optionsQuery.isLoading || (action === "edit" && recordQuery.query.isLoading)) {
     return <Skeleton active paragraph={{ rows: 10 }} />;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { App, Card, Skeleton, Typography } from "antd";
+import { Alert, App, Card, Skeleton, Typography } from "antd";
 import { fetchOptionsForSingleton } from "@/lib/admin/bootstrap";
 import { requestAdminData } from "@/lib/admin/http";
 import type { AdminOptionsResponse } from "@/lib/admin/types";
@@ -42,7 +42,11 @@ export function SingletonSettingsPage({
         {title}
       </Typography.Title>
       {description ? <Typography.Paragraph type="secondary">{description}</Typography.Paragraph> : null}
-      {dataQuery.isLoading || optionsQuery.isLoading ? (
+      {dataQuery.isError ? (
+        <Alert type="error" showIcon message="Failed to load settings data." />
+      ) : optionsQuery.isError ? (
+        <Alert type="error" showIcon message="Failed to load settings schema from API." />
+      ) : dataQuery.isLoading || optionsQuery.isLoading ? (
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : (
         <SchemaForm
