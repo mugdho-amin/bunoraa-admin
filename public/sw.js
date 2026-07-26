@@ -3,7 +3,16 @@ const OFFLINE_URL = "/login";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.add(OFFLINE_URL)),
+    caches.open(CACHE).then((cache) =>
+      fetch(OFFLINE_URL).then((response) => {
+        if (response.ok || response.type === "opaqueredirect") {
+          return cache.put(OFFLINE_URL, response);
+        }
+      }).catch(() => {
+        // Backend unavailable — skip caching offline page.
+        // SW installation should not fail because of a downstream service.
+      }),
+    ),
   );
   self.skipWaiting();
 });

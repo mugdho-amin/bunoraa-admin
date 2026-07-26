@@ -8,12 +8,14 @@ const bodyFont = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-body",
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const displayFont = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["500", "700"],
+  weight: ["500"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
