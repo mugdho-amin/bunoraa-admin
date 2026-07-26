@@ -201,7 +201,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: data.width === null || data.width === undefined ? null : Number(data.width),
       height: data.height === null || data.height === undefined ? null : Number(data.height),
       free_shipping: data.free_shipping,
-      variants_data: hasVariants ? cleanVariants : [],
+      variants_data: cleanVariants,
       category_ids: data.categoryIds,
       primary_category: data.primaryCategoryId || null,
       is_active: data.is_active,
@@ -700,11 +700,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (!form.primaryCategoryId) newErrors["primaryCategoryId"] = "Primary category is required";
     if (!form.categoryIds || form.categoryIds.length === 0) newErrors["categoryIds"] = "At least one category is required";
 
-    if (hasVariants) {
-      form.variants.forEach((v, i) => {
-        if (!v.sku) newErrors[`variants.${i}.sku`] = "SKU is required";
-      });
-    }
+    form.variants.forEach((v, i) => {
+      if (!v.sku) newErrors[`variants.${i}.sku`] = "SKU is required";
+    });
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors);
@@ -753,7 +751,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: form.width === null || form.width === undefined ? null : Number(form.width),
       height: form.height === null || form.height === undefined ? null : Number(form.height),
       free_shipping: form.free_shipping,
-      variants_data: hasVariants ? cleanVariants : [],
+      variants_data: cleanVariants,
       category_ids: form.categoryIds,
       primary_category: form.primaryCategoryId || null,
       is_featured: form.is_featured,
@@ -904,7 +902,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             {!hasVariants && (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
                 <Flex vertical gap={4}>
-                  <label className="admin-field-label">SKU</label>
+                  <label className="admin-field-label">SKU *</label>
                   <div style={{ position: "relative" }}>
                     <input type="text" value={form.variants[0]?.sku ?? ""}
                       onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
@@ -1763,7 +1761,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--admin-divider)" }}>
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU *</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.sku} onChange={(e) => updateVariant(actualIdx, "sku", e.target.value)}
                                         style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
