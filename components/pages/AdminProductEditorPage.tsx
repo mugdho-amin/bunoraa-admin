@@ -37,7 +37,7 @@ let galleryIdCounter = 0;
 const galleryId = () => `gallery_${Date.now()}_${++galleryIdCounter}`;
 
 interface ProductForm {
-  name: string; slug: string; sku: string;
+  name: string; slug: string; sku: string; barcode: string;
   short_description: string; description: string;
   primaryImage: string; primaryImageAlt: string; gallery: GalleryImage[];
   price: number | null; sale_price: number | null; compare_at_price: number | null; cost: number | null; currency: string;
@@ -94,7 +94,8 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
 });
 
 const emptyForm: ProductForm = {
-  name: "", slug: "", sku: "", short_description: "", description: "",
+  name: "", slug: "", sku: "", barcode: "",
+  short_description: "", description: "",
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
   stock_quantity: 1, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
@@ -181,8 +182,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     return {
       name: data.name,
       slug: data.slug,
-      sku: hasVariants ? null : (data.variants[0]?.sku || null),
-      barcode: hasVariants ? null : (data.variants[0]?.barcode || ''),
+      sku: hasVariants ? null : data.sku || null,
+      barcode: hasVariants ? null : data.barcode || '',
       short_description: data.short_description,
       description: data.description,
       primary_image: data.primaryImage || null,
@@ -291,6 +292,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         name: product.name ?? "",
         slug: product.slug ?? "",
         sku: product.sku ?? "",
+        barcode: product.barcode ?? "",
         short_description: product.short_description ?? "",
         description: product.description ?? "",
         primaryImage: product.primary_image ?? "",
@@ -310,7 +312,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         width: product.width ? Number(product.width) : null,
         height: product.height ? Number(product.height) : null,
         free_shipping: product.free_shipping ?? false,
-        variants: variants.length ? variants : [{ ...emptyVariant(0), barcode: product.barcode || '' }],
+        variants: variants.length ? variants : [emptyVariant(0)],
         categoryIds: (product.categories ?? []).map((c: { id?: string; category?: { id?: string } }) => c.id ?? c.category?.id).filter(Boolean) as string[],
         primaryCategoryId,
         is_active: product.is_active ?? true,
@@ -375,22 +377,28 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     });
   };
 
-  const toggleVariants = () => {
-    const next = !hasVariants;
-    setHasVariants(next);
-    if (next) {
-      if (form.variants.length === 1 && !form.variants[0].size && !form.variants[0].color) {
-        setForm((p) => ({
-          ...p,
-          variants: p.variants.map((v) => ({
-            ...v,
-            price: v.price ?? p.price,
-            compareAt: v.compareAt ?? p.sale_price ?? null,
-          })),
-        }));
-      }
-    }
-  };
+   const toggleVariants = () => {
+     const next = !hasVariants;
+     setHasVariants(next);
+     if (next) {
+       setForm((p) => ({
+         ...p,
+         variants: p.variants.map((v) => ({
+           ...v,
+           sku: v.sku || p.sku,
+           barcode: v.barcode || p.barcode,
+           price: v.price ?? p.price,
+           compareAt: v.compareAt ?? p.sale_price ?? null,
+         })),
+       }));
+     } else {
+       setForm((p) => ({
+         ...p,
+         sku: p.variants[0]?.sku || p.sku,
+         barcode: p.variants[0]?.barcode || p.barcode,
+       }));
+     }
+   };
 
   const addVariant = () => {
     const idx = form.variants.length;
@@ -701,9 +709,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (!form.primaryCategoryId) newErrors["primaryCategoryId"] = "Primary category is required";
     if (!form.categoryIds || form.categoryIds.length === 0) newErrors["categoryIds"] = "At least one category is required";
 
-    form.variants.forEach((v, i) => {
-      if (!v.sku) newErrors[`variants.${i}.sku`] = "SKU is required";
-    });
+    if (!hasVariants) {
+      if (!form.sku) newErrors["sku"] = "SKU is required";
+    } else {
+      form.variants.forEach((v, i) => {
+        if (!v.sku) newErrors[`variants.${i}.sku`] = "SKU is required";
+      });
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors);
@@ -732,10 +744,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     }));
 
     const values: Record<string, unknown> = {
-      name: form.name,
-      slug: form.slug,
-      sku: hasVariants ? null : (form.variants[0]?.sku || null),
-      barcode: hasVariants ? null : (form.variants[0]?.barcode || ''),
+       name: form.name,
+       slug: form.slug,
+       sku: hasVariants ? null : form.sku || null,
+       barcode: hasVariants ? null : form.barcode || '',
       short_description: form.short_description,
       description: form.description,
       images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
@@ -903,33 +915,33 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </div>
             {!hasVariants && (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
-                <Flex vertical gap={4}>
-                  <label className="admin-field-label">SKU *</label>
-                  <div style={{ position: "relative" }}>
-                    <input type="text" value={form.variants[0]?.sku ?? ""}
-                      onChange={(e) => { clearFieldError("variants.0.sku"); updateVariant(0, "sku", e.target.value); }}
-                      className={`admin-input${fieldErrors["variants.0.sku"] ? " error" : ""}`}
-                      style={{ paddingRight: 40 }} />
-                    <button onClick={() => generateSingleSku(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
-                      <WandSparkles size={14} />
-                    </button>
-                  </div>
-                  {fieldErrors["variants.0.sku"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["variants.0.sku"]}</span>}
-                </Flex>
-                <Flex vertical gap={4}>
-                  <label className="admin-field-label">Barcode / EAN</label>
-                  <div style={{ position: "relative" }}>
-                    <input type="text" value={form.variants[0]?.barcode ?? ""}
-                      onChange={(e) => updateVariant(0, "barcode", e.target.value)}
-                      className="admin-input"
-                      style={{ paddingRight: 40 }} />
-                    <button onClick={() => generateSingleBarcode(0)}
-                      style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
-                      <WandSparkles size={14} />
-                    </button>
-                  </div>
-                </Flex>
+                 <Flex vertical gap={4}>
+                   <label className="admin-field-label">SKU *</label>
+                   <div style={{ position: "relative" }}>
+                      <input type="text" value={form.sku ?? ""}
+                        onChange={(e) => updateField("sku", e.target.value)}
+                        className={`admin-input${fieldErrors["sku"] ? " error" : ""}`}
+                       style={{ paddingRight: 40 }} />
+                     <button onClick={() => updateField("sku", generateSku("", ""))}
+                       style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
+                       <WandSparkles size={14} />
+                     </button>
+                   </div>
+                   {fieldErrors["sku"] && <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500 }}>{fieldErrors["sku"]}</span>}
+                 </Flex>
+                 <Flex vertical gap={4}>
+                   <label className="admin-field-label">Barcode / EAN</label>
+                   <div style={{ position: "relative" }}>
+                     <input type="text" value={form.barcode ?? ""}
+                       onChange={(e) => updateField("barcode", e.target.value)}
+                       className="admin-input"
+                       style={{ paddingRight: 40 }} />
+                     <button onClick={() => updateField("barcode", generateBarcode())}
+                       style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
+                       <WandSparkles size={14} />
+                     </button>
+                   </div>
+                 </Flex>
               </div>
             )}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12 }}>
