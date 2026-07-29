@@ -7,6 +7,7 @@ import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropd
 import type { MenuProps } from "antd";
 import Image from "next/image";
 import { uploadImage } from "@/lib/upload";
+import { uploadVideo } from "@/lib/uploadVideo";
 import {
   Plus, Trash2, Upload, X, Check, WandSparkles, GripVertical,
   Copy, ChevronDown, ChevronUp, Package,
@@ -33,8 +34,32 @@ interface GalleryImage {
   _storageKey?: string;
 }
 
+interface ProductVideoForm {
+  _id: string;
+  url: string;
+  thumbnail: string;
+  title: string;
+  alt_text: string;
+  is_cover: boolean;
+  is_featured: boolean;
+  _storageKey?: string;
+}
+
+interface CustomizationOptionForm {
+  _id: string;
+  name: string;
+  option_type: "text" | "textarea" | "color_picker" | "image_upload" | "select" | "checkbox" | "file";
+  is_required: boolean;
+  price_modifier: number | null;
+  choices: string[];
+  ordering: number;
+  is_active: boolean;
+}
+
 let galleryIdCounter = 0;
 const galleryId = () => `gallery_${Date.now()}_${++galleryIdCounter}`;
+const videoId = () => `video_${Date.now()}_${++galleryIdCounter}`;
+const customizationId = () => `cust_${Date.now()}_${++galleryIdCounter}`;
 
 interface ProductForm {
   name: string; slug: string; sku: string; barcode: string;
@@ -44,8 +69,10 @@ interface ProductForm {
   stock_quantity: number; low_stock_threshold: number; allow_backorder: boolean; tax_included: boolean;
   weight: number | null; length: number | null; width: number | null; height: number | null; free_shipping: boolean;
   variants: VariantForm[]; categoryIds: string[]; primaryCategoryId: string;
-  is_active: boolean; is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean; can_be_customized: boolean;
+  is_active: boolean; is_featured: boolean; is_bestseller: boolean; is_new_arrival: boolean; can_be_customized: boolean; has_cover_video: boolean;
   tags: string[];
+  videos: ProductVideoForm[];
+  customization_options: CustomizationOptionForm[];
   aspect_ratio: string;
   publish_from: string; publish_until: string;
   meta_title: string; meta_description: string; meta_keywords: string;
@@ -99,8 +126,10 @@ const emptyForm: ProductForm = {
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
   stock_quantity: 1, low_stock_threshold: 5, allow_backorder: true, tax_included: true, weight: null, length: null, width: null, height: null, free_shipping: false,
   variants: [emptyVariant(0)], categoryIds: [], primaryCategoryId: "",
-  is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: true,
+  is_active: true, is_featured: false, is_bestseller: false, is_new_arrival: false, can_be_customized: true, has_cover_video: false,
   tags: [],
+  videos: [],
+  customization_options: [],
   aspect_ratio: "",
   publish_from: "", publish_until: "",
   meta_title: "", meta_description: "", meta_keywords: "",
@@ -132,6 +161,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [shippingCollapsed, setShippingCollapsed] = useState(true);
   const [scheduleCollapsed, setScheduleCollapsed] = useState(true);
   const [imageUploadKey, setImageUploadKey] = useState(0);
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const slugManuallyEdited = useRef(false);
   const variantContainerRef = useRef<HTMLDivElement>(null);
 
@@ -212,6 +242,26 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       is_new_arrival: data.is_new_arrival,
       can_be_customized: data.can_be_customized,
       tags: data.tags,
+      videos_data: data.videos.map((v) => ({
+        video_url: v.url,
+        thumbnail: v.thumbnail || undefined,
+        title: v.title,
+        alt_text: v.alt_text,
+        is_cover: v.is_cover,
+        is_featured: v.is_featured,
+        ...(v._storageKey && v.url.includes('/_temp/') ? { _storage_key: v._storageKey } : {}),
+      })),
+      has_cover_video: data.has_cover_video,
+      customization_options_data: data.customization_options.map((o) => ({
+        id: o._id.startsWith("cust_") ? undefined : o._id,
+        name: o.name,
+        option_type: o.option_type,
+        is_required: o.is_required,
+        price_modifier: o.price_modifier,
+        choices: o.choices,
+        ordering: o.ordering,
+        is_active: o.is_active,
+      })),
       aspect_ratio: data.aspect_ratio || "",
       publish_from: data.publish_from || null,
       publish_until: data.publish_until || null,
@@ -320,6 +370,26 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         is_bestseller: product.is_bestseller ?? false,
         is_new_arrival: product.is_new_arrival ?? false,
         can_be_customized: product.can_be_customized ?? false,
+        has_cover_video: (product.videos ?? []).some((v: Record<string, unknown>) => v.is_cover),
+        customization_options: (product.customization_options ?? []).map((o: Record<string, unknown>, oi: number) => ({
+          _id: (o.id as string) || customizationId(),
+          name: (o.name as string) || "",
+          option_type: (o.option_type as CustomizationOptionForm["option_type"]) || "text",
+          is_required: (o.is_required as boolean) || false,
+          price_modifier: (o.price_modifier as number) ?? null,
+          choices: (o.choices as string[]) || [],
+          ordering: (o.ordering as number) ?? oi,
+          is_active: (o.is_active as boolean) ?? true,
+        })),
+        videos: (product.videos ?? []).map((v: Record<string, unknown>) => ({
+          _id: videoId(),
+          url: (v.video_url as string) || "",
+          thumbnail: (v.thumbnail as string) || "",
+          title: (v.title as string) || "",
+          alt_text: (v.alt_text as string) || "",
+          is_cover: (v.is_cover as boolean) || false,
+          is_featured: (v.is_featured as boolean) || false,
+        })),
         aspect_ratio: product.aspect_ratio || categoryAspectDefault || "",
         tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.id ?? "")),
         publish_from: product.publish_from ?? "",
@@ -725,7 +795,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     setFieldErrors({});
     setSaving(true);
-    autoSave.flush();
+    await autoSave.flush();
 
     const cleanVariants = form.variants.map((v) => ({
       id: v.id || undefined,
@@ -772,6 +842,26 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       is_bestseller: form.is_bestseller,
       is_new_arrival: form.is_new_arrival,
       can_be_customized: form.can_be_customized,
+      has_cover_video: form.has_cover_video,
+      customization_options_data: form.customization_options.map((o) => ({
+        id: o._id.startsWith("cust_") ? undefined : o._id,
+        name: o.name,
+        option_type: o.option_type,
+        is_required: o.is_required,
+        price_modifier: o.price_modifier,
+        choices: o.choices,
+        ordering: o.ordering,
+        is_active: o.is_active,
+      })),
+      videos_data: form.videos.map((v) => ({
+        video_url: v.url,
+        thumbnail: v.thumbnail || undefined,
+        title: v.title,
+        alt_text: v.alt_text,
+        is_cover: v.is_cover,
+        is_featured: v.is_featured,
+        ...(v._storageKey && v.url.includes('/_temp/') ? { _storage_key: v._storageKey } : {}),
+      })),
       tags: form.tags,
       aspect_ratio: form.aspect_ratio || "",
       publish_until: form.publish_until || null,
@@ -1100,6 +1190,286 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           </Flex>
 
+          {/* Videos */}
+          <Card className="admin-soft-panel" variant="borderless" title="Videos" style={{ flex: "1 1 300px", minWidth: 0 }}>
+            {form.videos.length > 0 && (
+              <Flex vertical gap={8}>
+                {form.videos.map((video, i) => (
+                  <div key={video._id}
+                    style={{ borderRadius: 12, border: "1px solid var(--admin-input-border)", padding: 12 }}
+                  >
+                    <Flex gap={12} align="start">
+                      <div style={{ position: "relative", flexShrink: 0, width: 80, height: 60, borderRadius: 8, overflow: "hidden", background: "var(--admin-muted-alpha-10)", cursor: video.url ? "pointer" : "default" }}
+                        onClick={() => video.url && setPreviewVideoUrl(video.url)}>
+                        {video.thumbnail ? (
+                          <Image src={video.thumbnail} alt={video.title} width={80} height={60} unoptimized style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 10, color: "var(--admin-muted)" }}>
+                            {video.url ? "▶" : "No thumb"}
+                          </div>
+                        )}
+                        {video.url && (
+                          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)", opacity: 0, transition: "opacity 0.15s" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#000" }}>▶</div>
+                          </div>
+                        )}
+                        {video.is_cover && (
+                          <span style={{ position: "absolute", bottom: 2, left: 2, fontSize: 8, background: "var(--admin-brand)", color: "var(--admin-text-on-brand)", padding: "1px 4px", borderRadius: 4, fontWeight: 600 }}>
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <input value={video.title} onChange={(e) => {
+                          setForm((p) => {
+                            const next = [...p.videos];
+                            next[i] = { ...next[i], title: e.target.value };
+                            return { ...p, videos: next };
+                          });
+                        }}
+                          placeholder="Video title"
+                          className="admin-input"
+                          style={{ fontSize: 11, padding: "6px 10px", marginBottom: 6 }} />
+                        <input value={video.url} onChange={(e) => {
+                          setForm((p) => {
+                            const next = [...p.videos];
+                            next[i] = { ...next[i], url: e.target.value };
+                            return { ...p, videos: next };
+                          });
+                        }}
+                          placeholder="https://cdn.bunoraa.com/videos/product.mp4"
+                          className="admin-input"
+                          style={{ fontSize: 11, padding: "6px 10px", marginBottom: 6, fontFamily: "monospace" }} />
+                        <Flex gap={4} align="center">
+                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <input type="checkbox" checked={video.is_cover}
+                              onChange={() => {
+                                setForm((p) => ({
+                                  ...p,
+                                  videos: p.videos.map((v, vi) => ({ ...v, is_cover: vi === i ? !v.is_cover : false })),
+                                  has_cover_video: i === 0 ? !video.is_cover : p.has_cover_video,
+                                }));
+                              }}
+                              style={{ accentColor: "var(--admin-brand)" }} />
+                            Cover
+                          </label>
+                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <input type="checkbox" checked={video.is_featured}
+                              onChange={() => {
+                                setForm((p) => {
+                                  const next = [...p.videos];
+                                  next[i] = { ...next[i], is_featured: !next[i].is_featured };
+                                  return { ...p, videos: next };
+                                });
+                              }}
+                              style={{ accentColor: "var(--admin-brand)" }} />
+                            Featured
+                          </label>
+                          <button onClick={() => {
+                            setForm((p) => ({ ...p, videos: p.videos.filter((_, j) => j !== i) }));
+                          }}
+                            style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 11 }}>
+                            Remove
+                          </button>
+                        </Flex>
+                      </div>
+                    </Flex>
+                  </div>
+                ))}
+              </Flex>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button onClick={() => {
+                setForm((p) => ({ ...p, videos: [...p.videos, { _id: videoId(), url: "", thumbnail: "", title: "", alt_text: "", is_cover: false, is_featured: false }] }));
+              }}
+                style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
+                + Add Video URL
+              </button>
+              <label style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <Upload size={14} /> Upload Video
+                <input key={`video-${imageUploadKey}`} type="file" accept="video/mp4,video/webm,video/ogg" multiple style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files) return;
+                    const uploads = Array.from(files).map((f) => uploadVideo(f));
+                    const results = await Promise.allSettled(uploads);
+                    const items: ProductVideoForm[] = [];
+                    let failed = 0;
+                    for (const r of results) {
+                      if (r.status === "fulfilled") items.push({ _id: videoId(), url: r.value.url, _storageKey: r.value.key, thumbnail: "", title: "", alt_text: "", is_cover: false, is_featured: false });
+                      else failed++;
+                    }
+                    if (items.length > 0) setForm((prev) => ({ ...prev, videos: [...prev.videos, ...items] }));
+                    if (failed > 0) message.warning(`${failed} video(s) failed to upload.`);
+                    if (items.length > 0) message.success(`${items.length} video(s) uploaded.`);
+                    setImageUploadKey((k) => k + 1);
+                  }} />
+              </label>
+            </div>
+          </Card>
+
+          {/* Customization Options */}
+          {form.can_be_customized && (
+            <Card className="admin-soft-panel" variant="borderless"
+              title={<Flex align="center" gap={8}><FileText size={14} /> Customization Options</Flex>}
+              style={{ flex: "1 1 300px", minWidth: 0 }}>
+              {form.customization_options.length > 0 && (
+                <Flex vertical gap={8}>
+                  {form.customization_options.map((opt, oi) => (
+                    <div key={opt._id}
+                      style={{ borderRadius: 12, border: "1px solid var(--admin-input-border)", padding: 12, background: opt.is_active ? "none" : "var(--admin-muted-alpha-05)" }}>
+                      <Flex gap={12} vertical>
+                        <Flex gap={8} align="center" wrap>
+                          <input value={opt.name} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], name: e.target.value };
+                              return { ...p, customization_options: next };
+                            });
+                          }}
+                            placeholder="Option name (e.g. Engraving Text)"
+                            className="admin-input"
+                            style={{ flex: "1 1 180px", fontSize: 11, padding: "6px 10px" }} />
+                          <select value={opt.option_type} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], option_type: e.target.value as CustomizationOptionForm["option_type"] };
+                              return { ...p, customization_options: next };
+                            });
+                          }}
+                            className="admin-input"
+                            style={{ flex: "0 1 130px", fontSize: 11, padding: "6px 10px" }}>
+                            <option value="text">Text</option>
+                            <option value="textarea">Text Area</option>
+                            <option value="color_picker">Color Picker</option>
+                            <option value="image_upload">Image Upload</option>
+                            <option value="select">Select</option>
+                            <option value="checkbox">Checkbox</option>
+                            <option value="file">File Upload</option>
+                          </select>
+                          <input type="number" value={opt.ordering ?? oi} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], ordering: Number(e.target.value) };
+                              return { ...p, customization_options: next };
+                            });
+                          }}
+                            className="admin-input"
+                            style={{ width: 60, fontSize: 11, padding: "6px 10px" }}
+                            title="Order" />
+                        </Flex>
+                        <Flex gap={8} align="center" wrap>
+                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <input type="checkbox" checked={opt.is_required}
+                              onChange={() => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  next[oi] = { ...next[oi], is_required: !next[oi].is_required };
+                                  return { ...p, customization_options: next };
+                                });
+                              }}
+                              style={{ accentColor: "var(--admin-brand)" }} />
+                            Required
+                          </label>
+                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <input type="checkbox" checked={opt.is_active}
+                              onChange={() => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  next[oi] = { ...next[oi], is_active: !next[oi].is_active };
+                                  return { ...p, customization_options: next };
+                                });
+                              }}
+                              style={{ accentColor: "var(--admin-brand)" }} />
+                            Active
+                          </label>
+                          <Flex align="center" gap={4} style={{ marginLeft: "auto" }}>
+                            <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted-alpha-55)", whiteSpace: "nowrap" }}>
+                              Price modifier
+                            </Typography.Text>
+                            <input type="number" step="any" value={opt.price_modifier ?? ""} onChange={(e) => {
+                              setForm((p) => {
+                                const next = [...p.customization_options];
+                                next[oi] = { ...next[oi], price_modifier: e.target.value ? Number(e.target.value) : null };
+                                return { ...p, customization_options: next };
+                              });
+                            }}
+                              className="admin-input"
+                              style={{ width: 90, fontSize: 11, padding: "6px 10px" }}
+                              placeholder="0.00" />
+                          </Flex>
+                          <button onClick={() => {
+                            setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }));
+                          }}
+                            style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 11 }}>
+                            Remove
+                          </button>
+                        </Flex>
+                        {(opt.option_type === "select" || opt.option_type === "checkbox") && (
+                          <Flex vertical gap={4} style={{ marginLeft: 16 }}>
+                            <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted-alpha-55)" }}>Choices</Typography.Text>
+                            {opt.choices.map((choice, ci) => (
+                              <Flex key={ci} gap={6} align="center">
+                                <input value={choice} onChange={(e) => {
+                                  setForm((p) => {
+                                    const next = [...p.customization_options];
+                                    const nextChoices = [...next[oi].choices];
+                                    nextChoices[ci] = e.target.value;
+                                    next[oi] = { ...next[oi], choices: nextChoices };
+                                    return { ...p, customization_options: next };
+                                  });
+                                }}
+                                  className="admin-input"
+                                  style={{ flex: 1, fontSize: 11, padding: "4px 8px" }}
+                                  placeholder={`Choice ${ci + 1}`} />
+                                <button onClick={() => {
+                                  setForm((p) => {
+                                    const next = [...p.customization_options];
+                                    next[oi] = { ...next[oi], choices: next[oi].choices.filter((_, j) => j !== ci) };
+                                    return { ...p, customization_options: next };
+                                  });
+                                }}
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 10 }}>
+                                  <X size={12} />
+                                </button>
+                              </Flex>
+                            ))}
+                            <button onClick={() => {
+                              setForm((p) => {
+                                const next = [...p.customization_options];
+                                next[oi] = { ...next[oi], choices: [...next[oi].choices, ""] };
+                                return { ...p, customization_options: next };
+                              });
+                            }}
+                              style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 8, border: "1px dashed var(--admin-border-strong)", fontSize: 10, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
+                              + Add Choice
+                            </button>
+                          </Flex>
+                        )}
+                      </Flex>
+                    </div>
+                  ))}
+                </Flex>
+              )}
+              <div style={{ marginTop: 12 }}>
+                <button onClick={() => {
+                  setForm((p) => ({
+                    ...p,
+                    customization_options: [...p.customization_options, {
+                      _id: customizationId(), name: "", option_type: "text" as const,
+                      is_required: false, price_modifier: null, choices: [], ordering: p.customization_options.length, is_active: true,
+                    }],
+                  }));
+                }}
+                  style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
+                  + Add Customization Option
+                </button>
+              </div>
+            </Card>
+          )}
+
           {hasVariants ? (
             <>
               {/* Categories */}
@@ -1263,6 +1633,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex align="center" gap={8}>
                 <Switch checked={form.can_be_customized} onChange={(c) => updateField("can_be_customized", c)} size="small" />
                 <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Can Be Customized</Typography.Text>
+              </Flex>
+              <Flex align="center" gap={8}>
+                <Switch checked={form.has_cover_video} onChange={(c) => updateField("has_cover_video", c)} size="small" />
+                <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Has Cover Video</Typography.Text>
               </Flex>
               <Flex align="center" gap={8}>
                 <Switch checked={form.is_featured} onChange={(c) => updateField("is_featured", c)} size="small" />
@@ -1934,6 +2308,29 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             The product will be published automatically on this date and time.
           </Typography.Text>
         </Flex>
+      </Modal>
+
+      {/* Video Preview Modal */}
+      <Modal
+        open={!!previewVideoUrl}
+        onCancel={() => setPreviewVideoUrl(null)}
+        footer={null}
+        width={720}
+        destroyOnClose
+        centered
+        styles={{ body: { padding: 0 } }}
+      >
+        {previewVideoUrl && (
+          <video
+            key={previewVideoUrl}
+            src={previewVideoUrl}
+            controls
+            autoPlay
+            style={{ width: "100%", maxHeight: "80vh", display: "block", borderRadius: 8 }}
+          >
+            Your browser does not support the video tag.
+          </video>
+        )}
       </Modal>
     </Flex>
   );

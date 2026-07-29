@@ -31,6 +31,7 @@ export function useAutoSave<T>({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
   const mounted = useRef(true);
+  const flushResolve = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -77,6 +78,8 @@ export function useAutoSave<T>({
           if (mounted.current) setStatus("idle");
         }, 3000);
       }
+      flushResolve.current?.();
+      flushResolve.current = null;
     } catch (err) {
       if (mounted.current) {
         setStatus("error");
@@ -85,6 +88,8 @@ export function useAutoSave<T>({
           if (mounted.current) setStatus("idle");
         }, 4000);
       }
+      flushResolve.current?.();
+      flushResolve.current = null;
     } finally {
       if (mounted.current) saving.current = false;
     }
@@ -109,7 +114,16 @@ export function useAutoSave<T>({
 
   const flush = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
-    saveDraft();
+    if (!saving.current) {
+      saveDraft();
+    }
+    return new Promise<void>((resolve) => {
+      if (!saving.current) {
+        resolve();
+      } else {
+        flushResolve.current = resolve;
+      }
+    });
   }, [saveDraft]);
 
   return { draftId, status, lastSaved, flush, resetSnapshot };
