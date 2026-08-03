@@ -194,6 +194,55 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
 
+  /**
+   * Reconcile the form with the server's canonical state after a successful
+   * save: promoted staging files get replaced by their permanent URLs and the
+   * staging keys are cleared so retries/autosaves never resend stale _temp
+   * references (which previously caused 400s). Pure — returns a new form or
+   * the same reference when nothing changed.
+   */
+  const syncFormWithServer = useCallback((data: Record<string, unknown>, current: ProductForm): ProductForm => {
+    const serverImages = data.images as { image_url?: string; alt_text?: string }[] | undefined;
+    const serverVariants = data.variants as Record<string, unknown>[] | undefined;
+    const serverVideos = data.videos as { video_url?: string; thumbnail?: string }[] | undefined;
+    const serverPrimaryImage = data.primary_image as string | undefined;
+
+    let changed = false;
+
+    const gallery = current.gallery.map((g, i) => {
+      if (!g._storageKey || !g.url.includes('/_temp/')) return g;
+      const server = serverImages?.[i];
+      if (!server?.image_url || server.image_url.includes('/_temp/')) return g;
+      changed = true;
+      return { ...g, url: server.image_url, alt: server.alt_text ?? g.alt, _storageKey: undefined };
+    });
+
+    const variants = current.variants.map((v) => {
+      if (!v._imageKey || !v.image.includes('/_temp/')) return v;
+      const server = (serverVariants ?? []).find((sv) => String((sv.sku as string | undefined) ?? '') === v.sku.trim());
+      const serverUrl = (server?.image_url as string | undefined) || (server?.image as string | undefined);
+      if (!serverUrl || serverUrl.includes('/_temp/')) return v;
+      changed = true;
+      return { ...v, image: serverUrl, _imageKey: undefined };
+    });
+
+    const videos = current.videos.map((v, i) => {
+      if (!v._storageKey || !v.url.includes('/_temp/')) return v;
+      const server = serverVideos?.[i];
+      if (!server?.video_url || server.video_url.includes('/_temp/')) return v;
+      changed = true;
+      return { ...v, url: server.video_url, thumbnail: server.thumbnail ?? v.thumbnail, _storageKey: undefined };
+    });
+
+    const primaryImage = current.primaryImage.includes('/_temp/') && serverPrimaryImage
+      ? serverPrimaryImage
+      : current.primaryImage;
+
+    if (!changed && primaryImage === current.primaryImage) return current;
+
+    return { ...current, gallery, variants, videos, primaryImage };
+  }, []);
+
   const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
     const cleanVariants = data.variants.map((v) => ({
       id: v.id || undefined,
@@ -282,23 +331,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     getPayload: getProductPayload,
     onCreated: (newId, data) => {
       setCurrentId(newId);
-      if (data?.images) {
-        const serverImages = data.images as { image_url?: string; alt_text?: string; variant_ids?: string[] }[];
-        setForm((prev) => {
-          const updated = prev.gallery.map((g, i) => {
-            if (g._storageKey && g.url.includes('/_temp/') && i < serverImages.length) {
-              return { ...g, url: serverImages[i].image_url || g.url, alt: serverImages[i].alt_text || g.alt, _storageKey: undefined };
-            }
-            return g;
-          });
-          const serverPrimaryImage = (data as Record<string, unknown>).primary_image as string | undefined;
-          return {
-            ...prev,
-            gallery: updated,
-            primaryImage: serverPrimaryImage || prev.primaryImage,
-          };
-        });
-      }
+      if (data) setForm((prev) => syncFormWithServer(data, prev));
+    },
+    onSaved: (data) => {
+      setForm((prev) => syncFormWithServer(data, prev));
     },
   });
 
@@ -887,9 +923,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     setFieldErrors({});
     setSaving(true);
-    await autoSave.flush();
+    const savedData = await autoSave.flush();
+    const workingForm = savedData ? syncFormWithServer(savedData, form) : form;
+    if (workingForm !== form) setForm(workingForm);
 
-    const cleanVariants = form.variants.map((v) => ({
+    const cleanVariants = workingForm.variants.map((v) => ({
       id: v.id || undefined,
       sku: v.sku.trim(),
       stock_quantity: Number(v.stock ?? 0),
@@ -902,40 +940,40 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
-      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
+      ...(v._imageKey && (v.image || '').includes('/_temp/') ? { _image_key: v._imageKey } : {}),
     }));
 
     const values: Record<string, unknown> = {
-       name: form.name,
-       slug: form.slug,
-       sku: hasVariants ? null : form.sku || null,
-       barcode: hasVariants ? null : form.barcode || '',
-      short_description: form.short_description,
-      description: form.description,
-      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
-      price: Number(form.price ?? 0),
-      sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
-      compare_at_price: form.compare_at_price === null || form.compare_at_price === undefined ? null : Number(form.compare_at_price),
-      cost: form.cost === null || form.cost === undefined ? null : Number(form.cost),
-      currency: form.currency,
-      stock_quantity: hasVariants ? form.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0) : Number(form.variants[0]?.stock ?? 0),
-      low_stock_threshold: form.low_stock_threshold,
-      allow_backorder: form.allow_backorder,
-      tax_included: form.tax_included,
-      weight: form.weight === null || form.weight === undefined ? null : Number(form.weight),
-      length: form.length === null || form.length === undefined ? null : Number(form.length),
-      width: form.width === null || form.width === undefined ? null : Number(form.width),
-      height: form.height === null || form.height === undefined ? null : Number(form.height),
-      free_shipping: form.free_shipping,
+       name: workingForm.name,
+       slug: workingForm.slug,
+       sku: hasVariants ? null : workingForm.sku || null,
+       barcode: hasVariants ? null : workingForm.barcode || '',
+      short_description: workingForm.short_description,
+      description: workingForm.description,
+      images_data: workingForm.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
+      price: Number(workingForm.price ?? 0),
+      sale_price: workingForm.sale_price === null || workingForm.sale_price === undefined ? null : Number(workingForm.sale_price),
+      compare_at_price: workingForm.compare_at_price === null || workingForm.compare_at_price === undefined ? null : Number(workingForm.compare_at_price),
+      cost: workingForm.cost === null || workingForm.cost === undefined ? null : Number(workingForm.cost),
+      currency: workingForm.currency,
+      stock_quantity: hasVariants ? workingForm.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0) : Number(workingForm.variants[0]?.stock ?? 0),
+      low_stock_threshold: workingForm.low_stock_threshold,
+      allow_backorder: workingForm.allow_backorder,
+      tax_included: workingForm.tax_included,
+      weight: workingForm.weight === null || workingForm.weight === undefined ? null : Number(workingForm.weight),
+      length: workingForm.length === null || workingForm.length === undefined ? null : Number(workingForm.length),
+      width: workingForm.width === null || workingForm.width === undefined ? null : Number(workingForm.width),
+      height: workingForm.height === null || workingForm.height === undefined ? null : Number(workingForm.height),
+      free_shipping: workingForm.free_shipping,
       ...(hasVariants ? { variants_data: cleanVariants } : {}),
-      category_ids: form.categoryIds,
-      primary_category: form.primaryCategoryId || null,
-      is_featured: form.is_featured,
-      is_bestseller: form.is_bestseller,
-      is_new_arrival: form.is_new_arrival,
-      can_be_customized: form.can_be_customized,
-      has_cover_video: form.has_cover_video,
-      customization_options_data: form.customization_options.map((o) => ({
+      category_ids: workingForm.categoryIds,
+      primary_category: workingForm.primaryCategoryId || null,
+      is_featured: workingForm.is_featured,
+      is_bestseller: workingForm.is_bestseller,
+      is_new_arrival: workingForm.is_new_arrival,
+      can_be_customized: workingForm.can_be_customized,
+      has_cover_video: workingForm.has_cover_video,
+      customization_options_data: workingForm.customization_options.map((o) => ({
         id: o._id.startsWith("cust_") ? undefined : o._id,
         name: o.name,
         option_type: o.option_type,
@@ -945,7 +983,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         ordering: o.ordering,
         is_active: o.is_active,
       })),
-      videos_data: form.videos.map((v) => ({
+      videos_data: workingForm.videos.map((v) => ({
         id: v._id.startsWith("video_") ? undefined : v._id,
         video_url: v.url,
         thumbnail: v.thumbnail || undefined,
@@ -953,14 +991,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         alt_text: v.alt_text,
         is_cover: v.is_cover,
         is_featured: v.is_featured,
-        ...(v._storageKey ? { _storage_key: v._storageKey } : {}),
+        ...(v._storageKey && v.url.includes('/_temp/') ? { _storage_key: v._storageKey } : {}),
       })),
-      tags: form.tags,
-      aspect_ratio: form.aspect_ratio || "",
-      publish_until: form.publish_until || null,
-      meta_title: (form.meta_title || form.name || "").trim(),
-      meta_description: (form.meta_description || form.short_description || "").trim(),
-      meta_keywords: (form.meta_keywords || "").trim(),
+      tags: workingForm.tags,
+      aspect_ratio: workingForm.aspect_ratio || "",
+      publish_until: workingForm.publish_until || null,
+      meta_title: (workingForm.meta_title || workingForm.name || "").trim(),
+      meta_description: (workingForm.meta_description || workingForm.short_description || "").trim(),
+      meta_keywords: (workingForm.meta_keywords || "").trim(),
     };
 
     if (saveAction === 'publish') {
@@ -971,7 +1009,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       values.publish_from = null;
     } else {
       values.is_active = true;
-      values.publish_from = form.publish_from || null;
+      values.publish_from = workingForm.publish_from || null;
     }
 
     const effectiveId = currentId || id;

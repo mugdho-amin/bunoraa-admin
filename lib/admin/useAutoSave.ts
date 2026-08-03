@@ -14,6 +14,7 @@ type UseAutoSaveOptions<T> = {
   intervalMs?: number;
   getPayload?: (data: T) => Record<string, unknown>;
   onCreated?: (newId: string | number, data?: Record<string, unknown>) => void;
+  onSaved?: (data: Record<string, unknown>) => void;
 };
 
 export function useAutoSave<T>({
@@ -25,6 +26,7 @@ export function useAutoSave<T>({
   intervalMs = 0,
   getPayload,
   onCreated,
+  onSaved,
 }: UseAutoSaveOptions<T>) {
   const [draftId, setDraftId] = useState<string | number | null>(id ?? null);
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
@@ -33,7 +35,7 @@ export function useAutoSave<T>({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
   const mounted = useRef(true);
-  const flushResolve = useRef<(() => void) | null>(null);
+  const flushResolve = useRef<((data?: Record<string, unknown>) => void) | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -54,21 +56,21 @@ export function useAutoSave<T>({
 
     const payload = getPayload ? getPayload(formData) : (formData as unknown as Record<string, unknown>);
 
+    let responseData: Record<string, unknown> | undefined;
     try {
       if (draftId) {
-        await requestAdminData(`/admin/${resource}/${draftId}`, {
-          method: "PATCH",
-          body: payload,
-        });
+        responseData = await requestAdminData<Record<string, unknown>>(
+          `/admin/${resource}/${draftId}`,
+          { method: "PATCH", body: payload },
+        );
       } else {
-        const data = await requestAdminData<Record<string, unknown>>(
+        responseData = await requestAdminData<Record<string, unknown>>(
           `/admin/${resource}`,
           { method: "POST", body: { ...payload, is_active: false } },
         );
-        const newId = data?.id as string | number | undefined;
+        const newId = responseData?.id as string | number | undefined;
         if (newId && mounted.current) {
           setDraftId(newId);
-          onCreated?.(newId, data);
         }
       }
 
@@ -79,8 +81,15 @@ export function useAutoSave<T>({
         setTimeout(() => {
           if (mounted.current) setStatus("idle");
         }, 3000);
+
+        if (draftId) {
+          onSaved?.(responseData ?? {});
+        } else {
+          const newId = responseData?.id as string | number | undefined;
+          if (newId) onCreated?.(newId, responseData);
+        }
       }
-      flushResolve.current?.();
+      flushResolve.current?.(responseData);
       flushResolve.current = null;
     } catch (err) {
       if (mounted.current) {
@@ -90,12 +99,12 @@ export function useAutoSave<T>({
           if (mounted.current) setStatus("idle");
         }, 4000);
       }
-      flushResolve.current?.();
+      flushResolve.current?.(undefined);
       flushResolve.current = null;
     } finally {
       if (mounted.current) saving.current = false;
     }
-  }, [draftId, resource, formData, getPayload, onCreated]);
+  }, [draftId, resource, formData, getPayload, onCreated, onSaved]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -106,7 +115,9 @@ export function useAutoSave<T>({
     if (timer.current) clearTimeout(timer.current);
 
     timer.current = setTimeout(() => {
-      saveDraft();
+      if (JSON.stringify(formData) !== lastSnapshot.current) {
+        saveDraft();
+      }
     }, debounceMs);
 
     return () => {
@@ -126,14 +137,14 @@ export function useAutoSave<T>({
     return () => clearInterval(interval);
   }, [enabled, intervalMs, formData, saveDraft]);
 
-  const flush = useCallback(() => {
+  const flush = useCallback((): Promise<Record<string, unknown> | undefined> => {
     if (timer.current) clearTimeout(timer.current);
-    if (!saving.current) {
-      saveDraft();
-    }
-    return new Promise<void>((resolve) => {
+    return new Promise<Record<string, unknown> | undefined>((resolve) => {
       if (!saving.current) {
-        resolve();
+        saveDraft();
+      }
+      if (!saving.current) {
+        resolve(undefined);
       } else {
         flushResolve.current = resolve;
       }
