@@ -276,7 +276,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
       currency: data.currency,
       stock_quantity: hasVariants ? 0 : Number(data.variants[0]?.stock ?? 0),
-      low_stock_threshold: data.low_stock_threshold,
+      low_stock_threshold: hasVariants ? data.low_stock_threshold : Number(data.variants[0]?.lowStockThreshold ?? 5),
       allow_backorder: data.allow_backorder,
       tax_included: data.tax_included,
       weight: data.weight === null || data.weight === undefined ? null : Number(data.weight),
@@ -401,7 +401,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         width: product.width ? Number(product.width) : null,
         height: product.height ? Number(product.height) : null,
         free_shipping: product.free_shipping ?? false,
-        variants: variants.length ? variants : [emptyVariant(0)],
+        variants: variants.length
+          ? variants
+          : [{
+              ...emptyVariant(0),
+              price: product.price ? Number(product.price) : null,
+              stock: product.stock_quantity ?? null,
+              lowStockThreshold: product.low_stock_threshold ?? 5,
+            }],
         categoryIds: (product.categories ?? []).map((c: { id?: string; category?: { id?: string } }) => c.id ?? c.category?.id).filter(Boolean) as string[],
         primaryCategoryId,
         is_active: product.is_active ?? true,
@@ -957,7 +964,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       cost: workingForm.cost === null || workingForm.cost === undefined ? null : Number(workingForm.cost),
       currency: workingForm.currency,
       stock_quantity: hasVariants ? workingForm.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0) : Number(workingForm.variants[0]?.stock ?? 0),
-      low_stock_threshold: workingForm.low_stock_threshold,
+      low_stock_threshold: hasVariants ? workingForm.low_stock_threshold : Number(workingForm.variants[0]?.lowStockThreshold ?? 5),
       allow_backorder: workingForm.allow_backorder,
       tax_included: workingForm.tax_included,
       weight: workingForm.weight === null || workingForm.weight === undefined ? null : Number(workingForm.weight),
