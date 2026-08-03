@@ -18,6 +18,7 @@ import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
+import { startProductAutofill, waitForProductAutofill, type ProductAiSuggestion } from "@/lib/productAi";
 
 interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -141,6 +142,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const isMobile = !screens.md;
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [aiRunning, setAiRunning] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>(() => {
     if (typeof window === 'undefined') return 'publish';
@@ -374,7 +376,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         customization_options: (product.customization_options ?? []).map((o: Record<string, unknown>, oi: number) => ({
           _id: (o.id as string) || customizationId(),
           name: (o.name as string) || "",
-          option_type: (o.option_type as CustomizationOptionForm["option_type"]) || "text",
+          option_type: ((o.option_type === "color" ? "color_picker" : o.option_type === "image" ? "image_upload" : o.option_type) as CustomizationOptionForm["option_type"]) || "text",
           is_required: (o.is_required as boolean) || false,
           price_modifier: (o.price_modifier as number) ?? null,
           choices: (o.choices as string[]) || [],
@@ -382,7 +384,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           is_active: (o.is_active as boolean) ?? true,
         })),
         videos: (product.videos ?? []).map((v: Record<string, unknown>) => ({
-          _id: videoId(),
+          _id: (v.id as string) || videoId(),
           url: (v.video_url as string) || "",
           thumbnail: (v.thumbnail as string) || "",
           title: (v.title as string) || "",
@@ -391,7 +393,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           is_featured: (v.is_featured as boolean) || false,
         })),
         aspect_ratio: product.aspect_ratio || categoryAspectDefault || "",
-        tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.id ?? "")),
+        tags: (product.tags ?? []).map((t: string | { id?: string; name?: string }) => typeof t === "string" ? t : (t.name ?? "")),
         publish_from: product.publish_from ?? "",
         publish_until: product.publish_until ?? "",
         meta_title: product.meta_title ?? "",
@@ -771,6 +773,95 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     }
   };
 
+  const applyAiSuggestions = useCallback((suggestions: ProductAiSuggestion[]) => {
+    const usable = suggestions.filter((item) => !item.is_null && item.value !== null && item.value !== undefined);
+    setForm((current) => {
+      const next = { ...current };
+      for (const suggestion of usable) {
+        const value = suggestion.value;
+        switch (suggestion.field_name) {
+          case "name": next.name = String(value); break;
+          case "sku": next.sku = String(value); break;
+          case "description": next.description = String(value); break;
+          case "short_description": next.short_description = String(value); break;
+          case "price": next.price = Number(value); break;
+          case "sale_price": next.sale_price = Number(value); break;
+          case "compare_at_price": next.compare_at_price = Number(value); break;
+          case "cost": next.cost = Number(value); break;
+          case "stock_quantity": next.stock_quantity = Number(value); break;
+          case "low_stock_threshold": next.low_stock_threshold = Number(value); break;
+          case "weight": next.weight = Number(value); break;
+          case "length": next.length = Number(value); break;
+          case "width": next.width = Number(value); break;
+          case "height": next.height = Number(value); break;
+          case "aspect_ratio": next.aspect_ratio = String(value); break;
+          case "meta_title": next.meta_title = String(value); break;
+          case "meta_description": next.meta_description = String(value); break;
+          case "meta_keywords": next.meta_keywords = String(value); break;
+          case "primary_category": next.primaryCategoryId = String(value); break;
+          case "categories":
+            if (Array.isArray(value)) next.categoryIds = value.map(String);
+            break;
+          case "tags": {
+            const names = suggestion.metadata.names;
+            next.tags = Array.isArray(names)
+              ? names.map(String)
+              : Array.isArray(value) ? value.map(String) : [String(value)];
+            break;
+          }
+        }
+      }
+      if (!slugManuallyEdited.current && next.name) {
+        next.slug = slugify(next.name);
+      }
+      return next;
+    });
+    return usable;
+  }, []);
+
+  const handleAiAutofill = async () => {
+    const imageKeys = form.gallery.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
+    if (!id && imageKeys.length === 0) {
+      message.warning("Upload at least one product image before running AI autofill.");
+      return;
+    }
+    setAiRunning(true);
+    try {
+      const categoryNames = categories
+        .filter((category) => form.categoryIds.includes(String(category.id)))
+        .map((category) => category.name);
+      const started = await startProductAutofill({
+        product_id: id ? String(id) : undefined,
+        image_keys: imageKeys,
+        currency: form.currency,
+        locale: "en",
+        allow_external: true,
+        context_hints: {
+          name: form.name,
+          sku: form.sku,
+          description: form.description,
+          short_description: form.short_description,
+          categories: categoryNames,
+          tags: form.tags,
+          has_variants: hasVariants,
+        },
+      });
+      const result = await waitForProductAutofill(started.job_id);
+      if (result.status !== "completed") {
+        throw new Error(result.error_message || "AI product analysis failed.");
+      }
+      const applied = applyAiSuggestions(result.suggestions ?? []);
+      const lowConfidence = applied.filter((item) => item.low_confidence).length;
+      message.success(
+        `AI filled ${applied.length} field${applied.length === 1 ? "" : "s"}${lowConfidence ? ` (${lowConfidence} need review)` : ""}.`
+      );
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "AI product analysis failed.");
+    } finally {
+      setAiRunning(false);
+    }
+  };
+
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!form.name) newErrors["name"] = "Product name is required";
@@ -810,7 +901,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: v.compareAt === null || v.compareAt === undefined ? null : Number(v.compareAt),
       size: v.size || '',
       color: v.color || '',
-      ...(v._imageKey && (v.image || '').includes('/_temp/') ? { _image_key: v._imageKey } : {}),
+      ...(v._imageKey ? { _image_key: v._imageKey } : {}),
     }));
 
     const values: Record<string, unknown> = {
@@ -820,7 +911,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
        barcode: hasVariants ? null : form.barcode || '',
       short_description: form.short_description,
       description: form.description,
-      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
+      images_data: form.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey ? { _storage_key: g._storageKey } : {}) })),
       price: Number(form.price ?? 0),
       sale_price: form.sale_price === null || form.sale_price === undefined ? null : Number(form.sale_price),
       compare_at_price: form.compare_at_price === null || form.compare_at_price === undefined ? null : Number(form.compare_at_price),
@@ -854,13 +945,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         is_active: o.is_active,
       })),
       videos_data: form.videos.map((v) => ({
+        id: v._id.startsWith("video_") ? undefined : v._id,
         video_url: v.url,
         thumbnail: v.thumbnail || undefined,
         title: v.title,
         alt_text: v.alt_text,
         is_cover: v.is_cover,
         is_featured: v.is_featured,
-        ...(v._storageKey && v.url.includes('/_temp/') ? { _storage_key: v._storageKey } : {}),
+        ...(v._storageKey ? { _storage_key: v._storageKey } : {}),
       })),
       tags: form.tags,
       aspect_ratio: form.aspect_ratio || "",
@@ -935,6 +1027,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           </Typography.Title>
         </Flex>
         <Flex align="center" gap={8}>
+          <Button
+            icon={<WandSparkles size={15} />}
+            onClick={handleAiAutofill}
+            loading={aiRunning}
+            disabled={saving}
+          >
+            {aiRunning ? "Analyzing product..." : "AI Autofill"}
+          </Button>
           {autoSave.status !== "idle" && (
             <span className={`admin-auto-save admin-auto-save--${autoSave.status}`}>
               {autoSave.status === "saving" ? "Saving draft..."
