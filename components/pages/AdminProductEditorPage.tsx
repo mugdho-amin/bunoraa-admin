@@ -18,7 +18,8 @@ import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
-import { startProductAutofill, waitForProductAutofill, type ProductAiSuggestion } from "@/lib/productAi";
+  import { startProductAutofill, waitForProductAutofill, reviewProductAutofill, type ProductAiSuggestion, type AiReviewDecision } from "@/lib/productAi";
+  import AiReviewModal from "@/components/ai/AiReviewModal";
 
 interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -143,6 +144,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
+  const [aiRegenerating, setAiRegenerating] = useState(false);
+  const [aiReview, setAiReview] = useState<{ jobId: string; suggestions: ProductAiSuggestion[] } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>(() => {
     if (typeof window === 'undefined') return 'publish';
@@ -817,94 +820,153 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     }
   };
 
-  const applyAiSuggestions = useCallback((suggestions: ProductAiSuggestion[]) => {
-    const usable = suggestions.filter((item) => !item.is_null && item.value !== null && item.value !== undefined);
-    setForm((current) => {
-      const next = { ...current };
-      for (const suggestion of usable) {
-        const value = suggestion.value;
-        switch (suggestion.field_name) {
-          case "name": next.name = String(value); break;
-          case "sku": next.sku = String(value); break;
-          case "description": next.description = String(value); break;
-          case "short_description": next.short_description = String(value); break;
-          case "price": next.price = Number(value); break;
-          case "sale_price": next.sale_price = Number(value); break;
-          case "compare_at_price": next.compare_at_price = Number(value); break;
-          case "cost": next.cost = Number(value); break;
-          case "stock_quantity": next.stock_quantity = Number(value); break;
-          case "low_stock_threshold": next.low_stock_threshold = Number(value); break;
-          case "weight": next.weight = Number(value); break;
-          case "length": next.length = Number(value); break;
-          case "width": next.width = Number(value); break;
-          case "height": next.height = Number(value); break;
-          case "aspect_ratio": next.aspect_ratio = String(value); break;
-          case "meta_title": next.meta_title = String(value); break;
-          case "meta_description": next.meta_description = String(value); break;
-          case "meta_keywords": next.meta_keywords = String(value); break;
-          case "primary_category": next.primaryCategoryId = String(value); break;
-          case "categories":
-            if (Array.isArray(value)) next.categoryIds = value.map(String);
-            break;
-          case "tags": {
-            const names = suggestion.metadata.names;
-            next.tags = Array.isArray(names)
-              ? names.map(String)
-              : Array.isArray(value) ? value.map(String) : [String(value)];
-            break;
-          }
+  const applySuggestionToForm = useCallback(
+    (next: ProductForm, suggestion: ProductAiSuggestion, overrideValue?: unknown): ProductForm => {
+      const value = overrideValue ?? suggestion.value;
+      if (value === null || value === undefined) return next;
+      switch (suggestion.field_name) {
+        case "name": next.name = String(value); break;
+        case "sku": next.sku = String(value); break;
+        case "description": next.description = String(value); break;
+        case "short_description": next.short_description = String(value); break;
+        case "price": next.price = Number(value); break;
+        case "sale_price": next.sale_price = Number(value); break;
+        case "compare_at_price": next.compare_at_price = Number(value); break;
+        case "cost": next.cost = Number(value); break;
+        case "stock_quantity": next.stock_quantity = Number(value); break;
+        case "low_stock_threshold": next.low_stock_threshold = Number(value); break;
+        case "weight": next.weight = Number(value); break;
+        case "length": next.length = Number(value); break;
+        case "width": next.width = Number(value); break;
+        case "height": next.height = Number(value); break;
+        case "aspect_ratio": next.aspect_ratio = String(value); break;
+        case "meta_title": next.meta_title = String(value); break;
+        case "meta_description": next.meta_description = String(value); break;
+        case "meta_keywords": next.meta_keywords = String(value); break;
+        case "primary_category": next.primaryCategoryId = String(value); break;
+        case "categories":
+          if (Array.isArray(value)) next.categoryIds = value.map(String);
+          break;
+        case "tags": {
+          const names = suggestion.metadata.names;
+          next.tags = Array.isArray(names)
+            ? names.map(String)
+            : Array.isArray(value) ? value.map(String) : [String(value)];
+          break;
         }
       }
       if (!slugManuallyEdited.current && next.name) {
         next.slug = slugify(next.name);
       }
       return next;
-    });
-    return usable;
-  }, []);
+    },
+    [],
+  );
 
-  const handleAiAutofill = async () => {
+  const runAiAutofill = useCallback(async (): Promise<{ jobId: string; suggestions: ProductAiSuggestion[] }> => {
     const imageKeys = form.gallery.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
     if (!id && imageKeys.length === 0) {
-      message.warning("Upload at least one product image before running AI autofill.");
-      return;
+      throw new Error("Upload at least one product image before running AI autofill.");
     }
+    const categoryNames = categories
+      .filter((category) => form.categoryIds.includes(String(category.id)))
+      .map((category) => category.name);
+    const started = await startProductAutofill({
+      product_id: id ? String(id) : undefined,
+      image_keys: imageKeys,
+      currency: form.currency,
+      locale: "en",
+      allow_external: true,
+      context_hints: {
+        name: form.name,
+        sku: form.sku,
+        description: form.description,
+        short_description: form.short_description,
+        categories: categoryNames,
+        tags: form.tags,
+        has_variants: hasVariants,
+      },
+    });
+    const result = await waitForProductAutofill(started.job_id);
+    if (result.status !== "completed") {
+      throw new Error(result.error_message || "AI product analysis failed.");
+    }
+    return { jobId: started.job_id, suggestions: result.suggestions ?? [] };
+  }, [id, form.gallery, form.currency, form.name, form.sku, form.description, form.short_description, form.tags, form.categoryIds, categories, hasVariants]);
+
+  const handleAiAutofill = async () => {
     setAiRunning(true);
     try {
-      const categoryNames = categories
-        .filter((category) => form.categoryIds.includes(String(category.id)))
-        .map((category) => category.name);
-      const started = await startProductAutofill({
-        product_id: id ? String(id) : undefined,
-        image_keys: imageKeys,
-        currency: form.currency,
-        locale: "en",
-        allow_external: true,
-        context_hints: {
-          name: form.name,
-          sku: form.sku,
-          description: form.description,
-          short_description: form.short_description,
-          categories: categoryNames,
-          tags: form.tags,
-          has_variants: hasVariants,
-        },
-      });
-      const result = await waitForProductAutofill(started.job_id);
-      if (result.status !== "completed") {
-        throw new Error(result.error_message || "AI product analysis failed.");
-      }
-      const applied = applyAiSuggestions(result.suggestions ?? []);
-      const lowConfidence = applied.filter((item) => item.low_confidence).length;
-      message.success(
-        `AI filled ${applied.length} field${applied.length === 1 ? "" : "s"}${lowConfidence ? ` (${lowConfidence} need review)` : ""}.`
-      );
+      const result = await runAiAutofill();
+      setAiReview(result);
     } catch (error) {
       message.error(error instanceof Error ? error.message : "AI product analysis failed.");
     } finally {
       setAiRunning(false);
     }
   };
+
+  const handleAiRegenerate = async () => {
+    setAiRegenerating(true);
+    try {
+      const result = await runAiAutofill();
+      setAiReview(result);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "AI product analysis failed.");
+    } finally {
+      setAiRegenerating(false);
+    }
+  };
+
+  const handleAiApplyReview = async (decisions: AiReviewDecision[]) => {
+    if (!aiReview) return;
+    const suggestionsById = new Map(aiReview.suggestions.map((s) => [s.field_name, s]));
+    const accepted = decisions.filter((d) => d.action === "applied" || d.action === "edited");
+    setForm((current) => {
+      const next = { ...current };
+      for (const decision of accepted) {
+        const suggestion = suggestionsById.get(decision.field_name);
+        if (!suggestion) continue;
+        applySuggestionToForm(
+          next,
+          suggestion,
+          decision.action === "edited" ? decision.final_value : suggestion.value,
+        );
+      }
+      return next;
+    });
+    try {
+      await reviewProductAutofill(aiReview.jobId, decisions);
+    } catch {
+      message.warning("Changes applied, but the AI review couldn't be recorded.");
+    }
+    const lowConfidence = accepted.filter((d) => suggestionsById.get(d.field_name)?.low_confidence).length;
+    setAiReview(null);
+    message.success(
+      `Applied ${accepted.length} AI suggestion${accepted.length === 1 ? "" : "s"}${lowConfidence ? ` (${lowConfidence} low confidence)` : ""}. Review before saving.`
+    );
+  };
+
+  const aiCurrentValues: Record<string, unknown> = useMemo(() => ({
+    name: form.name,
+    sku: form.sku,
+    description: form.description,
+    short_description: form.short_description,
+    price: form.price,
+    sale_price: form.sale_price,
+    compare_at_price: form.compare_at_price,
+    cost: form.cost,
+    stock_quantity: form.stock_quantity,
+    low_stock_threshold: form.low_stock_threshold,
+    weight: form.weight,
+    length: form.length,
+    width: form.width,
+    height: form.height,
+    aspect_ratio: form.aspect_ratio,
+    meta_title: form.meta_title,
+    meta_description: form.meta_description,
+    meta_keywords: form.meta_keywords,
+  }), [form]);
 
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
@@ -1081,6 +1143,19 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           >
             {aiRunning ? "Analyzing product..." : "AI Autofill"}
           </Button>
+          {aiReview && (
+            <AiReviewModal
+              key={aiReview.jobId}
+              open
+              jobId={aiReview.jobId}
+              suggestions={aiReview.suggestions}
+              currentValues={aiCurrentValues}
+              regenerating={aiRegenerating}
+              onApply={handleAiApplyReview}
+              onRegenerate={handleAiRegenerate}
+              onCancel={() => setAiReview(null)}
+            />
+          )}
           {autoSave.status !== "idle" && (
             <span className={`admin-auto-save admin-auto-save--${autoSave.status}`}>
               {autoSave.status === "saving" ? "Saving draft..."

@@ -23,6 +23,15 @@ export type ProductAiJob = {
   suggestions?: ProductAiSuggestion[];
 };
 
+export type AiReviewAction = "applied" | "rejected" | "edited";
+
+export type AiReviewDecision = {
+  field_name: string;
+  action: AiReviewAction;
+  final_value?: unknown;
+  note?: string;
+};
+
 export async function startProductAutofill(payload: {
   product_id?: string;
   image_keys: string[];
@@ -59,4 +68,15 @@ export async function waitForProductAutofill(jobId: string, timeoutMs = 180_000)
     await new Promise((resolve) => window.setTimeout(resolve, 2000));
   }
   throw new Error("AI product analysis is still running. Please try again shortly.");
+}
+
+export async function reviewProductAutofill(jobId: string, decisions: AiReviewDecision[]) {
+  const response = await requestAdminEnvelope<{ recorded: number }>(
+    `admin/product-autofill/${jobId}/review/`,
+    { method: "POST", body: { decisions } },
+  );
+  if (!response.success) {
+    throw new Error(response.message || "Unable to record AI review decisions.");
+  }
+  return response.data;
 }
