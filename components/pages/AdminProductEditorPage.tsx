@@ -278,6 +278,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     formData: form,
     id: currentId,
     enabled: !saving && !loadingProduct,
+    intervalMs: 10000,
     getPayload: getProductPayload,
     onCreated: (newId, data) => {
       setCurrentId(newId);

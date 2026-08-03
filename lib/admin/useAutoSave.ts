@@ -11,6 +11,7 @@ type UseAutoSaveOptions<T> = {
   id?: string | number | null;
   enabled?: boolean;
   debounceMs?: number;
+  intervalMs?: number;
   getPayload?: (data: T) => Record<string, unknown>;
   onCreated?: (newId: string | number, data?: Record<string, unknown>) => void;
 };
@@ -21,6 +22,7 @@ export function useAutoSave<T>({
   id,
   enabled = true,
   debounceMs = 3000,
+  intervalMs = 0,
   getPayload,
   onCreated,
 }: UseAutoSaveOptions<T>) {
@@ -111,6 +113,18 @@ export function useAutoSave<T>({
       if (timer.current) clearTimeout(timer.current);
     };
   }, [enabled, formData, debounceMs, saveDraft]);
+
+  useEffect(() => {
+    if (!enabled || !intervalMs || intervalMs <= 0) return;
+
+    const interval = setInterval(() => {
+      if (JSON.stringify(formData) !== lastSnapshot.current && !saving.current) {
+        saveDraft();
+      }
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+  }, [enabled, intervalMs, formData, saveDraft]);
 
   const flush = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
