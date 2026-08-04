@@ -578,10 +578,16 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     }
   }, [action, existing]);
 
+  const resetSnapshotRef = useRef(autoSave.resetSnapshot);
+
+  useEffect(() => {
+    resetSnapshotRef.current = autoSave.resetSnapshot;
+  }, [autoSave.resetSnapshot]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       initForm();
-      autoSave.resetSnapshot();
+      resetSnapshotRef.current();
     }, 0);
     return () => clearTimeout(timer);
   }, [initForm]);

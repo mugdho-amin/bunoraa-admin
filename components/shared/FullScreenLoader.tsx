@@ -1,6 +1,6 @@
 "use client";
 
-import { Flex, Typography } from "antd";
+import { Typography } from "antd";
 
 export function FullScreenLoader({
   message = "Preparing the admin workspace...",

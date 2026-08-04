@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Button, Flex, Input, InputNumber, Modal, Space, Tag, Typography } from "antd";
 import { Check, ExternalLink, RefreshCw, X } from "lucide-react";
 import { humanizeLabel } from "@/lib/admin/utils";
@@ -73,10 +73,12 @@ export default function AiReviewModal({
   onCancel,
 }: AiReviewModalProps) {
   const [items, setItems] = useState<ReviewItem[]>(() => buildItems(suggestions));
+  const [prevProps, setPrevProps] = useState({ open, suggestions });
 
-  useEffect(() => {
-    if (open) setItems(buildItems(suggestions));
-  }, [open, suggestions]);
+  if (open && (open !== prevProps.open || suggestions !== prevProps.suggestions)) {
+    setPrevProps({ open, suggestions });
+    setItems(buildItems(suggestions));
+  }
 
   const acceptedCount = items.filter((i) => i.decision === "accepted").length;
   const rejectedCount = items.filter((i) => i.decision === "rejected").length;

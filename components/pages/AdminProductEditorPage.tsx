@@ -920,7 +920,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       throw new Error(result.error_message || "AI product analysis failed.");
     }
     return { jobId: started.job_id, suggestions: result.suggestions ?? [] };
-  }, [id, form.gallery, form.currency, form.name, form.sku, form.description, form.short_description, form.tags, form.categoryIds, categories, hasVariants]);
+  }, [id, form.gallery, form.currency, form.name, form.sku, form.description, form.short_description, form.tags, form.categoryIds, categories, form.product_type]);
 
   const handleAiAutofill = async () => {
     setAiRunning(true);
