@@ -30,6 +30,9 @@ const AdminNotificationsPage = dynamic(() => import("@/components/pages/AdminNot
 const AdminRealtimeEventsPage = dynamic(() => import("@/components/pages/AdminRealtimeEventsPage").then((m) => ({ default: m.AdminRealtimeEventsPage })), {
   loading: () => <FullScreenLoader message="Loading events..." />,
 });
+const AdminAiProvidersPage = dynamic(() => import("@/components/pages/AdminAiProvidersPage").then((m) => ({ default: m.AdminAiProvidersPage })), {
+  loading: () => <FullScreenLoader message="Loading AI providers..." />,
+});
 const SingletonSettingsPage = dynamic(() => import("@/components/pages/SingletonSettingsPage").then((m) => ({ default: m.SingletonSettingsPage })), {
   loading: () => <FullScreenLoader message="Loading settings..." />,
 });
@@ -112,7 +115,9 @@ export function AdminRouteRenderer({ slug }: { slug: string[] }) {
               ? renderProductPage(route.action, route.id)
               : route.resource.name === "catalog/categories"
                 ? renderCategoryPage(route.action, route.id)
-                : (
+                : route.resource.name === "ai/providers"
+                  ? <AdminAiProvidersPage />
+                  : (
                   <GenericResourcePage
                     resource={route.resource}
                     action={route.action}

@@ -122,6 +122,27 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
   lowStockThreshold: 5, enabled: true, sortOrder,
 });
 
+export function suggestVariantSku(
+  variant: VariantForm,
+  productSku: string,
+  productSlug: string,
+  existingSkus: string[],
+): string {
+  const part = (text: string) => (text || "").replace(/[^A-Za-z0-9]+/g, "").toUpperCase().slice(0, 14);
+  const base = part(productSku) || part(productSlug) || "V";
+  const suffix = [part(variant.size), part(variant.color)].filter(Boolean);
+  const candidate = [base, ...(suffix.length ? suffix : ["V"])].join("-").slice(0, 20);
+  const used = new Set(existingSkus.map((s) => s.toUpperCase()).filter(Boolean));
+  if (!used.has(candidate)) return candidate;
+  let counter = 2;
+  while (counter < 999) {
+    const alt = `${candidate.slice(0, 17)}-${counter}`.slice(0, 20);
+    if (!used.has(alt)) return alt;
+    counter += 1;
+  }
+  return candidate;
+}
+
 const emptyForm: ProductForm = {
   name: "", slug: "", sku: "", barcode: "",
   short_description: "", description: "",
@@ -979,8 +1000,15 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (!hasVariants) {
       if (!form.sku) newErrors["sku"] = "SKU is required";
     } else {
+      const seen = new Set<string>();
       form.variants.forEach((v, i) => {
-        if (!v.sku) newErrors[`variants.${i}.sku`] = "SKU is required";
+        const sku = v.sku.trim().toUpperCase();
+        if (!sku) return;
+        if (seen.has(sku)) {
+          newErrors[`variants.${i}.sku`] = `Duplicate SKU "${v.sku.trim()}"`;
+        } else {
+          seen.add(sku);
+        }
       });
     }
 
@@ -2373,6 +2401,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU *</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.sku} onChange={(e) => updateVariant(actualIdx, "sku", e.target.value)}
+                                        placeholder={`Auto: ${suggestVariantSku(variant, form.sku, form.slug, form.variants.map((v) => v.sku))}`}
                                         style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                       <button onClick={() => generateSingleSku(actualIdx)}
                                         style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
