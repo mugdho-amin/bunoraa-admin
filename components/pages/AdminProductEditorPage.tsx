@@ -64,6 +64,7 @@ const videoId = () => `video_${Date.now()}_${++galleryIdCounter}`;
 const customizationId = () => `cust_${Date.now()}_${++galleryIdCounter}`;
 
 interface ProductForm {
+  product_type: "simple" | "variable";
   name: string; slug: string; sku: string; barcode: string;
   short_description: string; description: string;
   primaryImage: string; primaryImageAlt: string; gallery: GalleryImage[];
@@ -144,6 +145,7 @@ export function suggestVariantSku(
 }
 
 const emptyForm: ProductForm = {
+  product_type: "simple",
   name: "", slug: "", sku: "", barcode: "",
   short_description: "", description: "",
   primaryImage: "", primaryImageAlt: "", gallery: [], price: null, sale_price: null, compare_at_price: null, cost: null, currency: "BDT",
@@ -268,6 +270,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }, []);
 
   const getProductPayload = useCallback((data: ProductForm): Record<string, unknown> => {
+    const dataHasVariants = data.product_type === "variable";
     const cleanVariants = data.variants.map((v) => ({
       id: v.id || undefined,
       sku: v.sku.trim(),
@@ -287,8 +290,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     return {
       name: data.name,
       slug: data.slug,
-      sku: hasVariants ? null : data.sku || null,
-      barcode: hasVariants ? null : data.barcode || '',
+      sku: dataHasVariants ? null : data.sku || null,
+      barcode: dataHasVariants ? null : data.barcode || '',
       short_description: data.short_description,
       description: data.description,
       primary_image: data.primaryImage || null,
@@ -299,8 +302,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: data.compare_at_price === null || data.compare_at_price === undefined ? null : Number(data.compare_at_price),
       cost: data.cost === null || data.cost === undefined ? null : Number(data.cost),
       currency: data.currency,
-      stock_quantity: hasVariants ? 0 : Number(data.variants[0]?.stock ?? 0),
-      low_stock_threshold: hasVariants ? data.low_stock_threshold : Number(data.variants[0]?.lowStockThreshold ?? 5),
+      stock_quantity: dataHasVariants ? data.variants.reduce((sum, v) => sum + Number(v.stock ?? 0), 0) : Number(data.variants[0]?.stock ?? 0),
+      low_stock_threshold: dataHasVariants ? data.low_stock_threshold : Number(data.variants[0]?.lowStockThreshold ?? 5),
       allow_backorder: data.allow_backorder,
       tax_included: data.tax_included,
       weight: data.weight === null || data.weight === undefined ? null : Number(data.weight),
@@ -308,7 +311,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: data.width === null || data.width === undefined ? null : Number(data.width),
       height: data.height === null || data.height === undefined ? null : Number(data.height),
       free_shipping: data.free_shipping,
-      ...(hasVariants ? { variants_data: cleanVariants } : {}),
+      variants_data: dataHasVariants ? cleanVariants : [],
       category_ids: data.categoryIds,
       primary_category: data.primaryCategoryId || null,
       is_active: data.is_active,
@@ -344,7 +347,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       meta_description: (data.meta_description || data.short_description || "").trim(),
       meta_keywords: (data.meta_keywords || "").trim(),
     };
-  }, [hasVariants]);
+  }, []);
 
   const autoSave = useAutoSave({
     resource: "catalog/products",
@@ -400,8 +403,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text ?? item.alt ?? "" };
       });
       const hasOptions = variants.some((v) => v.size || v.color);
-      setHasVariants(hasOptions);
+      const loadedAsVariantProduct = variants.length > 1 || hasOptions || Boolean(product.has_variants);
+       setHasVariants(loadedAsVariantProduct);
       setForm({
+        product_type: loadedAsVariantProduct ? "variable" : "simple",
         name: product.name ?? "",
         slug: product.slug ?? "",
         sku: product.sku ?? "",
@@ -542,7 +547,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const addVariant = () => {
     const idx = form.variants.length;
-    setForm((p) => ({ ...p, variants: [...p.variants, { ...emptyVariant(idx), price: p.price }] }));
+    setHasVariants(true);
+    setForm((p) => ({ ...p, product_type: "variable", variants: [...p.variants, { ...emptyVariant(idx), price: p.price }] }));
     setExpandedVariants((prev) => new Set(prev).add(idx));
     setTimeout(() => variantContainerRef.current?.scrollTo({ top: variantContainerRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
@@ -905,7 +911,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         short_description: form.short_description,
         categories: categoryNames,
         tags: form.tags,
-        has_variants: hasVariants,
+        has_variants: form.product_type === "variable",
+        image_names: form.gallery.map((image) => image.url.split("/").pop() || "").filter(Boolean),
       },
     });
     const result = await waitForProductAutofill(started.job_id);
@@ -997,13 +1004,18 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (!form.primaryCategoryId) newErrors["primaryCategoryId"] = "Primary category is required";
     if (!form.categoryIds || form.categoryIds.length === 0) newErrors["categoryIds"] = "At least one category is required";
 
-    if (!hasVariants) {
-      if (!form.sku) newErrors["sku"] = "SKU is required";
+    const formHasVariants = form.product_type === "variable";
+    if (!formHasVariants) {
+      if (!form.sku.trim()) newErrors["sku"] = "SKU is required";
     } else {
+      if (form.variants.length === 0) newErrors["variants"] = "Add at least one variant";
       const seen = new Set<string>();
       form.variants.forEach((v, i) => {
         const sku = v.sku.trim().toUpperCase();
-        if (!sku) return;
+        if (!sku) {
+          newErrors[`variants.${i}.sku`] = "Variant SKU is required";
+          return;
+        }
         if (seen.has(sku)) {
           newErrors[`variants.${i}.sku`] = `Duplicate SKU "${v.sku.trim()}"`;
         } else {
@@ -1022,6 +1034,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     setSaving(true);
     const savedData = await autoSave.flush();
     const workingForm = savedData ? syncFormWithServer(savedData, form) : form;
+    const workingHasVariants = workingForm.product_type === "variable";
     if (workingForm !== form) setForm(workingForm);
 
     const cleanVariants = workingForm.variants.map((v) => ({
@@ -1043,8 +1056,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     const values: Record<string, unknown> = {
        name: workingForm.name,
        slug: workingForm.slug,
-       sku: hasVariants ? null : workingForm.sku || null,
-       barcode: hasVariants ? null : workingForm.barcode || '',
+       sku: workingHasVariants ? null : workingForm.sku || null,
+       barcode: workingHasVariants ? null : workingForm.barcode || '',
       short_description: workingForm.short_description,
       description: workingForm.description,
       images_data: workingForm.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
@@ -1053,8 +1066,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       compare_at_price: workingForm.compare_at_price === null || workingForm.compare_at_price === undefined ? null : Number(workingForm.compare_at_price),
       cost: workingForm.cost === null || workingForm.cost === undefined ? null : Number(workingForm.cost),
       currency: workingForm.currency,
-      stock_quantity: hasVariants ? workingForm.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0) : Number(workingForm.variants[0]?.stock ?? 0),
-      low_stock_threshold: hasVariants ? workingForm.low_stock_threshold : Number(workingForm.variants[0]?.lowStockThreshold ?? 5),
+      stock_quantity: workingHasVariants ? workingForm.variants.reduce((sum, v) => sum + Number(v.stock ?? 0), 0) : Number(workingForm.variants[0]?.stock ?? 0),
+      low_stock_threshold: workingHasVariants ? workingForm.low_stock_threshold : Number(workingForm.variants[0]?.lowStockThreshold ?? 5),
       allow_backorder: workingForm.allow_backorder,
       tax_included: workingForm.tax_included,
       weight: workingForm.weight === null || workingForm.weight === undefined ? null : Number(workingForm.weight),
@@ -1062,7 +1075,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       width: workingForm.width === null || workingForm.width === undefined ? null : Number(workingForm.width),
       height: workingForm.height === null || workingForm.height === undefined ? null : Number(workingForm.height),
       free_shipping: workingForm.free_shipping,
-      ...(hasVariants ? { variants_data: cleanVariants } : {}),
+      variants_data: workingHasVariants ? cleanVariants : [],
       category_ids: workingForm.categoryIds,
       primary_category: workingForm.primaryCategoryId || null,
       is_featured: workingForm.is_featured,
@@ -1361,7 +1374,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       }}
                       onDragEnd={() => setGalleryDragIndex(null)}
                     >
-                      <Flex gap={12} align="start">
+                      <Flex gap={12} align="start" className="admin-video-row">
                         <div style={{ cursor: "grab", color: "var(--admin-muted-alpha-20)", marginTop: 4 }}>
                           <GripVertical size={16} />
                         </div>
@@ -1445,10 +1458,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <Flex vertical gap={8}>
                 {form.videos.map((video, i) => (
                   <div key={video._id}
-                    style={{ borderRadius: 12, border: "1px solid var(--admin-input-border)", padding: 12 }}
+                    className="admin-video-card"
                   >
                     <Flex gap={12} align="start">
-                      <div style={{ position: "relative", flexShrink: 0, width: 80, height: 60, borderRadius: 8, overflow: "hidden", background: "var(--admin-muted-alpha-10)", cursor: video.url ? "pointer" : "default" }}
+                      <div className="admin-video-preview"
                         onClick={() => video.url && setPreviewVideoUrl(video.url)}>
                         {video.thumbnail ? (
                           <Image src={video.thumbnail} alt={video.title} width={80} height={60} unoptimized style={{ objectFit: "cover", width: "100%", height: "100%" }} />
@@ -1498,7 +1511,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                 setForm((p) => ({
                                   ...p,
                                   videos: p.videos.map((v, vi) => ({ ...v, is_cover: vi === i ? !v.is_cover : false })),
-                                  has_cover_video: i === 0 ? !video.is_cover : p.has_cover_video,
+                                  has_cover_video: !p.videos[i].is_cover,
                                 }));
                               }}
                               style={{ accentColor: "var(--admin-brand)" }} />
@@ -2401,7 +2414,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU *</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.sku} onChange={(e) => updateVariant(actualIdx, "sku", e.target.value)}
-                                        placeholder={`Auto: ${suggestVariantSku(variant, form.sku, form.slug, form.variants.map((v) => v.sku))}`}
+                                        placeholder={`${suggestVariantSku(variant, form.sku, form.slug, form.variants.map((v) => v.sku))}`}
                                         style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
                                       <button onClick={() => generateSingleSku(actualIdx)}
                                         style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>

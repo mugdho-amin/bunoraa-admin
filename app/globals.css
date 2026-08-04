@@ -864,3 +864,59 @@ pre { white-space: pre-wrap; word-break: break-word; }
 .admin-section-body {
   padding: 0 20px 20px;
 }
+
+
+/* Product media and customization editor */
+.admin-video-card,
+.admin-customization-card {
+  border: 1px solid var(--admin-input-border);
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--admin-surface), var(--admin-hover-bg));
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.admin-video-card:hover,
+.admin-customization-card:hover {
+  border-color: var(--admin-brand-alpha-15);
+  box-shadow: 0 10px 28px hsl(var(--admin-shadow-color) / 0.08);
+}
+
+.admin-video-preview {
+  position: relative;
+  flex: 0 0 132px;
+  width: 132px;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--admin-muted-alpha-10);
+  cursor: pointer;
+}
+
+.admin-video-actions {
+  min-height: 28px;
+  padding-top: 2px;
+  border-top: 1px solid var(--admin-divider);
+}
+
+.admin-customization-panel .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-customization-card.is-disabled {
+  opacity: 0.66;
+  background: var(--admin-muted-alpha-05);
+}
+
+@media (max-width: 640px) {
+  .admin-video-row {
+    flex-direction: column;
+  }
+
+  .admin-video-preview {
+    width: 100%;
+    flex-basis: auto;
+  }
+}

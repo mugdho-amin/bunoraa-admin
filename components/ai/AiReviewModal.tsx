@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Flex, Input, InputNumber, Modal, Space, Tag, Typography } from "antd";
 import { Check, ExternalLink, RefreshCw, X } from "lucide-react";
 import { humanizeLabel } from "@/lib/admin/utils";
@@ -73,6 +73,10 @@ export default function AiReviewModal({
   onCancel,
 }: AiReviewModalProps) {
   const [items, setItems] = useState<ReviewItem[]>(() => buildItems(suggestions));
+
+  useEffect(() => {
+    if (open) setItems(buildItems(suggestions));
+  }, [open, suggestions]);
 
   const acceptedCount = items.filter((i) => i.decision === "accepted").length;
   const rejectedCount = items.filter((i) => i.decision === "rejected").length;
@@ -171,6 +175,13 @@ export default function AiReviewModal({
         </Flex>
       }
     >
+      <Alert
+        type="warning"
+        showIcon
+        style={{ marginBottom: 8 }}
+        message="AI suggestions are drafts, not verified facts"
+        description="Confirm material, dimensions, claims, prices, and SEO wording against your product before applying."
+      />
       <Alert
         type="info"
         showIcon
