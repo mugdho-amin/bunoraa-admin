@@ -20,12 +20,19 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { BrainCircuit, PlugZap, Plus, Pencil, Trash2, X } from "lucide-react";
+import { BrainCircuit, PlugZap, Plus, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { requestAdminEnvelope } from "@/lib/admin/http";
 
 const PRESETS: Record<
   string,
-  { label: string; provider_type: string; base_url: string; model: string; supports_json_mode: boolean }
+  {
+    label: string;
+    provider_type: string;
+    base_url: string;
+    model: string;
+    supports_json_mode: boolean;
+    models: string[];
+  }
 > = {
   openai: {
     label: "OpenAI (ChatGPT)",
@@ -33,6 +40,7 @@ const PRESETS: Record<
     base_url: "https://api.openai.com/v1",
     model: "gpt-4o-mini",
     supports_json_mode: true,
+    models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "o3-mini"],
   },
   anthropic: {
     label: "Anthropic (Claude)",
@@ -40,13 +48,15 @@ const PRESETS: Record<
     base_url: "https://api.anthropic.com",
     model: "claude-sonnet-4-20250514",
     supports_json_mode: false,
+    models: ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-20250514"],
   },
   gemini: {
     label: "Google Gemini",
     provider_type: "openai_compatible",
     base_url: "https://generativelanguage.googleapis.com/v1beta/openai/",
-    model: "gemini-2.0-flash",
+    model: "gemini-flash-latest",
     supports_json_mode: true,
+    models: ["gemini-flash-latest"],
   },
   grok: {
     label: "xAI Grok",
@@ -54,6 +64,7 @@ const PRESETS: Record<
     base_url: "https://api.x.ai/v1",
     model: "grok-4-fast-mini",
     supports_json_mode: true,
+    models: ["grok-4-fast-mini"],
   },
   custom: {
     label: "Custom (OpenAI-compatible)",
@@ -61,6 +72,7 @@ const PRESETS: Record<
     base_url: "",
     model: "",
     supports_json_mode: true,
+    models: [],
   },
 };
 
@@ -71,6 +83,7 @@ type AiProviderRecord = {
   provider_type: string;
   base_url: string;
   model: string;
+  available_models: string[];
   masked_key: string;
   enabled: boolean;
   priority: number;
@@ -97,6 +110,7 @@ type FormValues = {
   supports_json_mode: boolean;
   rpm_limit: number | null;
   is_default: boolean;
+  available_models: string[];
 };
 
 const emptyForm: FormValues = {
@@ -114,6 +128,7 @@ const emptyForm: FormValues = {
   supports_json_mode: true,
   rpm_limit: null,
   is_default: false,
+  available_models: [],
 };
 
 export function AdminAiProvidersPage() {
@@ -124,6 +139,11 @@ export function AdminAiProvidersPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; text: string }>>({});
+  const [modelsRecord, setModelsRecord] = useState<AiProviderRecord | null>(null);
+  const [modelsOpen, setModelsOpen] = useState(false);
+  const [newModelName, setNewModelName] = useState("");
+  const [modelsSyncing, setModelsSyncing] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   const { query: listQuery, result: listResult } = useList<AiProviderRecord>({
     resource: "ai/providers",
@@ -162,6 +182,7 @@ export function AdminAiProvidersPage() {
       supports_json_mode: record.supports_json_mode,
       rpm_limit: record.rpm_limit,
       is_default: record.is_default,
+      available_models: record.available_models ?? [],
     });
     setModalOpen(true);
   };
@@ -175,6 +196,7 @@ export function AdminAiProvidersPage() {
       base_url: preset.base_url,
       model: preset.model,
       supports_json_mode: preset.supports_json_mode,
+      available_models: preset.models,
     });
   };
 
@@ -265,6 +287,81 @@ export function AdminAiProvidersPage() {
     await refetch();
   };
 
+  const openManageModels = (record: AiProviderRecord) => {
+    setModelsRecord(record);
+    setAvailableModels(record.available_models ?? []);
+    setNewModelName("");
+    setModelsOpen(true);
+  };
+
+  const refreshModelsRecord = async () => {
+    refetch();
+  };
+
+  const handleAddModel = async () => {
+    const name = newModelName.trim();
+    if (!modelsRecord || !name) return;
+    const updated = await requestAdminEnvelope<{ available_models: string[] }>(
+      `admin/ai/providers/${modelsRecord.id}/models/`,
+      { method: "POST", body: { name } },
+    );
+    if (updated.success) {
+      setAvailableModels(updated.data?.available_models ?? []);
+      setNewModelName("");
+      message.success(`Added "${name}".`);
+      await refreshModelsRecord();
+    } else {
+      message.error(updated.message || "Failed to add model.");
+    }
+  };
+
+  const handleRemoveModel = async (name: string) => {
+    if (!modelsRecord) return;
+    const updated = await requestAdminEnvelope<{ available_models: string[] }>(
+      `admin/ai/providers/${modelsRecord.id}/models/?name=${encodeURIComponent(name)}`,
+      { method: "DELETE" },
+    );
+    if (updated.success) {
+      setAvailableModels(updated.data?.available_models ?? []);
+      message.success(`Removed "${name}".`);
+      await refreshModelsRecord();
+    } else {
+      message.error(updated.message || "Failed to remove model.");
+    }
+  };
+
+  const handleSyncModels = async () => {
+    if (!modelsRecord) return;
+    setModelsSyncing(true);
+    try {
+      const updated = await requestAdminEnvelope<{ available_models: string[] }>(
+        `admin/ai/providers/${modelsRecord.id}/models/sync/`,
+        { method: "POST", body: {} },
+      );
+      if (updated.success) {
+        setAvailableModels(updated.data?.available_models ?? []);
+        message.success(updated.message || "Models synced.");
+        await refreshModelsRecord();
+      } else {
+        message.error(updated.message || "Sync failed.");
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Sync failed.");
+    } finally {
+      setModelsSyncing(false);
+    }
+  };
+
+  const handleSetModel = async (record: AiProviderRecord, model: string) => {
+    await updateProvider({
+      resource: "ai/providers",
+      id: record.id,
+      values: { model },
+    });
+    message.success(`Active model set to "${model}".`);
+    await refetch();
+  };
+
   const setDefault = async (record: AiProviderRecord) => {
     await updateProvider({
       resource: "ai/providers",
@@ -302,9 +399,26 @@ export function AdminAiProvidersPage() {
     {
       title: "Model",
       dataIndex: "model",
-      width: 200,
-      render: (value: string) => (
-        <Typography.Text style={{ fontSize: 12, fontFamily: "monospace" }}>{value}</Typography.Text>
+      width: 240,
+      render: (value: string, record) => (
+        <Flex vertical gap={2}>
+          <Select
+            size="small"
+            variant="borderless"
+            value={value}
+            style={{ width: "100%", maxWidth: 220 }}
+            options={(record.available_models?.length
+              ? record.available_models
+              : [value]
+            ).map((m) => ({ value: m, label: m }))}
+            onChange={(model) => handleSetModel(record, model)}
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+            {record.available_models?.length
+              ? `${record.available_models.length} model${record.available_models.length === 1 ? "" : "s"} in registry`
+              : "No registry"}
+          </Typography.Text>
+        </Flex>
       ),
     },
     {
@@ -359,7 +473,7 @@ export function AdminAiProvidersPage() {
     {
       title: "",
       key: "actions",
-      width: 130,
+      width: 220,
       render: (_, record) => (
         <Space size={4}>
           {!record.is_default && record.masked_key && (
@@ -367,6 +481,9 @@ export function AdminAiProvidersPage() {
               Make default
             </Button>
           )}
+          <Button size="small" type="text" icon={<RefreshCw size={13} />} onClick={() => openManageModels(record)}>
+            Models
+          </Button>
           <Button size="small" type="text" icon={<Pencil size={13} />} onClick={() => openEdit(record)} />
           <Button size="small" type="text" danger icon={<Trash2 size={13} />} onClick={() => handleDelete(record)} />
         </Space>
@@ -423,6 +540,9 @@ export function AdminAiProvidersPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical" initialValues={emptyForm} style={{ marginTop: 8 }}>
+          <Form.Item name="available_models" hidden>
+            <Input type="hidden" />
+          </Form.Item>
           <Form.Item name="key" label="Provider key" rules={[{ required: true, message: "Choose a provider" }]}>
             <Select
               disabled={Boolean(editing)}
@@ -495,6 +615,70 @@ export function AdminAiProvidersPage() {
             </Form.Item>
           )}
         </Form>
+      </Modal>
+
+      <Modal
+        open={modelsOpen}
+        title={`Manage models — ${modelsRecord?.label ?? ""}`}
+        width={560}
+        onCancel={() => setModelsOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Flex vertical gap={16}>
+          <Alert
+            type="info"
+            showIcon
+            message={`Active model: ${modelsRecord?.model ?? ""}`}
+            description="The registry below populates the Model dropdown. Add or remove model names freely; they are suggestions and do not need to be fetched from the provider first."
+          />
+          <Flex gap={8}>
+            <Input
+              placeholder="Model name, e.g. gpt-4o-mini"
+              value={newModelName}
+              onChange={(e) => setNewModelName(e.target.value)}
+              onPressEnter={handleAddModel}
+              disabled={!modelsRecord?.masked_key}
+            />
+            <Button type="primary" icon={<Plus size={14} />} onClick={handleAddModel} disabled={!newModelName.trim() || !modelsRecord?.masked_key}>
+              Add
+            </Button>
+          </Flex>
+          <Flex vertical gap={8}>
+            {availableModels.map((name) => (
+              <Flex key={name} justify="space-between" align="center" gap={8}>
+                <Typography.Text style={{ fontFamily: "monospace", fontSize: 12 }}>{name}</Typography.Text>
+                <Space>
+                  <Button
+                    size="small"
+                    type="primary"
+                    disabled={name === modelsRecord?.model}
+                    onClick={() => handleSetModel(modelsRecord!, name)}
+                  >
+                    Use
+                  </Button>
+                  <Button size="small" type="text" danger icon={<Trash2 size={12} />} onClick={() => handleRemoveModel(name)} />
+                </Space>
+              </Flex>
+            ))}
+            {availableModels.length === 0 && (
+              <Typography.Text type="secondary">No models in the registry yet.</Typography.Text>
+            )}
+          </Flex>
+          <Flex gap={8}>
+            <Button
+              icon={<RefreshCw size={14} />}
+              loading={modelsSyncing}
+              disabled={!modelsRecord?.masked_key}
+              onClick={handleSyncModels}
+            >
+              Sync from provider
+            </Button>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              Fetch the provider&apos;s live model list and merge it into the registry.
+            </Typography.Text>
+          </Flex>
+        </Flex>
       </Modal>
     </Flex>
   );
