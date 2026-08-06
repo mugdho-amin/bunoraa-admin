@@ -43,6 +43,14 @@ function displayValue(value: unknown): string {
   return String(value);
 }
 
+function suggestedText(suggestion: ProductAiSuggestion): string {
+  const display = suggestion.display_value;
+  if (display !== null && display !== undefined && String(display).trim() !== "") {
+    return String(display);
+  }
+  return displayValue(suggestion.value);
+}
+
 type AiReviewModalProps = {
   open: boolean;
   jobId: string;
@@ -65,7 +73,7 @@ function buildItems(suggestions: ProductAiSuggestion[]): ReviewItem[] {
     .map((suggestion) => ({
       suggestion,
       decision: "pending" as const,
-      editedValue: displayValue(suggestion.value),
+      editedValue: suggestedText(suggestion),
     }));
 }
 
@@ -109,8 +117,16 @@ export default function AiReviewModal({
         if (item.decision === "rejected") {
           return { field_name: suggestion.field_name, action: "rejected" as const };
         }
-        const edited = !READONLY_FIELDS.has(suggestion.field_name)
-          && item.editedValue.trim() !== String(suggestion.display_value ?? "").trim();
+        if (READONLY_FIELDS.has(suggestion.field_name)) {
+          // Taxonomy fields apply server-side from value_json (IDs); keep the
+          // raw value so the recorded feedback matches the applied data.
+          return {
+            field_name: suggestion.field_name,
+            action: "applied" as const,
+            final_value: suggestion.value,
+          };
+        }
+        const edited = item.editedValue.trim() !== String(suggestion.display_value ?? "").trim();
         const finalValue = NUMERIC_FIELDS.has(suggestion.field_name)
           ? Number(item.editedValue)
           : item.editedValue;
@@ -148,7 +164,7 @@ export default function AiReviewModal({
       );
     }
     if (READONLY_FIELDS.has(field)) {
-      return <Typography.Text type="secondary">{displayValue(item.suggestion.value)}</Typography.Text>;
+      return <Typography.Text type="secondary">{suggestedText(item.suggestion)}</Typography.Text>;
     }
     return (
       <Input
@@ -211,7 +227,7 @@ export default function AiReviewModal({
           const currentText = current === undefined || current === null || current === ""
             ? null
             : displayValue(current);
-          const differs = currentText !== null && currentText !== displayValue(suggestion.value);
+          const differs = currentText !== null && currentText !== suggestedText(suggestion);
           return (
             <Flex
               key={suggestion.field_name}
