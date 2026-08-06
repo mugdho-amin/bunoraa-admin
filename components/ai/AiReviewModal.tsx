@@ -1,26 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Flex, Input, InputNumber, Modal, Space, Tag, Typography } from "antd";
+import { Alert, Button, Flex, Input, Modal, Select, Space, Tag, Typography } from "antd";
 import { Check, ExternalLink, RefreshCw, X } from "lucide-react";
 import { humanizeLabel } from "@/lib/admin/utils";
 import type { AiReviewDecision, ProductAiSuggestion } from "@/lib/productAi";
 
 const LONG_FIELDS = new Set(["description", "short_description", "meta_description", "meta_keywords"]);
-const NUMERIC_FIELDS = new Set([
-  "price",
-  "sale_price",
-  "compare_at_price",
-  "cost",
-  "stock_quantity",
-  "low_stock_threshold",
-  "weight",
-  "length",
-  "width",
-  "height",
+const READONLY_FIELDS = new Set(["tags"]);
+const AUTOFILL_FIELDS = new Set([
+  "name",
+  "short_description",
+  "description",
+  "tags",
+  "meta_title",
+  "meta_description",
+  "meta_keywords",
 ]);
-const READONLY_FIELDS = new Set(["primary_category", "categories", "tags"]);
-const EXCLUDED_AUTOFILL_FIELDS = new Set(["sku", "aspect_ratio", "primary_category", "categories"]);
+const REVIEW_FIELD_ORDER = [
+  "name",
+  "short_description",
+  "description",
+  "tags",
+  "meta_title",
+  "meta_description",
+  "meta_keywords",
+];
+const REVIEW_FIELD_RANK = new Map(REVIEW_FIELD_ORDER.map((field, index) => [field, index]));
 
 type Decision = "pending" | "accepted" | "rejected";
 
@@ -44,6 +50,12 @@ function displayValue(value: unknown): string {
 }
 
 function suggestedText(suggestion: ProductAiSuggestion): string {
+  if (suggestion.field_name === "tags") {
+    const names = suggestion.metadata?.names;
+    if (Array.isArray(names) && names.length > 0) {
+      return names.map(String).filter(Boolean).join(", ");
+    }
+  }
   const display = suggestion.display_value;
   if (display !== null && display !== undefined && String(display).trim() !== "") {
     return String(display);
@@ -57,6 +69,10 @@ type AiReviewModalProps = {
   suggestions: ProductAiSuggestion[];
   currentValues: Record<string, unknown>;
   regenerating: boolean;
+  modelInfo: string;
+  drafts: Array<{ jobId: string; createdAt: string }>;
+  activeDraftId: string;
+  onSelectDraft: (jobId: string) => void;
   onApply: (decisions: AiReviewDecision[]) => void;
   onRegenerate: () => void;
   onCancel: () => void;
@@ -65,10 +81,15 @@ type AiReviewModalProps = {
 function buildItems(suggestions: ProductAiSuggestion[]): ReviewItem[] {
   return suggestions
     .filter((s) => (
-      !EXCLUDED_AUTOFILL_FIELDS.has(s.field_name)
+      AUTOFILL_FIELDS.has(s.field_name)
       && !s.is_null
       && s.value !== null
       && s.value !== undefined
+    ))
+    .sort((a, b) => (
+      (REVIEW_FIELD_RANK.get(a.field_name) ?? Number.MAX_SAFE_INTEGER)
+      - (REVIEW_FIELD_RANK.get(b.field_name) ?? Number.MAX_SAFE_INTEGER)
+      || a.field_name.localeCompare(b.field_name)
     ))
     .map((suggestion) => ({
       suggestion,
@@ -82,6 +103,10 @@ export default function AiReviewModal({
   suggestions,
   currentValues,
   regenerating,
+  modelInfo,
+  drafts,
+  activeDraftId,
+  onSelectDraft,
   onApply,
   onRegenerate,
   onCancel,
@@ -109,12 +134,12 @@ export default function AiReviewModal({
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, editedValue: value } : item)));
   };
 
-  const handleApply = () => {
-    const decisions: AiReviewDecision[] = items
-      .filter((item) => item.decision !== "pending")
+  const buildDecisions = (applyAll = false): AiReviewDecision[] => {
+    return items
+      .filter((item) => applyAll || item.decision !== "pending")
       .map((item) => {
         const { suggestion } = item;
-        if (item.decision === "rejected") {
+        if (!applyAll && item.decision === "rejected") {
           return { field_name: suggestion.field_name, action: "rejected" as const };
         }
         if (READONLY_FIELDS.has(suggestion.field_name)) {
@@ -126,33 +151,27 @@ export default function AiReviewModal({
             final_value: suggestion.value,
           };
         }
-        const edited = item.editedValue.trim() !== String(suggestion.display_value ?? "").trim();
-        const finalValue = NUMERIC_FIELDS.has(suggestion.field_name)
-          ? Number(item.editedValue)
-          : item.editedValue;
+        const edited = item.editedValue.trim() !== suggestedText(suggestion).trim();
         return {
           field_name: suggestion.field_name,
           action: edited ? ("edited" as const) : ("applied" as const),
-          final_value: finalValue,
+          final_value: item.editedValue,
         };
       });
-    onApply(decisions);
+  };
+
+  const handleApply = () => {
+    onApply(buildDecisions());
+  };
+
+  const handleApplyAll = () => {
+    onApply(buildDecisions(true));
   };
 
   const reviewedCount = acceptedCount + rejectedCount;
 
   const renderValueInput = (item: ReviewItem, index: number) => {
     const field = item.suggestion.field_name;
-    if (NUMERIC_FIELDS.has(field)) {
-      return (
-        <InputNumber
-          value={item.editedValue === "" ? null : Number(item.editedValue)}
-          onChange={(value) => setEditedValue(index, value === null ? "" : String(value))}
-          style={{ width: "100%" }}
-          precision={2}
-        />
-      );
-    }
     if (LONG_FIELDS.has(field)) {
       return (
         <Input.TextArea
@@ -177,7 +196,23 @@ export default function AiReviewModal({
   return (
     <Modal
       open={open}
-      title="Review AI suggestions"
+      title={
+        <Flex align="center" gap={10} wrap="wrap">
+          <span>Review AI suggestions</span>
+          {drafts.length > 1 && (
+            <Select
+              size="small"
+              value={activeDraftId}
+              onChange={onSelectDraft}
+              style={{ minWidth: 180 }}
+              options={drafts.map((draft, index) => ({
+                value: draft.jobId,
+                label: `Draft ${index + 1}${draft.jobId === activeDraftId ? " — current" : ""}`,
+              }))}
+            />
+          )}
+        </Flex>
+      }
       width={760}
       onCancel={onCancel}
       footer={
@@ -192,6 +227,9 @@ export default function AiReviewModal({
             <Button icon={<RefreshCw size={14} />} onClick={onRegenerate} loading={regenerating}>
               Regenerate
             </Button>
+            <Button disabled={items.length === 0} onClick={handleApplyAll}>
+              Apply all ({items.length})
+            </Button>
             <Button type="primary" disabled={acceptedCount === 0} onClick={handleApply}>
               Apply changes ({acceptedCount})
             </Button>
@@ -204,14 +242,11 @@ export default function AiReviewModal({
         showIcon
         style={{ marginBottom: 8 }}
         message="AI suggestions are drafts, not verified facts"
-        description="Confirm material, dimensions, claims, prices, and SEO wording against your product before applying."
+        description="Confirm product claims and SEO wording against your product before applying."
       />
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="Nothing is applied automatically. Review each suggestion, then apply the ones you want. Changes are only saved to the product when you save the product."
-      />
+      <Typography.Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+        Generated by: {modelInfo}
+      </Typography.Text>
       {items.length === 0 && (
         <Alert
           type="info"

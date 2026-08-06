@@ -109,14 +109,37 @@ const CURRENCY_OPTIONS = [
   { value: "INR", label: "INR (₹)" },
 ];
 
-// These are operational/catalog-structure fields, not AI copy suggestions.
-// They are deliberately excluded even if an older queued job returns them.
-const AI_AUTOFILL_EXCLUDED_FIELDS = new Set([
-  "sku",
-  "aspect_ratio",
-  "primary_category",
-  "categories",
+// Autofill is intentionally limited to editable product copy. Operational,
+// pricing, inventory, dimension and taxonomy fields stay merchant-owned.
+const AI_AUTOFILL_FIELDS = new Set([
+  "name",
+  "short_description",
+  "description",
+  "tags",
+  "meta_title",
+  "meta_description",
+  "meta_keywords",
 ]);
+
+type AiDraftGeneration = {
+  jobId: string;
+  createdAt: string;
+  suggestions: ProductAiSuggestion[];
+  summary?: Record<string, unknown>;
+};
+
+function aiModelLabel(summary?: Record<string, unknown>): string {
+  const llm = summary?.llm;
+  if (!llm || typeof llm !== "object") return "product analysis pipeline";
+  const details = llm as Record<string, unknown>;
+  const provider = String(details.provider ?? "").trim();
+  const model = String(details.model ?? "").trim();
+  if (provider && model) return `${provider} · ${model}`;
+  if (model) return model;
+  return String(details.status ?? "product analysis pipeline") === "completed"
+    ? "configured language model"
+    : "product analysis pipeline";
+}
 
 /** Parse money/decimal inputs; empty → null, invalid → null. */
 const parseDecimal = (raw: string): number | null => {
@@ -177,7 +200,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [saving, setSaving] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
   const [aiRegenerating, setAiRegenerating] = useState(false);
-  const [aiReview, setAiReview] = useState<{ jobId: string; suggestions: ProductAiSuggestion[] } | null>(null);
+  const [aiReview, setAiReview] = useState<AiDraftGeneration | null>(null);
+  const [aiDrafts, setAiDrafts] = useState<AiDraftGeneration[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>(() => {
     if (typeof window === 'undefined') return 'publish';
@@ -228,6 +252,27 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }, [form.primaryCategoryId, categories]);
 
   const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
+  const aiDraftStorageKey = `bunoraa:admin:product-ai-drafts:${String(currentId ?? id ?? "new")}`;
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(aiDraftStorageKey) ?? "[]") as unknown;
+      if (!Array.isArray(saved)) {
+        setAiDrafts([]);
+        return;
+      }
+      setAiDrafts(saved
+        .filter((draft): draft is AiDraftGeneration => (
+          Boolean(draft)
+          && typeof draft === "object"
+          && typeof (draft as AiDraftGeneration).jobId === "string"
+          && Array.isArray((draft as AiDraftGeneration).suggestions)
+        ))
+        .slice(0, 5));
+    } catch {
+      setAiDrafts([]);
+    }
+  }, [aiDraftStorageKey]);
 
   /**
    * Reconcile the form with the server's canonical state after a successful
@@ -858,7 +903,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const applySuggestionToForm = useCallback(
     (next: ProductForm, suggestion: ProductAiSuggestion, overrideValue?: unknown): ProductForm => {
-      if (AI_AUTOFILL_EXCLUDED_FIELDS.has(suggestion.field_name)) return next;
+      if (!AI_AUTOFILL_FIELDS.has(suggestion.field_name)) return next;
       const value = overrideValue ?? suggestion.value;
       if (value === null || value === undefined) return next;
       switch (suggestion.field_name) {
@@ -894,7 +939,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     [],
   );
 
-  const runAiAutofill = useCallback(async (): Promise<{ jobId: string; suggestions: ProductAiSuggestion[] }> => {
+  const runAiAutofill = useCallback(async (): Promise<Omit<AiDraftGeneration, "createdAt">> => {
     const imageKeys = form.gallery.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
     // A new draft can be autosaved before the button is pressed. Use its new
     // server ID so the backend can analyze promoted primary/gallery images.
@@ -933,16 +978,36 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     return {
       jobId: started.job_id,
       suggestions: (result.suggestions ?? []).filter(
-        (suggestion) => !AI_AUTOFILL_EXCLUDED_FIELDS.has(suggestion.field_name),
+        (suggestion) => AI_AUTOFILL_FIELDS.has(suggestion.field_name),
       ),
+      summary: result.summary,
     };
   }, [id, currentId, form.gallery, form.currency, form.name, form.description, form.short_description, form.tags, form.categoryIds, form.primaryCategoryId, categories, form.product_type]);
+
+  const storeAiDraft = useCallback((result: Omit<AiDraftGeneration, "createdAt">) => {
+    const draft: AiDraftGeneration = { ...result, createdAt: new Date().toISOString() };
+    setAiDrafts((previous) => {
+      const next = [draft, ...previous.filter((item) => item.jobId !== draft.jobId)].slice(0, 5);
+      try {
+        localStorage.setItem(aiDraftStorageKey, JSON.stringify(next));
+      } catch {
+        // Draft history is a convenience; generation and review still work.
+      }
+      return next;
+    });
+    setAiReview(draft);
+  }, [aiDraftStorageKey]);
+
+  const selectAiDraft = useCallback((jobId: string) => {
+    const draft = aiDrafts.find((item) => item.jobId === jobId);
+    if (draft) setAiReview(draft);
+  }, [aiDrafts]);
 
   const handleAiAutofill = async () => {
     setAiRunning(true);
     try {
       const result = await runAiAutofill();
-      setAiReview(result);
+      storeAiDraft(result);
     } catch (error) {
       message.error(error instanceof Error ? error.message : "AI product analysis failed.");
     } finally {
@@ -954,7 +1019,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     setAiRegenerating(true);
     try {
       const result = await runAiAutofill();
-      setAiReview(result);
+      storeAiDraft(result);
     } catch (error) {
       message.error(error instanceof Error ? error.message : "AI product analysis failed.");
     } finally {
@@ -993,20 +1058,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const aiCurrentValues: Record<string, unknown> = useMemo(() => ({
     name: form.name,
-    sku: form.sku,
     description: form.description,
     short_description: form.short_description,
-    price: form.price,
-    sale_price: form.sale_price,
-    compare_at_price: form.compare_at_price,
-    cost: form.cost,
-    stock_quantity: form.stock_quantity,
-    low_stock_threshold: form.low_stock_threshold,
-    weight: form.weight,
-    length: form.length,
-    width: form.width,
-    height: form.height,
-    aspect_ratio: form.aspect_ratio,
+    tags: form.tags,
     meta_title: form.meta_title,
     meta_description: form.meta_description,
     meta_keywords: form.meta_keywords,
@@ -1200,6 +1254,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           >
             {aiRunning ? "Analyzing product..." : "AI Autofill"}
           </Button>
+          {!aiReview && aiDrafts.length > 0 && (
+            <Button onClick={() => setAiReview(aiDrafts[0])} disabled={saving}>
+              AI drafts ({aiDrafts.length})
+            </Button>
+          )}
           {aiReview && (
             <AiReviewModal
               key={aiReview.jobId}
@@ -1208,6 +1267,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               suggestions={aiReview.suggestions}
               currentValues={aiCurrentValues}
               regenerating={aiRegenerating}
+              modelInfo={aiModelLabel(aiReview.summary)}
+              drafts={aiDrafts}
+              activeDraftId={aiReview.jobId}
+              onSelectDraft={selectAiDraft}
               onApply={handleAiApplyReview}
               onRegenerate={handleAiRegenerate}
               onCancel={() => setAiReview(null)}
