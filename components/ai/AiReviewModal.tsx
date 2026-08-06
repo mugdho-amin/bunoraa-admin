@@ -20,6 +20,7 @@ const NUMERIC_FIELDS = new Set([
   "height",
 ]);
 const READONLY_FIELDS = new Set(["primary_category", "categories", "tags"]);
+const EXCLUDED_AUTOFILL_FIELDS = new Set(["sku", "aspect_ratio", "primary_category", "categories"]);
 
 type Decision = "pending" | "accepted" | "rejected";
 
@@ -55,7 +56,12 @@ type AiReviewModalProps = {
 
 function buildItems(suggestions: ProductAiSuggestion[]): ReviewItem[] {
   return suggestions
-    .filter((s) => !s.is_null && s.value !== null && s.value !== undefined)
+    .filter((s) => (
+      !EXCLUDED_AUTOFILL_FIELDS.has(s.field_name)
+      && !s.is_null
+      && s.value !== null
+      && s.value !== undefined
+    ))
     .map((suggestion) => ({
       suggestion,
       decision: "pending" as const,

@@ -109,6 +109,15 @@ const CURRENCY_OPTIONS = [
   { value: "INR", label: "INR (₹)" },
 ];
 
+// These are operational/catalog-structure fields, not AI copy suggestions.
+// They are deliberately excluded even if an older queued job returns them.
+const AI_AUTOFILL_EXCLUDED_FIELDS = new Set([
+  "sku",
+  "aspect_ratio",
+  "primary_category",
+  "categories",
+]);
+
 /** Parse money/decimal inputs; empty → null, invalid → null. */
 const parseDecimal = (raw: string): number | null => {
   const trimmed = raw.trim();
@@ -849,11 +858,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const applySuggestionToForm = useCallback(
     (next: ProductForm, suggestion: ProductAiSuggestion, overrideValue?: unknown): ProductForm => {
+      if (AI_AUTOFILL_EXCLUDED_FIELDS.has(suggestion.field_name)) return next;
       const value = overrideValue ?? suggestion.value;
       if (value === null || value === undefined) return next;
       switch (suggestion.field_name) {
         case "name": next.name = String(value); break;
-        case "sku": next.sku = String(value); break;
         case "description": next.description = String(value); break;
         case "short_description": next.short_description = String(value); break;
         case "price": next.price = Number(value); break;
@@ -866,14 +875,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         case "length": next.length = Number(value); break;
         case "width": next.width = Number(value); break;
         case "height": next.height = Number(value); break;
-        case "aspect_ratio": next.aspect_ratio = String(value); break;
         case "meta_title": next.meta_title = String(value); break;
         case "meta_description": next.meta_description = String(value); break;
         case "meta_keywords": next.meta_keywords = String(value); break;
-        case "primary_category": next.primaryCategoryId = String(value); break;
-        case "categories":
-          if (Array.isArray(value)) next.categoryIds = value.map(String);
-          break;
         case "tags": {
           const names = suggestion.metadata.names;
           next.tags = Array.isArray(names)
@@ -892,25 +896,32 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const runAiAutofill = useCallback(async (): Promise<{ jobId: string; suggestions: ProductAiSuggestion[] }> => {
     const imageKeys = form.gallery.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
-    if (!id && imageKeys.length === 0) {
+    // A new draft can be autosaved before the button is pressed. Use its new
+    // server ID so the backend can analyze promoted primary/gallery images.
+    const productId = currentId ?? id;
+    if (!productId && imageKeys.length === 0) {
       throw new Error("Upload at least one product image before running AI autofill.");
     }
-    const categoryNames = categories
-      .filter((category) => form.categoryIds.includes(String(category.id)))
-      .map((category) => category.name);
+    const selectedCategories = categories.filter(
+      (category) => form.categoryIds.includes(String(category.id)),
+    );
+    const categoryNames = selectedCategories.map((category) => category.name);
+    const primaryCategoryName = categories.find((category) => String(category.id) === form.primaryCategoryId)?.name ?? "";
     const started = await startProductAutofill({
-      product_id: id ? String(id) : undefined,
+      product_id: productId ? String(productId) : undefined,
       image_keys: imageKeys,
       currency: form.currency,
       locale: "en",
       allow_external: true,
       context_hints: {
         name: form.name,
-        sku: form.sku,
         description: form.description,
         short_description: form.short_description,
-        categories: categoryNames,
-        tags: form.tags,
+        primary_category_id: form.primaryCategoryId,
+        primary_category_name: primaryCategoryName,
+        category_ids: form.categoryIds,
+        category_names: categoryNames,
+        tag_names: form.tags,
         has_variants: form.product_type === "variable",
         image_names: form.gallery.map((image) => image.url.split("/").pop() || "").filter(Boolean),
       },
@@ -919,8 +930,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (result.status !== "completed") {
       throw new Error(result.error_message || "AI product analysis failed.");
     }
-    return { jobId: started.job_id, suggestions: result.suggestions ?? [] };
-  }, [id, form.gallery, form.currency, form.name, form.sku, form.description, form.short_description, form.tags, form.categoryIds, categories, form.product_type]);
+    return {
+      jobId: started.job_id,
+      suggestions: (result.suggestions ?? []).filter(
+        (suggestion) => !AI_AUTOFILL_EXCLUDED_FIELDS.has(suggestion.field_name),
+      ),
+    };
+  }, [id, currentId, form.gallery, form.currency, form.name, form.description, form.short_description, form.tags, form.categoryIds, form.primaryCategoryId, categories, form.product_type]);
 
   const handleAiAutofill = async () => {
     setAiRunning(true);
