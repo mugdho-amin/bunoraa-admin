@@ -18,8 +18,9 @@ import type { BaseKey } from "@refinedev/core";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
-  import { startProductAutofill, waitForProductAutofill, reviewProductAutofill, type ProductAiSuggestion, type AiReviewDecision } from "@/lib/productAi";
-  import AiReviewModal from "@/components/ai/AiReviewModal";
+import { AdminApiError } from "@/lib/admin/http";
+import { startProductAutofill, waitForProductAutofill, reviewProductAutofill, type ProductAiSuggestion, type AiReviewDecision } from "@/lib/productAi";
+import AiReviewModal from "@/components/ai/AiReviewModal";
 
 interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -128,6 +129,24 @@ type AiDraftGeneration = {
   summary?: Record<string, unknown>;
 };
 
+/** Read and validate persisted AI drafts for one product key (top 5 only). */
+function readAiDraftsFromStorage(key: string): AiDraftGeneration[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) ?? "[]") as unknown;
+    if (!Array.isArray(saved)) return [];
+    return saved
+      .filter((draft): draft is AiDraftGeneration => (
+        Boolean(draft)
+        && typeof draft === "object"
+        && typeof (draft as AiDraftGeneration).jobId === "string"
+        && Array.isArray((draft as AiDraftGeneration).suggestions)
+      ))
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
 function aiModelLabel(summary?: Record<string, unknown>): string {
   const llm = summary?.llm;
   if (!llm || typeof llm !== "object") return "product analysis pipeline";
@@ -154,6 +173,94 @@ const emptyVariant = (sortOrder = 0): VariantForm => ({
   compareAt: null, image: "", weight: null, barcode: "",
   lowStockThreshold: 5, enabled: true, sortOrder,
 });
+
+/** Human-readable labels for API/validation field keys. */
+const FIELD_LABELS: Record<string, string> = {
+  name: "Product name",
+  slug: "Slug",
+  sku: "SKU",
+  price: "Price",
+  primaryCategoryId: "Primary category",
+  categoryIds: "Categories",
+  variants: "Variants",
+  variants_data: "Variant",
+  images_data: "Gallery image",
+  videos_data: "Video",
+  customization_options_data: "Customization option",
+  primary_category: "Primary category",
+  category_ids: "Categories",
+  tags: "Tags",
+};
+
+function fieldLabel(key: string): string {
+  if (!key) return "";
+  const match = /^variants\.(\d+)\.sku$/.exec(key);
+  if (match) return `Variant ${Number(match[1]) + 1} SKU`;
+  return FIELD_LABELS[key] ?? key;
+}
+
+type FormattedSaveError = {
+  message: string;
+  fieldErrors: Record<string, string>;
+};
+
+/**
+ * Translate a raw API error (Bunoraa envelope: `meta.errors: [{field, message}]`)
+ * into an actionable message plus field-level errors mapped back to the form.
+ * Falls back to the generic "success: false, message" and finally to `fallback`
+ * so users never see a bare "Request failed" without context.
+ */
+function formatSaveError(err: unknown, fallback: string, variants: VariantForm[] = []): FormattedSaveError {
+  const payload =
+    err instanceof AdminApiError
+      ? err.payload
+      : (err as { payload?: unknown } | null)?.payload;
+
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    const meta = record.meta;
+    if (meta && typeof meta === "object") {
+      const errors = (meta as Record<string, unknown>).errors;
+      if (Array.isArray(errors) && errors.length > 0) {
+        const messages: string[] = [];
+        const fieldErrors: Record<string, string> = {};
+        for (const item of errors) {
+          if (!item || typeof item !== "object") continue;
+          const entry = item as Record<string, unknown>;
+          const message = typeof entry.message === "string" ? entry.message : "";
+          const rawField = String(entry.field ?? "");
+          if (!message) continue;
+          messages.push(message);
+          if (!rawField) continue;
+          if (rawField === "variants_data") {
+            // SKU-level conflicts map to the exact variant row when possible.
+            const skuMatch = /"([^"]+)"|SKU ([A-Za-z0-9][A-Za-z0-9-]*)/i.exec(message);
+            const sku = (skuMatch?.[1] ?? skuMatch?.[2] ?? "").toUpperCase();
+            const index = variants.findIndex((v) => v.sku.trim().toUpperCase() === sku);
+            if (sku && index >= 0) fieldErrors[`variants.${index}.sku`] = message;
+            else fieldErrors["variants"] = message;
+          } else {
+            fieldErrors[rawField] = message;
+          }
+        }
+        if (messages.length > 0) {
+          const summary = messages.slice(0, 2).join(" ");
+          return {
+            message: `${summary}${messages.length > 2 ? ` (${messages.length} more)` : ""}`,
+            fieldErrors,
+          };
+        }
+      }
+    }
+    if (typeof record.message === "string" && record.message.trim()) {
+      return { message: record.message, fieldErrors: {} };
+    }
+  }
+
+  if (err instanceof Error && err.message) return { message: err.message, fieldErrors: {} };
+  if (typeof err === "string") return { message: err, fieldErrors: {} };
+  return { message: fallback, fieldErrors: {} };
+}
 
 export function suggestVariantSku(
   variant: VariantForm,
@@ -201,7 +308,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [aiRunning, setAiRunning] = useState(false);
   const [aiRegenerating, setAiRegenerating] = useState(false);
   const [aiReview, setAiReview] = useState<AiDraftGeneration | null>(null);
-  const [aiDrafts, setAiDrafts] = useState<AiDraftGeneration[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveAction, setSaveAction] = useState<'publish' | 'draft' | 'schedule'>(() => {
     if (typeof window === 'undefined') return 'publish';
@@ -254,25 +360,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [currentId, setCurrentId] = useState<BaseKey | undefined>(id);
   const aiDraftStorageKey = `bunoraa:admin:product-ai-drafts:${String(currentId ?? id ?? "new")}`;
 
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(aiDraftStorageKey) ?? "[]") as unknown;
-      if (!Array.isArray(saved)) {
-        setAiDrafts([]);
-        return;
-      }
-      setAiDrafts(saved
-        .filter((draft): draft is AiDraftGeneration => (
-          Boolean(draft)
-          && typeof draft === "object"
-          && typeof (draft as AiDraftGeneration).jobId === "string"
-          && Array.isArray((draft as AiDraftGeneration).suggestions)
-        ))
-        .slice(0, 5));
-    } catch {
-      setAiDrafts([]);
-    }
-  }, [aiDraftStorageKey]);
+  const [aiDrafts, setAiDrafts] = useState<AiDraftGeneration[]>(() =>
+    readAiDraftsFromStorage(aiDraftStorageKey)
+  );
+  // Re-read drafts when the storage key changes (product created or a
+  // different product opened) — "adjusting state during render" per the
+  // React docs, instead of a setState-in-effect render pass.
+  const [aiDraftKey, setAiDraftKey] = useState(aiDraftStorageKey);
+  if (aiDraftStorageKey !== aiDraftKey) {
+    setAiDraftKey(aiDraftStorageKey);
+    setAiDrafts(readAiDraftsFromStorage(aiDraftStorageKey));
+  }
 
   /**
    * Reconcile the form with the server's canonical state after a successful
@@ -579,24 +677,24 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
    const toggleVariants = () => {
      const next = !hasVariants;
      setHasVariants(next);
-     if (next) {
-       setForm((p) => ({
-         ...p,
-         variants: p.variants.map((v) => ({
-           ...v,
-           sku: v.sku || p.sku,
-           barcode: v.barcode || p.barcode,
-           price: v.price ?? p.price,
-           compareAt: v.compareAt ?? p.sale_price ?? null,
-         })),
-       }));
-     } else {
-       setForm((p) => ({
-         ...p,
-         sku: p.variants[0]?.sku || p.sku,
-         barcode: p.variants[0]?.barcode || p.barcode,
-       }));
-     }
+     setForm((p) => ({
+       ...p,
+       product_type: next ? "variable" : "simple",
+       ...(next
+         ? {
+             variants: p.variants.map((v) => ({
+               ...v,
+               sku: v.sku || p.sku,
+               barcode: v.barcode || p.barcode,
+               price: v.price ?? p.price,
+               compareAt: v.compareAt ?? p.sale_price ?? null,
+             })),
+           }
+         : {
+             sku: p.variants[0]?.sku || p.sku,
+             barcode: p.variants[0]?.barcode || p.barcode,
+           }),
+     }));
    };
 
   const addVariant = () => {
@@ -623,9 +721,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const duplicateVariant = (index: number) => {
     const idx = form.variants.length;
+    setHasVariants(true);
     setForm((p) => {
       const clone = { ...p.variants[index], sku: "", sortOrder: idx };
-      return { ...p, variants: [...p.variants, clone] };
+      return { ...p, product_type: "variable", variants: [...p.variants, clone] };
     });
     setExpandedVariants((prev) => new Set(prev).add(idx));
   };
@@ -850,7 +949,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       }
     }
     if (generated.length === 0) return;
-    setForm((p) => ({ ...p, variants: [...p.variants, ...generated] }));
+    setHasVariants(true);
+    setForm((p) => ({ ...p, product_type: "variable", variants: [...p.variants, ...generated] }));
     setExpandedVariants((prev) => {
       const next = new Set(prev);
       for (let i = form.variants.length; i < form.variants.length + generated.length; i++) next.add(i);
@@ -1096,7 +1196,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors);
-      message.error("Validation failed. Please check all fields.");
+      const firstKey = Object.keys(newErrors)[0] ?? "";
+      const remaining = Object.keys(newErrors).length - 1;
+      message.error(
+        remaining > 0
+          ? `${fieldLabel(firstKey)}: ${newErrors[firstKey]} (${remaining} more issue${remaining > 1 ? "s" : ""} to fix)`
+          : `${fieldLabel(firstKey)}: ${newErrors[firstKey]}`,
+      );
       return;
     }
 
@@ -1104,6 +1210,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     setSaving(true);
     const savedData = await autoSave.flush();
     const workingForm = savedData ? syncFormWithServer(savedData, form) : form;
+    // The manual save must never create a second product. If the autosave
+    // flush just created the draft (new product), reuse the returned id and
+    // PATCH it with the final publish values — otherwise the same variant
+    // SKUs would be rejected by the backend's global uniqueness check.
+    const savedId = typeof savedData?.id === "string" || typeof savedData?.id === "number"
+      ? (savedData.id as BaseKey)
+      : undefined;
     const workingHasVariants = workingForm.product_type === "variable";
     if (workingForm !== form) setForm(workingForm);
 
@@ -1192,7 +1305,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       values.publish_from = workingForm.publish_from || null;
     }
 
-    const effectiveId = currentId || id;
+    const effectiveId = savedId ?? currentId ?? id;
 
     try {
       if (effectiveId) {
@@ -1200,7 +1313,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           { resource: "catalog/products", id: effectiveId, values },
           {
             onSuccess: () => { message.success("Product updated"); router.push("/catalog/products"); },
-            onError: (err) => message.error(err?.message || "Failed to update product"),
+            onError: (err) => {
+              const formatted = formatSaveError(err, "Failed to update product", workingForm.variants);
+              if (Object.keys(formatted.fieldErrors).length > 0) {
+                setFieldErrors((prev) => ({ ...prev, ...formatted.fieldErrors }));
+              }
+              message.error(formatted.message);
+            },
           },
         );
       } else {
@@ -1208,7 +1327,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           { resource: "catalog/products", values },
           {
             onSuccess: () => { message.success("Product created"); router.push("/catalog/products"); },
-            onError: (err) => message.error(err?.message || "Failed to create product"),
+            onError: (err) => {
+              const formatted = formatSaveError(err, "Failed to create product", workingForm.variants);
+              if (Object.keys(formatted.fieldErrors).length > 0) {
+                setFieldErrors((prev) => ({ ...prev, ...formatted.fieldErrors }));
+              }
+              message.error(formatted.message);
+            },
           },
         );
       }
@@ -1532,6 +1657,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           </Flex>
 
           {/* Videos */}
+          {form.has_cover_video && (
           <Card className="admin-soft-panel" variant="borderless" title="Videos" style={{ flex: "1 1 300px", minWidth: 0 }}>
             {form.videos.length > 0 && (
               <Flex vertical gap={8}>
@@ -1650,6 +1776,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </label>
             </div>
           </Card>
+          )}
 
           {/* Customization Options */}
           {form.can_be_customized && (
@@ -2323,6 +2450,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     <Button size="small" onClick={addVariant} icon={<Plus size={14} />}>Add</Button>
                   </Flex>
                 </Flex>
+                {fieldErrors["variants"] && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: "var(--admin-danger)", fontWeight: 500, background: "var(--admin-danger-light)", border: "1px solid var(--admin-danger)", borderRadius: 8, padding: "8px 12px" }}>
+                    {fieldErrors["variants"]}
+                  </div>
+                )}
               </div>
 
               {/* Matrix Generator */}
@@ -2490,16 +2622,21 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--admin-divider)" }}>
                                 <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
                                   <Flex vertical gap={4}>
-                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>SKU *</label>
+                                    <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: fieldErrors[`variants.${actualIdx}.sku`] ? "var(--admin-danger)" : "var(--admin-muted)", fontWeight: 500 }}>SKU *</label>
                                     <div style={{ position: "relative" }}>
                                       <input type="text" value={variant.sku} onChange={(e) => updateVariant(actualIdx, "sku", e.target.value)}
                                         placeholder={`${suggestVariantSku(variant, form.sku, form.slug, form.variants.map((v) => v.sku))}`}
-                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: "1px solid var(--admin-input-border)", fontSize: 12, outline: "none" }} />
+                                        style={{ width: "100%", padding: "6px 30px 6px 10px", borderRadius: 8, border: `1px solid ${fieldErrors[`variants.${actualIdx}.sku`] ? "var(--admin-danger)" : "var(--admin-input-border)"}`, fontSize: 12, outline: "none" }} />
                                       <button onClick={() => generateSingleSku(actualIdx)}
                                         style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", cursor: "pointer", color: "var(--admin-muted-light)" }}>
                                         <WandSparkles size={12} />
                                       </button>
                                     </div>
+                                    {fieldErrors[`variants.${actualIdx}.sku`] && (
+                                      <span style={{ fontSize: 10, color: "var(--admin-danger)", fontWeight: 500, lineHeight: 1.35 }}>
+                                        {fieldErrors[`variants.${actualIdx}.sku`]}
+                                      </span>
+                                    )}
                                   </Flex>
                                   <Flex vertical gap={4}>
                                     <label style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--admin-muted)", fontWeight: 500 }}>Barcode / EAN</label>

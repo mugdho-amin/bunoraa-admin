@@ -69,23 +69,30 @@ function extractMessage(payload: unknown, fallback = "Request failed") {
     return fallback;
   }
   const record = payload as Record<string, unknown>;
-  if (typeof record.message === "string" && record.message.trim()) {
-    return record.message;
-  }
-  if (typeof record.detail === "string" && record.detail.trim()) {
-    return record.detail;
-  }
-  if (record.meta && typeof record.meta === "object") {
-    const errors = (record.meta as Record<string, unknown>).errors;
-    if (errors && typeof errors === "object") {
-      const first = Object.values(errors as Record<string, unknown>)[0];
-      if (Array.isArray(first) && first.length > 0) {
-        return String(first[0]);
+  const meta = record.meta;
+  if (meta && typeof meta === "object") {
+    // Bunoraa envelope: field-level detail lives in meta.errors, e.g.
+    // [{ field: "variants_data", message: "Variant SKU \"X\" is already used..." }].
+    // Prefer it over the generic "Validation failed. Please check your input."
+    const errors = (meta as Record<string, unknown>).errors;
+    if (Array.isArray(errors) && errors.length > 0) {
+      const first = errors[0];
+      if (first && typeof first === "object") {
+        const message = (first as Record<string, unknown>).message;
+        if (typeof message === "string" && message.trim()) {
+          return message;
+        }
       }
       if (typeof first === "string") {
         return first;
       }
     }
+  }
+  if (typeof record.message === "string" && record.message.trim()) {
+    return record.message;
+  }
+  if (typeof record.detail === "string" && record.detail.trim()) {
+    return record.detail;
   }
   return fallback;
 }
