@@ -383,35 +383,37 @@ export function AdminShell({ route, children }: AdminShellProps) {
         <Layout style={{ background: "transparent", overflow: "hidden" }}>
           <Header
             style={{
-              padding: isDesktop || isTablet ? "16px 24px 0 0" : "12px",
+              padding: isDesktop || isTablet ? "16px 24px 0 0" : "10px 12px 0",
               background: "transparent",
               height: "auto",
               lineHeight: "inherit",
               flexShrink: 0,
+              borderBottom: isMobile ? "1px solid var(--admin-divider)" : "none",
             }}
           >
-            <Flex align="center" justify="space-between" gap={12}>
-              <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+            <Flex align="center" justify="space-between" gap={8}>
+              <Flex align="center" gap={8} style={{ minWidth: 0, flex: 1 }}>
                 {isMobile && (
                   <Button
                     type="text"
-                    icon={<MenuIcon size={18} />}
+                    icon={<MenuIcon size={20} />}
                     onClick={() => setMobileNavOpen(true)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44 }}
+                    aria-label="Open navigation"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44, flexShrink: 0 }}
                   />
                 )}
-                <Flex vertical gap={0} style={{ minWidth: 0 }}>
+                <Flex vertical gap={0} style={{ minWidth: 0, flex: 1 }}>
                   <Typography.Title
                     level={4}
                     className="admin-display"
-                    style={{ margin: 0, fontSize: 18, lineHeight: 1.3 }}
+                    style={{ margin: 0, fontSize: isMobile ? 16 : 18, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                   >
                     {title}
                   </Typography.Title>
                 </Flex>
               </Flex>
 
-              <Space size={4} wrap>
+              <Space size={isMobile ? 2 : 4} wrap>
                 <Tooltip title={
                   mode === "light" ? "Switch to dark mode" :
                   mode === "dark" ? "Switch to system theme" :
@@ -419,10 +421,11 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 }>
                   <Button
                     type="text"
-                    icon={mode === "light" ? <Sun size={18} /> : mode === "dark" ? <Moon size={18} /> : <Monitor size={18} />}
+                    icon={mode === "light" ? <Sun size={isMobile ? 16 : 18} /> : mode === "dark" ? <Moon size={isMobile ? 16 : 18} /> : <Monitor size={isMobile ? 16 : 18} />}
                     onClick={toggleTheme}
                     aria-label="Toggle theme"
                     className="admin-header-btn"
+                    style={{ minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40 }}
                   />
                 </Tooltip>
                 <NotificationBell />
@@ -430,14 +433,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   <Button
                     type="text"
                     className="admin-header-btn admin-user-trigger"
-                    style={{ gap: 8, width: "auto", paddingInline: 8 }}
+                    style={{ gap: 6, width: "auto", paddingInline: isMobile ? 4 : 8, minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40 }}
                   >
                     <Avatar
-                      size={26}
+                      size={isMobile ? 24 : 26}
                       shape="circle"
                       style={{
                         background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
-                        lineHeight: "26px", fontSize: 13, fontWeight: 700, flexShrink: 0,
+                        lineHeight: isMobile ? "24px" : "26px", fontSize: isMobile ? 12 : 13, fontWeight: 700, flexShrink: 0,
                       }}
                     >
                       {nameInitial}

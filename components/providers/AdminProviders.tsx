@@ -41,10 +41,22 @@ const adminTheme = {
     colorError: "#be123c",
     borderRadius: 18,
     fontFamily: 'var(--font-body), "IBM Plex Sans", sans-serif',
+    controlHeight: 40,
+    controlHeightLG: 48,
+    controlHeightSM: 32,
+    fontSize: 14,
+    fontSizeHeading1: 30,
+    fontSizeHeading2: 24,
+    fontSizeHeading3: 20,
+    fontSizeHeading4: 16,
+    sizeMS: 12,
   },
   components: {
     Layout: {
       bodyBg: "transparent",
+      headerBg: "transparent",
+      siderBg: "transparent",
+      triggerBg: "transparent",
     },
     Card: {
       paddingLG: 20,
@@ -53,6 +65,72 @@ const adminTheme = {
     Menu: {
       itemBg: "transparent",
       subMenuItemBg: "transparent",
+      itemBorderRadius: 10,
+      itemMarginBlock: 2,
+      itemMarginInline: 4,
+      iconSize: 16,
+      collapsedIconSize: 18,
+    },
+    Button: {
+      borderRadius: 12,
+      controlHeight: 40,
+      controlHeightLG: 48,
+      controlHeightSM: 32,
+      paddingInline: 16,
+      paddingInlineLG: 20,
+      fontWeight: 500,
+    },
+    Input: {
+      borderRadius: 12,
+      controlHeight: 40,
+      controlHeightLG: 48,
+    },
+    Select: {
+      borderRadius: 12,
+      controlHeight: 40,
+      controlHeightLG: 48,
+    },
+    Table: {
+      borderRadiusLG: 16,
+      headerBg: "transparent",
+      headerColor: "var(--admin-muted)",
+      fontSize: 13,
+      cellPaddingBlock: 12,
+      cellPaddingInline: 16,
+    },
+    Modal: {
+      borderRadiusLG: 20,
+      paddingContentHorizontalLG: 24,
+    },
+    Drawer: {
+      borderRadiusLG: 0,
+    },
+    Tabs: {
+      cardBorderRadius: 12,
+      cardPadding: "8px 16px",
+    },
+    Badge: {
+      dotSize: 8,
+    },
+    Tag: {
+      borderRadiusSM: 8,
+      defaultBg: "transparent",
+    },
+    Tooltip: {
+      borderRadiusSM: 8,
+    },
+    Dropdown: {
+      borderRadiusLG: 16,
+      paddingBlock: 4,
+    },
+    Notification: {
+      borderRadiusLG: 16,
+    },
+    Message: {
+      borderRadiusLG: 12,
+    },
+    Alert: {
+      borderRadiusLG: 12,
     },
   },
 };
@@ -66,9 +144,51 @@ function useThemeAwareConfig() {
       ...adminTheme.token,
       colorBgLayout: isDark ? "#0b1120" : "#eef2f7",
       colorBgContainer: isDark ? "#161c30" : "#ffffff",
+      colorBgElevated: isDark ? "#1c2440" : "#ffffff",
       colorBorderSecondary: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)",
+      colorBorder: isDark ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.12)",
       colorText: isDark ? "#e8edf5" : "#0f172a",
       colorTextSecondary: isDark ? "#8a99b5" : "#52607a",
+      colorTextTertiary: isDark ? "#5e6e88" : "#8293a8",
+      colorFillQuaternary: isDark ? "rgba(255,255,255,0.04)" : "rgba(15,23,42,0.04)",
+      boxShadow: isDark
+        ? "0 6px 16px rgba(0,0,0,0.32)"
+        : "0 6px 16px rgba(15,23,42,0.08)",
+      boxShadowSecondary: isDark
+        ? "0 6px 16px rgba(0,0,0,0.24)"
+        : "0 6px 16px rgba(15,23,42,0.06)",
+    },
+    components: {
+      ...adminTheme.components,
+      Table: {
+        ...adminTheme.components?.Table,
+        headerBg: isDark ? "rgba(255,255,255,0.04)" : "transparent",
+        rowHoverBg: isDark ? "rgba(255,255,255,0.04)" : undefined,
+        colorBgContainer: isDark ? "#161c30" : "#ffffff",
+      },
+      Card: {
+        ...adminTheme.components?.Card,
+        colorBgContainer: isDark ? "#161c30" : "#ffffff",
+      },
+      Menu: {
+        ...adminTheme.components?.Menu,
+        darkItemBg: "transparent",
+        darkSubMenuItemBg: "transparent",
+        darkItemSelectedBg: isDark ? "rgba(15,118,110,0.12)" : undefined,
+      },
+      Modal: {
+        ...adminTheme.components?.Modal,
+        contentBg: isDark ? "#161c30" : "#ffffff",
+        headerBg: isDark ? "#161c30" : "#ffffff",
+      },
+      Drawer: {
+        ...adminTheme.components?.Drawer,
+        colorBgElevated: isDark ? "#161c30" : "#ffffff",
+      },
+      Dropdown: {
+        ...adminTheme.components?.Dropdown,
+        colorBgElevated: isDark ? "#1c2440" : "#ffffff",
+      },
     },
   }), [isDark]);
 }

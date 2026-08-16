@@ -79,8 +79,8 @@ export function LoginScreen() {
   return (
     <div className="admin-login-page">
       <div className="admin-login-grid">
-        {/* ── Left: Brand Panel ── */}
-        <div className="admin-glass-card admin-shell-gradient" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {/* ── Left: Brand Panel (hidden on mobile) ── */}
+        <div className="admin-glass-card admin-shell-gradient admin-login-brand-panel" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <Flex align="center" gap={8} style={{ marginBottom: 24 }}>
             <Tag bordered={false} color="cyan" style={{ paddingInline: 12, borderRadius: 999 }}>
               Bunoraa Admin
@@ -95,7 +95,7 @@ export function LoginScreen() {
         </div>
 
         {/* ── Right: Login Form ── */}
-        <Card className="admin-glass-card" style={{ borderRadius: 28, border: "1px solid var(--admin-border)" }}>
+        <Card className="admin-glass-card admin-login-form-card" style={{ borderRadius: 28, border: "1px solid var(--admin-border)" }}>
           <Flex vertical gap={20}>
             <div style={{ textAlign: "center" }}>
               <Tag bordered={false} color="cyan" style={{ borderRadius: 999, paddingInline: 16, marginBottom: 12 }}>
