@@ -1679,7 +1679,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)", opacity: 0, transition: "opacity 0.15s" }}
                             onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
                             onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}>
-                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#000" }}>▶</div>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--admin-surface)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--admin-ink)" }}>▶</div>
                           </div>
                         )}
                         {video.is_cover && (

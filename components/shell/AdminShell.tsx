@@ -292,7 +292,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
               <Avatar
                 size={32}
                 shape="circle"
-                style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}
+                style={{ background: "linear-gradient(135deg, var(--admin-brand), var(--admin-accent))" }}
               >
                 {nameInitial}
               </Avatar>
@@ -305,7 +305,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 size={36}
                 shape="circle"
                 style={{
-                  background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
+                  background: "linear-gradient(135deg, var(--admin-brand), var(--admin-accent))",
                   flexShrink: 0,
                   lineHeight: "36px", fontSize: 15, fontWeight: 700,
                 }}
@@ -439,7 +439,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                       size={isMobile ? 24 : 26}
                       shape="circle"
                       style={{
-                        background: "linear-gradient(135deg, #0f766e, #1d4ed8)",
+                        background: "linear-gradient(135deg, var(--admin-brand), var(--admin-accent))",
                         lineHeight: isMobile ? "24px" : "26px", fontSize: isMobile ? 12 : 13, fontWeight: 700, flexShrink: 0,
                       }}
                     >

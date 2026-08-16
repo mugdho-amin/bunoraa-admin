@@ -270,13 +270,13 @@ export default function AiReviewModal({
               gap={8}
               style={{
                 border: item.decision === "accepted"
-                  ? "1px solid #52c41a"
+                  ? "1px solid var(--admin-success)"
                   : item.decision === "rejected"
-                    ? "1px solid #ff4d4f"
-                    : "1px solid #f0f0f0",
+                    ? "1px solid var(--admin-danger)"
+                    : "1px solid var(--admin-border)",
                 borderRadius: 8,
                 padding: 12,
-                backgroundColor: item.decision === "accepted" ? "#f6ffed" : "#fff",
+                backgroundColor: item.decision === "accepted" ? "var(--admin-success-light)" : "var(--admin-surface)",
               }}
             >
               <Flex justify="space-between" align="center" gap={8} wrap>

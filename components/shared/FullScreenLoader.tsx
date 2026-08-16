@@ -14,9 +14,9 @@ export function FullScreenLoader({
           <svg viewBox="0 0 100 100" className="admin-loader-svg">
             <defs>
               <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#0f766e" />
-                <stop offset="50%" stopColor="#1d4ed8" />
-                <stop offset="100%" stopColor="#0f766e" />
+                <stop offset="0%" stopColor="var(--admin-brand)" />
+                <stop offset="50%" stopColor="var(--admin-accent)" />
+                <stop offset="100%" stopColor="var(--admin-brand)" />
               </linearGradient>
             </defs>
             <circle cx="50" cy="50" r="40" fill="none" stroke="var(--admin-border)" strokeWidth="5" />

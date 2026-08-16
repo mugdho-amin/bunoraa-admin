@@ -140,12 +140,12 @@ export function AdminDashboardPage() {
   }, [categoryQuery.data]);
 
   const kpiCards = useMemo(() => [
-    { key: "revenue_30d" as const, title: "Revenue (30d)", icon: <DollarSign size={18} />, color: "#0f766e", value: d?.revenue_30d != null ? formatCurrency(d.revenue_30d) : null },
-    { key: "orders" as const, title: "Orders", icon: <ShoppingCart size={18} />, color: "#1d4ed8", value: formatNumber(d?.orders) },
+    { key: "revenue_30d" as const, title: "Revenue (30d)", icon: <DollarSign size={18} />, color: "var(--admin-brand)", value: d?.revenue_30d != null ? formatCurrency(d.revenue_30d) : null },
+    { key: "orders" as const, title: "Orders", icon: <ShoppingCart size={18} />, color: "var(--admin-accent)", value: formatNumber(d?.orders) },
     { key: "users" as const, title: "Users", icon: <Users size={18} />, color: "#7c3aed", value: formatNumber(d?.users) },
-    { key: "orders_pending" as const, title: "Pending", icon: <AlertCircle size={18} />, color: "#b45309", value: formatNumber(d?.orders_pending) },
+    { key: "orders_pending" as const, title: "Pending", icon: <AlertCircle size={18} />, color: "var(--admin-warning)", value: formatNumber(d?.orders_pending) },
     { key: "products" as const, title: "Products", icon: <Package size={18} />, color: "#0891b2", value: formatNumber(d?.products) },
-    { key: "conversion_rate" as const, title: "Conversion", icon: <Activity size={18} />, color: "#be123c", value: formatPercent(d?.conversion_rate) },
+    { key: "conversion_rate" as const, title: "Conversion", icon: <Activity size={18} />, color: "var(--admin-danger)", value: formatPercent(d?.conversion_rate) },
   ], [d]);
 
   return (
@@ -248,7 +248,7 @@ export function AdminDashboardPage() {
                       ))}
                     </Pie>
                     <RechartsTooltip
-                      contentStyle={{ borderRadius: 12, border: "1px solid rgba(0,0,0,0.06)" }}
+                      contentStyle={{ borderRadius: 12, border: "1px solid var(--admin-border)", background: "var(--admin-panel)" }}
                       formatter={(value, name) => [`${value}%`, name]}
                     />
                   </PieChart>

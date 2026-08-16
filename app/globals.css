@@ -169,6 +169,210 @@ body {
   transition: background-color 0.3s ease;
 }
 
+/* ── Dark mode Ant Design component overrides ── */
+.dark .ant-card {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.dark .ant-table {
+  background: transparent;
+}
+
+.dark .ant-table-thead > tr > th {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom-color: var(--admin-border) !important;
+  color: var(--admin-muted) !important;
+}
+
+.dark .ant-table-tbody > tr > td {
+  border-bottom-color: var(--admin-border) !important;
+}
+
+.dark .ant-table-tbody > tr:hover > td {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.dark .ant-modal-content {
+  background: var(--admin-panel) !important;
+  border: 1px solid var(--admin-border);
+}
+
+.dark .ant-modal-header {
+  background: var(--admin-panel) !important;
+  border-bottom-color: var(--admin-border) !important;
+}
+
+.dark .ant-drawer-content {
+  background: var(--admin-panel) !important;
+}
+
+.dark .ant-dropdown-menu {
+  background: var(--admin-panel) !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+.dark .ant-dropdown-menu-item:hover {
+  background: var(--admin-hover-bg) !important;
+}
+
+.dark .ant-select-dropdown {
+  background: var(--admin-panel) !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+.dark .ant-select-item-option-active {
+  background: var(--admin-hover-bg) !important;
+}
+
+.dark .ant-select-item-option-selected {
+  background: var(--admin-brand-light) !important;
+}
+
+.dark .ant-picker-dropdown .ant-picker-panel-container {
+  background: var(--admin-panel) !important;
+  border: 1px solid var(--admin-border) !important;
+}
+
+.dark .ant-popover .ant-popover-inner {
+  background: var(--admin-panel) !important;
+}
+
+.dark .ant-tag {
+  border-color: var(--admin-border);
+}
+
+.dark .ant-badge-count {
+  box-shadow: 0 0 0 2px var(--admin-panel);
+}
+
+.dark .ant-tabs-tab {
+  color: var(--admin-muted) !important;
+}
+
+.dark .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--admin-brand) !important;
+}
+
+.dark .ant-tabs-ink-bar {
+  background: var(--admin-brand) !important;
+}
+
+.dark .ant-input,
+.dark .ant-input-affix-wrapper,
+.dark .ant-select-selector,
+.dark .ant-picker,
+.dark .ant-input-number {
+  background: var(--admin-input-bg) !important;
+  border-color: var(--admin-input-border) !important;
+  color: var(--admin-input-color) !important;
+}
+
+.dark .ant-input::placeholder,
+.dark .ant-input-affix-wrapper .ant-input::placeholder {
+  color: var(--admin-muted) !important;
+}
+
+.dark .ant-btn-default {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-ink);
+}
+
+.dark .ant-btn-default:hover {
+  border-color: var(--admin-brand);
+  color: var(--admin-brand);
+}
+
+.dark .ant-alert {
+  border-color: var(--admin-border);
+}
+
+.dark .ant-collapse > .ant-collapse-item {
+  border-color: var(--admin-border);
+}
+
+.dark .ant-collapse-content {
+  background: transparent;
+}
+
+.dark .ant-form-item-label > label {
+  color: var(--admin-ink-secondary) !important;
+}
+
+.dark .ant-switch {
+  background: var(--admin-muted-alpha-20);
+}
+
+.dark .ant-switch-checked {
+  background: var(--admin-brand) !important;
+}
+
+.dark .ant-radio-button-wrapper {
+  border-color: var(--admin-border);
+  color: var(--admin-muted);
+}
+
+.dark .ant-radio-button-wrapper-checked {
+  border-color: var(--admin-brand);
+  color: var(--admin-brand);
+  background: var(--admin-brand-light);
+}
+
+.dark .ant-checkbox-wrapper {
+  color: var(--admin-ink-secondary);
+}
+
+.dark .ant-empty-description {
+  color: var(--admin-muted);
+}
+
+.dark .ant-upload-drag {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.dark .ant-upload-drag:hover {
+  border-color: var(--admin-brand);
+}
+
+.dark .ant-breadcrumb-link,
+.dark .ant-breadcrumb-separator {
+  color: var(--admin-muted) !important;
+}
+
+.dark .ant-breadcrumb-link a:hover {
+  color: var(--admin-brand) !important;
+}
+
+.dark .ant-pagination .ant-pagination-item {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.dark .ant-pagination .ant-pagination-item a {
+  color: var(--admin-ink-secondary);
+}
+
+.dark .ant-pagination .ant-pagination-item-active {
+  background: var(--admin-brand) !important;
+  border-color: var(--admin-brand) !important;
+}
+
+.dark .ant-pagination .ant-pagination-item-active a {
+  color: var(--admin-text-on-brand) !important;
+}
+
+.dark .ant-pagination .ant-pagination-prev button,
+.dark .ant-pagination .ant-pagination-next button {
+  color: var(--admin-muted);
+}
+
+.dark .ant-pagination .ant-pagination-jump-next,
+.dark .ant-pagination .ant-pagination-jump-prev {
+  color: var(--admin-muted);
+}
+
 /* Smooth theme transitions for themed containers */
 .admin-soft-panel,
 .admin-glass-card,
@@ -191,9 +395,15 @@ button, input, select, textarea { font: inherit; }
 /* ── Shell Gradient ── */
 .admin-shell-gradient {
   background:
-    linear-gradient(135deg, hsl(173 80% 24% / 0.16), hsl(224 76% 48% / 0.14)),
+    linear-gradient(135deg, hsl(var(--primary) / 0.16), hsl(var(--accent) / 0.14)),
     hsl(var(--card) / 0.76);
   backdrop-filter: blur(18px);
+}
+
+.dark .admin-shell-gradient {
+  background:
+    linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--accent) / 0.08)),
+    hsl(var(--card) / 0.84);
 }
 
 /* ── Glass Card ── */
