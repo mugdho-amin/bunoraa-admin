@@ -36,6 +36,9 @@ const AdminAiProvidersPage = dynamic(() => import("@/components/pages/AdminAiPro
 const SingletonSettingsPage = dynamic(() => import("@/components/pages/SingletonSettingsPage").then((m) => ({ default: m.SingletonSettingsPage })), {
   loading: () => <FullScreenLoader message="Loading settings..." />,
 });
+const AdminSiteSettingsPage = dynamic(() => import("@/components/pages/AdminSiteSettingsPage").then((m) => ({ default: m.AdminSiteSettingsPage })), {
+  loading: () => <FullScreenLoader message="Loading site settings..." />,
+});
 const GenericResourcePage = dynamic(() => import("@/components/pages/GenericResourcePage").then((m) => ({ default: m.GenericResourcePage })), {
   loading: () => <FullScreenLoader message="Loading resource..." />,
 });
@@ -70,13 +73,7 @@ function renderCustomPage(path: string) {
     case "/realtime/events":
       return <AdminRealtimeEventsPage />;
     case "/cms/site-settings":
-      return (
-        <SingletonSettingsPage
-          title="Site Settings"
-          path="cms/site-settings"
-          description="Global branding, messaging, and site-wide experience controls."
-        />
-      );
+      return <AdminSiteSettingsPage />;
     case "/shipping/settings":
       return (
         <SingletonSettingsPage
