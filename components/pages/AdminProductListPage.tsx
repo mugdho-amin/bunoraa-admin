@@ -5,10 +5,11 @@ import { useDelete, useList, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
 import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
 import type { InputRef } from "antd";
-import { Plus, Search, Trash2, Pencil, PackageSearch } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, PackageSearch, Upload, Download } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import type { SorterResult } from "antd/es/table/interface";
+import { requestAdminData } from "@/lib/admin/http";
 
 type ProductRecord = BaseRecord & {
   id: string;
@@ -51,7 +52,10 @@ export function AdminProductListPage() {
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const searchRef = useRef<InputRef>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
   const { mutate: updateProduct } = useUpdate();
 
   useEffect(() => {
@@ -91,6 +95,72 @@ export function AdminProductListPage() {
 
   const { mutate: deleteProduct, mutation: deleteMutation } = useDelete();
   const isDeleting = deleteMutation.isPending;
+
+  const handleExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const data = await requestAdminData<{ filename: string; content: string; content_type: string }>(
+        "/admin/catalog/products/export/",
+      );
+      const blob = new Blob([data.content], { type: data.content_type || "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.filename || "products_export.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      notification.success({ message: "Products exported" });
+    } catch (err: unknown) {
+      notification.error({
+        message: "Failed to export products",
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
+
+  const handleImport = useCallback(
+    async (file: File) => {
+      setIsImporting(true);
+      try {
+        const content = await file.text();
+        const result = await requestAdminData<{
+          created: number;
+          updated: number;
+          skipped: number;
+          error: number;
+          errors?: Array<{ row: number; error: string }>;
+        }>("/admin/catalog/products/import/", {
+          method: "POST",
+          body: { content },
+        });
+        if (result.error > 0 || (result.errors && result.errors.length > 0)) {
+          const first = result.errors?.[0];
+          notification.warning({
+            message: `Import completed with ${result.error} row error(s)`,
+            description: first ? `Row ${first.row}: ${first.error}` : undefined,
+          });
+        } else {
+          notification.success({
+            message: `Imported ${result.created + result.updated} products`,
+            description: `${result.created} created · ${result.updated} updated · ${result.skipped} skipped`,
+          });
+        }
+        void refetch();
+      } catch (err: unknown) {
+        notification.error({
+          message: "Failed to import products",
+          description: err instanceof Error ? err.message : "Unknown error",
+        });
+      } finally {
+        setIsImporting(false);
+      }
+    },
+    [refetch],
+  );
 
   const handleDelete = useCallback(
     (record: ProductRecord) => {
@@ -380,9 +450,38 @@ export function AdminProductListPage() {
           </Typography.Title>
           <Typography.Text type="secondary">Manage your product catalog</Typography.Text>
         </Flex>
-        <Button type="primary" icon={<Plus size={16} />} onClick={() => router.push("/catalog/products/create")}>
-          Create Product
-        </Button>
+        <Space wrap>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                void handleImport(file);
+              }
+              e.target.value = "";
+            }}
+          />
+          <Button
+            icon={<Upload size={16} />}
+            loading={isImporting}
+            onClick={() => importFileRef.current?.click()}
+          >
+            Import CSV
+          </Button>
+          <Button
+            icon={<Download size={16} />}
+            loading={isExporting}
+            onClick={() => void handleExport()}
+          >
+            Export CSV
+          </Button>
+          <Button type="primary" icon={<Plus size={16} />} onClick={() => router.push("/catalog/products/create")}>
+            Create Product
+          </Button>
+        </Space>
       </Flex>
 
       <Card className="admin-soft-panel" variant="borderless">

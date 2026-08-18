@@ -142,6 +142,19 @@ export function AdminSiteSettingsPage() {
           <Col xs={24} md={8}><Form.Item label="Favicon"><AssetUpload name="favicon_file" accept="image/*" currentUrl={current.favicon as string | undefined} /></Form.Item></Col>
         </Row>
 
+        <Divider /><Typography.Title level={4}>Slogan and brand story</Typography.Title>
+        <Typography.Paragraph type="secondary">The slogan (&ldquo;Your cloth, your choice.&rdquo;) plus the Bunoraa = Bunon (বুনন, weaving) + Aurora (dawn light) story. Shown on the homepage, About page, footer, and share links.</Typography.Paragraph>
+        <Row gutter={16}>
+          <Col xs={24} md={12}><Form.Item name="brand_slogan" label="Slogan (EN)"><Input /></Form.Item></Col>
+          <Col xs={24} md={12}><Form.Item name="brand_slogan_bn" label="Slogan (বাংলা)"><Input /></Form.Item></Col>
+          <Col xs={24} md={12}><Form.Item name="brand_story_title" label="Story title (EN)"><Input /></Form.Item></Col>
+          <Col xs={24} md={12}><Form.Item name="brand_story_title_bn" label="Story title (বাংলা)"><Input /></Form.Item></Col>
+          <Col span={24}><Form.Item name="brand_story_short" label="One-line brand meaning (EN)"><Input.TextArea rows={2} maxLength={500} showCount /></Form.Item></Col>
+          <Col span={24}><Form.Item name="brand_story_short_bn" label="One-line brand meaning (বাংলা)"><Input.TextArea rows={2} maxLength={500} showCount /></Form.Item></Col>
+          <Col span={24}><Form.Item name="brand_story_body" label="Full brand story (EN)"><Input.TextArea rows={7} /></Form.Item></Col>
+          <Col span={24}><Form.Item name="brand_story_body_bn" label="Full brand story (বাংলা)"><Input.TextArea rows={7} /></Form.Item></Col>
+        </Row>
+
         <Divider /><Typography.Title level={4}>Contact and location</Typography.Title>
         <Row gutter={16}>
           <Col xs={24} md={12}><Form.Item name="contact_email" label="Contact email" rules={[{ type: "email" }]}><Input /></Form.Item></Col>
