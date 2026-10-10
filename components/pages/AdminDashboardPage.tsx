@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Col, Flex, List, Row, Skeleton, Tag, Typography, Grid,
@@ -8,6 +8,7 @@ import {
 import {
   Users, Package, ShoppingCart, DollarSign,
   AlertCircle, Activity, BarChart3, RefreshCcw,
+  Database, Server, HardDrive,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -43,9 +44,68 @@ type CategoryStat = {
   orders_count: number;
 };
 
+type HealthCheck = { status?: string; [key: string]: unknown };
+
+type DatabaseCheck = {
+  status?: string;
+  latency_ms?: number;
+  engine?: string;
+  host?: string;
+  port?: string;
+  name?: string;
+  user?: string;
+  conn_max_age?: number | null;
+  ssl_required?: boolean;
+  pooled?: boolean;
+  url?: string;
+  error?: string;
+};
+
+type RedisTarget = {
+  status?: string;
+  latency_ms?: number;
+  version?: string;
+  connected_clients?: number;
+  used_memory_human?: string;
+  url?: string;
+  scheme?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  tls?: boolean;
+  error?: string;
+};
+
+type RedisCheck = {
+  status?: string;
+  reason?: string;
+  targets?: Record<string, RedisTarget>;
+  error?: string;
+};
+
+type CacheCheck = {
+  status?: string;
+  backend?: string;
+  location?: string;
+  latency_ms?: number;
+  error?: string;
+};
+
+type StorageCheck = {
+  status?: string;
+  backend?: string;
+  bucket?: string;
+  latency_ms?: number;
+  error?: string;
+};
+
 type HealthData = {
   status: string;
-  checks: Record<string, { status?: string; [key: string]: unknown }>;
+  service?: string;
+  version?: string;
+  environment?: string;
+  timestamp?: string;
+  checks: Record<string, HealthCheck>;
 };
 
 type EventFeed = {
@@ -78,6 +138,181 @@ function formatPercent(value: number | string | undefined | null): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "—";
   return `${num.toFixed(1)}%`;
+}
+
+function statusDotClass(status?: string): string {
+  if (status === "ok") return "online";
+  if (status === "error") return "error";
+  if (status === "skipped") return "away";
+  return "away";
+}
+
+function StatusTag({ status }: { status?: string }) {
+  if (!status) return null;
+  const color = status === "ok" ? "green" : status === "error" ? "red" : "gold";
+  return (
+    <Tag color={color} bordered={false} style={{ margin: 0, fontSize: 10, lineHeight: "16px" }}>
+      {status}
+    </Tag>
+  );
+}
+
+function InfoRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Flex justify="space-between" align="start" gap={12} style={{ width: "100%" }}>
+      <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted)", whiteSpace: "nowrap" }}>
+        {label}
+      </Typography.Text>
+      <Typography.Text style={{ fontSize: 12, fontWeight: 500, textAlign: "right", wordBreak: "break-all" }}>
+        {children}
+      </Typography.Text>
+    </Flex>
+  );
+}
+
+function InfrastructureCard({
+  checks,
+  version,
+  environment,
+}: {
+  checks: Record<string, HealthCheck>;
+  version?: string;
+  environment?: string;
+}) {
+  const db = checks.database as DatabaseCheck | undefined;
+  const redis = checks.redis as RedisCheck | undefined;
+  const cacheCheck = checks.cache as CacheCheck | undefined;
+  const storage = checks.storage as StorageCheck | undefined;
+  const redisTargets = Object.entries(redis?.targets ?? {});
+
+  const dbHost = db?.host
+    ? `${db.host}${db.port && db.port !== "default" ? `:${db.port}` : ""}`
+    : "—";
+
+  return (
+    <div className="bento-cell" style={{ padding: 20 }}>
+      <Flex align="center" gap={8} wrap="wrap" style={{ marginBottom: 16 }}>
+        <Server size={16} style={{ color: "var(--admin-muted)" }} />
+        <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Infrastructure
+        </Typography.Text>
+        {environment && (
+          <Tag bordered={false} style={{ fontSize: 10, marginLeft: "auto" }}>{environment}</Tag>
+        )}
+        {version && <Tag color="blue" bordered={false} style={{ fontSize: 10, margin: 0 }}>v{version}</Tag>}
+      </Flex>
+
+      <Row gutter={[20, 20]}>
+        <Col xs={24} lg={12}>
+          <Flex vertical gap={10}>
+            <Flex align="center" gap={6}>
+              <Database size={14} style={{ color: "var(--admin-muted)" }} />
+              <Typography.Text strong style={{ fontSize: 12 }}>Database</Typography.Text>
+              <span className={`status-dot ${statusDotClass(db?.status)}`} />
+              <StatusTag status={db?.status} />
+            </Flex>
+            <InfoRow label="URL">{db?.url || "—"}</InfoRow>
+            <InfoRow label="Engine">{db?.engine || "—"}</InfoRow>
+            <InfoRow label="Host">{dbHost}</InfoRow>
+            <InfoRow label="Name">{db?.name || "—"}</InfoRow>
+            <InfoRow label="User">{db?.user || "—"}</InfoRow>
+            <InfoRow label="Latency">{db?.latency_ms != null ? `${db.latency_ms} ms` : "—"}</InfoRow>
+            <InfoRow label="SSL / Pooling">
+              <Flex gap={4} justify="flex-end" wrap="wrap">
+                <Tag bordered={false} color={db?.ssl_required ? "green" : "default"} style={{ fontSize: 10, margin: 0 }}>
+                  SSL {db?.ssl_required ? "on" : "off"}
+                </Tag>
+                <Tag bordered={false} color={db?.pooled ? "purple" : "default"} style={{ fontSize: 10, margin: 0 }}>
+                  {db?.pooled ? "Pooler" : "Direct"}
+                </Tag>
+              </Flex>
+            </InfoRow>
+          </Flex>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Flex vertical gap={10}>
+            <Flex align="center" gap={6}>
+              <Server size={14} style={{ color: "var(--admin-muted)" }} />
+              <Typography.Text strong style={{ fontSize: 12 }}>Redis</Typography.Text>
+              <span className={`status-dot ${statusDotClass(redis?.status)}`} />
+              <StatusTag status={redis?.status} />
+            </Flex>
+            {redisTargets.length === 0 ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {redis?.reason || "No Redis targets configured."}
+              </Typography.Text>
+            ) : (
+              redisTargets.map(([name, target]) => (
+                <Flex
+                  key={name}
+                  vertical
+                  gap={4}
+                  style={{ background: "var(--admin-panel)", border: "1px solid var(--admin-border)", borderRadius: 10, padding: "8px 10px" }}
+                >
+                  <Flex align="center" gap={6}>
+                    <span className={`status-dot ${statusDotClass(target.status)}`} style={{ width: 6, height: 6 }} />
+                    <Typography.Text strong style={{ fontSize: 11 }}>{name}</Typography.Text>
+                    {target.version && (
+                      <Tag bordered={false} style={{ fontSize: 9, margin: 0, marginLeft: "auto" }}>
+                        v{target.version}
+                      </Tag>
+                    )}
+                  </Flex>
+                  <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted)", wordBreak: "break-all" }}>
+                    {target.url || "—"}
+                  </Typography.Text>
+                  <Flex gap={12} wrap="wrap">
+                    <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted)" }}>
+                      {target.status === "ok" && target.latency_ms != null ? `${target.latency_ms} ms` : target.error || "—"}
+                    </Typography.Text>
+                    {target.used_memory_human && (
+                      <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted)" }}>
+                        mem {target.used_memory_human}
+                      </Typography.Text>
+                    )}
+                    {target.connected_clients != null && (
+                      <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted)" }}>
+                        clients {target.connected_clients}
+                      </Typography.Text>
+                    )}
+                  </Flex>
+                </Flex>
+              ))
+            )}
+          </Flex>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Flex vertical gap={10}>
+            <Flex align="center" gap={6}>
+              <HardDrive size={14} style={{ color: "var(--admin-muted)" }} />
+              <Typography.Text strong style={{ fontSize: 12 }}>Cache</Typography.Text>
+              <span className={`status-dot ${statusDotClass(cacheCheck?.status)}`} />
+              <StatusTag status={cacheCheck?.status} />
+            </Flex>
+            <InfoRow label="Backend">{cacheCheck?.backend || "—"}</InfoRow>
+            <InfoRow label="Location">{cacheCheck?.location || "—"}</InfoRow>
+            <InfoRow label="Latency">{cacheCheck?.latency_ms != null ? `${cacheCheck.latency_ms} ms` : "—"}</InfoRow>
+          </Flex>
+        </Col>
+
+        <Col xs={24} lg={12}>
+          <Flex vertical gap={10}>
+            <Flex align="center" gap={6}>
+              <HardDrive size={14} style={{ color: "var(--admin-muted)" }} />
+              <Typography.Text strong style={{ fontSize: 12 }}>Storage</Typography.Text>
+              <span className={`status-dot ${statusDotClass(storage?.status)}`} />
+              <StatusTag status={storage?.status} />
+            </Flex>
+            <InfoRow label="Backend">{storage?.backend || "—"}</InfoRow>
+            <InfoRow label="Bucket">{storage?.bucket || "—"}</InfoRow>
+            <InfoRow label="Latency">{storage?.latency_ms != null ? `${storage.latency_ms} ms` : "—"}</InfoRow>
+          </Flex>
+        </Col>
+      </Row>
+    </div>
+  );
 }
 
 export function AdminDashboardPage() {
@@ -341,6 +576,19 @@ export function AdminDashboardPage() {
           </div>
         </Col>
       </Row>
+
+      {/* ── Infrastructure ── */}
+      {healthQuery.isLoading ? (
+        <div className="bento-cell" style={{ padding: 20 }}>
+          <Skeleton active paragraph={{ rows: 6 }} />
+        </div>
+      ) : healthQuery.data ? (
+        <InfrastructureCard
+          checks={healthQuery.data.checks ?? {}}
+          version={healthQuery.data.version}
+          environment={healthQuery.data.environment}
+        />
+      ) : null}
     </Flex>
   );
 }
