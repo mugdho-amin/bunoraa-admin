@@ -184,7 +184,7 @@ export function AdminSiteSettingsPage() {
           <Col span={24}><Form.Item name="default_meta_description" label="Default meta description"><Input.TextArea rows={2} maxLength={300} showCount /></Form.Item></Col>
           <Col xs={24} md={12}><Form.Item name="footer_text" label="Footer text"><Input.TextArea rows={2} /></Form.Item></Col>
           <Col xs={24} md={12}><Form.Item name="copyright_text" label="Copyright text"><Input.TextArea rows={2} /></Form.Item></Col>
-          <Col xs={24} md={12}><Form.Item name="facebook_pixel_id" label="Facebook Pixel ID"><Input /></Form.Item></Col>
+          <Col xs={24} md={12}><Form.Item name="facebook_pixel_id" label="Meta Pixel ID" extra="Paste the numeric Pixel ID from Meta Events Manager, not the full code snippet."><Input inputMode="numeric" maxLength={50} placeholder="123456789012345" /></Form.Item></Col>
           <Col span={24}><Form.Item name="custom_head_scripts" label="Custom head scripts"><Input.TextArea rows={4} /></Form.Item></Col>
           <Col span={24}><Form.Item name="custom_body_scripts" label="Custom body scripts"><Input.TextArea rows={4} /></Form.Item></Col>
         </Row>
