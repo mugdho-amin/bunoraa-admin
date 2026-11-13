@@ -70,8 +70,11 @@ export function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/sw.js")
-        .then(() => {
+        .register("/sw.js", { updateViaCache: "none" })
+        .then((registration) => {
+          void registration.update().catch(() => {
+            // Registration remains available; the next load will retry the update.
+          });
           console.info("[PWA] Service worker registered");
         })
         .catch(() => {

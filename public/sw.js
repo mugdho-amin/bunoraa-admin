@@ -1,4 +1,4 @@
-const CACHE = "bunoraa-admin-v2-cache-v1";
+const CACHE = "bunoraa-admin-v2-cache-v2";
 const OFFLINE_URL = "/login";
 
 self.addEventListener("install", (event) => {
@@ -27,13 +27,33 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  if (request.method !== "GET" || url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL)),
+      fetch(request).catch(() => caches.match(OFFLINE_URL)),
     );
     return;
   }
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
-  );
+
+  // Only cache immutable Next.js build assets. Never cache authenticated API
+  // responses or app data, which can otherwise leak across sessions or stay
+  // stale after deployments.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        const response = await fetch(request);
+        if (response.ok) await cache.put(request, response.clone());
+        return response;
+      }),
+    );
+  }
 });
