@@ -12,7 +12,6 @@ import {
   Layout,
   Menu,
   Space,
-  Tag,
   Tooltip,
   Typography,
 } from "antd";
@@ -38,6 +37,7 @@ import { getIconNode } from "@/lib/admin/utils";
 import { useThemeStore, type ThemeMode } from "@/lib/admin/theme-store";
 import { CommandPalette } from "@/components/shared/CommandPalette";
 import { InstallAppBanner } from "@/components/common/InstallAppBanner";
+import { BrandMark } from "@/components/common/BrandMark";
 
 type AdminShellProps = {
   route: ParsedAdminRoute;
@@ -245,17 +245,16 @@ export function AdminShell({ route, children }: AdminShellProps) {
           <Tooltip title="Expand sidebar" placement="right">
             <Button
               type="text"
-              icon={<ChevronRight size={20} />}
               onClick={() => setSidebarCollapsed(false)}
-              style={{ color: "var(--admin-muted)", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
-            />
+              aria-label="Expand sidebar"
+              style={{ color: "var(--admin-muted)", width: "100%", height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}
+            ><Flex align="center" gap={4}><BrandMark size={30} /><ChevronRight size={16} /></Flex></Button>
           </Tooltip>
         ) : (
           <Flex align="center" gap={8} justify={isDesktop ? "space-between" : "center"}>
             <Flex align="center" gap={8}>
-              <Tag color="cyan" bordered={false} style={{ borderRadius: 999, paddingInline: 8 }}>
-                Bunoraa
-              </Tag>
+              <BrandMark size={30} />
+              <Typography.Text strong style={{ fontSize: 15 }}>Bunoraa</Typography.Text>
               <Typography.Text strong style={{ fontSize: 15 }}>
                 Admin
               </Typography.Text>

@@ -21,6 +21,7 @@ import { loginWithPassword, verifyMfaCode } from "@/lib/admin/auth-provider";
 import { getPendingMfaChallenge } from "@/lib/admin/auth-storage";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 import { AdminApiError } from "@/lib/admin/http";
+import { BrandMark } from "@/components/common/BrandMark";
 
 type LoginFields = { email: string; password: string };
 type MfaFields = { method: string; code: string };
@@ -81,10 +82,9 @@ export function LoginScreen() {
       <div className="admin-login-grid">
         {/* ── Left: Brand Panel (hidden on mobile) ── */}
         <div className="admin-glass-card admin-shell-gradient admin-login-brand-panel" style={{ padding: "clamp(20px, 4vw, 40px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <Flex align="center" gap={8} style={{ marginBottom: 24 }}>
-            <Tag bordered={false} color="cyan" style={{ paddingInline: 12, borderRadius: 999 }}>
-              Bunoraa Admin
-            </Tag>
+          <Flex align="center" gap={10} style={{ marginBottom: 24 }}>
+            <BrandMark size={40} />
+            <Typography.Text strong style={{ fontSize: 16 }}>Bunoraa Admin</Typography.Text>
           </Flex>
           <Typography.Title level={1} className="admin-display" style={{ marginTop: 0, marginBottom: 16, fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
             Enterprise operations <br />dashboard
