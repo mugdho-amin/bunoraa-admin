@@ -101,7 +101,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const isMobile = !isDesktop;
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [headerAccountMenuOpen, setHeaderAccountMenuOpen] = useState(false);
+  const [sidebarAccountMenuOpen, setSidebarAccountMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sidebarIsCollapsed = isDesktop && sidebarCollapsed;
   const [sidebarPreferenceLoaded, setSidebarPreferenceLoaded] = useState(false);
@@ -215,6 +216,18 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const nameInitial = bootstrap?.identity.full_name?.slice(0, 1).toUpperCase() || "A";
   const userName = bootstrap?.identity.full_name || "Admin";
   const userEmail = bootstrap?.identity.email;
+  const closeAccountMenus = () => {
+    setHeaderAccountMenuOpen(false);
+    setSidebarAccountMenuOpen(false);
+  };
+  const onHeaderAccountMenuChange = (open: boolean) => {
+    setHeaderAccountMenuOpen(open);
+    if (open) setSidebarAccountMenuOpen(false);
+  };
+  const onSidebarAccountMenuChange = (open: boolean) => {
+    setSidebarAccountMenuOpen(open);
+    if (open) setHeaderAccountMenuOpen(false);
+  };
 
   const accountMenuContent = (
     <div className="admin-account-menu" role="menu" aria-label="Account menu">
@@ -226,27 +239,27 @@ export function AdminShell({ route, children }: AdminShellProps) {
         </div>
       </div>
       <div className="admin-account-menu-divider" />
-      <button className="admin-account-menu-action" role="menuitem" onClick={() => { setAccountMenuOpen(false); setCommandOpen(true); }}>
+      <button type="button" className="admin-account-menu-action" role="menuitem" onClick={() => { closeAccountMenus(); setCommandOpen(true); }}>
         <Search size={16} /> <span>Command palette</span>
       </button>
-      <button className="admin-account-menu-action" role="menuitem" onClick={() => { setAccountMenuOpen(false); void refreshBootstrap(); }}>
+      <button type="button" className="admin-account-menu-action" role="menuitem" onClick={() => { closeAccountMenus(); void refreshBootstrap(); }}>
         <RefreshCcw size={16} /> <span>Refresh data</span>
       </button>
       <div className="admin-account-menu-divider" />
-      <button className="admin-account-menu-action danger" role="menuitem" onClick={() => { clearAuthState(); window.location.href = "/login"; }}>
+      <button type="button" className="admin-account-menu-action danger" role="menuitem" onClick={() => { clearAuthState(); window.location.href = "/login"; }}>
         <LogOut size={16} /> <span>Sign out</span>
       </button>
     </div>
   );
 
-  const accountDropdownProps = {
+  const accountDropdownProps = (open: boolean, onOpenChange: (open: boolean) => void) => ({
     trigger: ["click"] as ("click")[],
-    open: accountMenuOpen,
-    onOpenChange: setAccountMenuOpen,
+    open,
+    onOpenChange,
     popupRender: () => accountMenuContent,
     getPopupContainer: () => document.body,
     overlayStyle: { maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)" },
-  };
+  });
 
   const sideMenu = (
     <Flex vertical style={{ height: "100%", minHeight: 0, minWidth: 0 }}>
@@ -318,7 +331,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
       >
         {sidebarIsCollapsed ? (
           <Dropdown
-            {...accountDropdownProps}
+            {...accountDropdownProps(sidebarAccountMenuOpen, onSidebarAccountMenuChange)}
             placement="topLeft"
           >
             <Button type="text" aria-label={`Open account menu for ${userName}`} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
@@ -333,7 +346,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           </Dropdown>
         ) : (
           <Dropdown
-            {...accountDropdownProps}
+            {...accountDropdownProps(sidebarAccountMenuOpen, onSidebarAccountMenuChange)}
             placement="topLeft"
           >
             <Button
@@ -480,7 +493,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 </Tooltip>
                 <NotificationBell />
                 <Dropdown
-                  {...accountDropdownProps}
+                  {...accountDropdownProps(headerAccountMenuOpen, onHeaderAccountMenuChange)}
                   placement="bottomRight"
                 >
                   <Button
@@ -488,6 +501,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
                     className="admin-header-btn admin-user-trigger"
                     aria-label={`Open account menu for ${userName}`}
                     aria-haspopup="menu"
+                    aria-expanded={headerAccountMenuOpen}
                     style={{ gap: 6, width: "auto", paddingInline: isMobile ? 4 : 8, minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40 }}
                   >
                     <Avatar
