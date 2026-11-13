@@ -37,6 +37,7 @@ type CategoryRecord = BaseRecord & {
   children_count: number;
   parent_id: string | null;
   parent_name: string | null;
+  cover_video: string | null;
 };
 
 interface CategoryFormData {
@@ -58,6 +59,7 @@ interface CategoryFormData {
   aspect_height: number | null;
   aspect_unit: string;
   category_type: string;
+  cover_video: string | null;
   apply_aspect_to_products: boolean;
   apply_aspect_to_children: boolean;
   set_aspect_default_for_descendants: boolean;
@@ -82,6 +84,7 @@ const emptyForm: CategoryFormData = {
   aspect_height: null,
   aspect_unit: "ratio",
   category_type: "STANDARD",
+  cover_video: null,
   apply_aspect_to_products: false,
   apply_aspect_to_children: false,
   set_aspect_default_for_descendants: false,
@@ -499,6 +502,12 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     sorters: [{ field: "path", order: "asc" }],
   });
   const categories = useMemo(() => (categoriesResult?.data ?? []) as CategoryRecord[], [categoriesResult]);
+  const { result: videosResult } = useList<BaseRecord & { id: string; title?: string; product_name?: string; video_url?: string }>({
+    resource: "catalog/videos",
+    pagination: { pageSize: 500 },
+    sorters: [{ field: "ordering", order: "asc" }],
+  });
+  const coverVideos = videosResult?.data ?? [];
 
   const { query: existingQuery, result: existing } = useOne<CategoryRecord>({
     resource: "catalog/categories",
@@ -527,6 +536,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
     aspect_height: data.aspect_height,
     aspect_unit: data.aspect_unit,
     category_type: data.category_type,
+    cover_video: data.cover_video,
     apply_aspect_to_products: data.apply_aspect_to_products,
     apply_aspect_to_children: data.apply_aspect_to_children,
     set_aspect_default_for_descendants: data.set_aspect_default_for_descendants,
@@ -569,6 +579,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_height: existing.aspect_height != null ? Number(existing.aspect_height) : null,
         aspect_unit: existing.aspect_unit ?? "ratio",
         category_type: existing.category_type ?? "STANDARD",
+        cover_video: existing.cover_video ?? null,
         apply_aspect_to_products: false,
         apply_aspect_to_children: false,
         set_aspect_default_for_descendants: false,
@@ -631,6 +642,7 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
         aspect_height: form.aspect_height,
         aspect_unit: form.aspect_unit,
         category_type: form.category_type,
+        cover_video: form.cover_video || null,
         apply_aspect_to_products: form.apply_aspect_to_products,
         apply_aspect_to_children: form.apply_aspect_to_children,
         set_aspect_default_for_descendants: form.set_aspect_default_for_descendants,
@@ -794,6 +806,26 @@ function CategoryFormView({ action, id }: { action: "create" | "edit"; id?: Base
             {form.image && (
               <Image src={form.image} alt="Category preview" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 4 }} preview={false} />
             )}
+          </Flex>
+
+          {/* Category cover video */}
+          <Flex vertical gap={6}>
+            <Typography.Text className="admin-field-label">Category cover video</Typography.Text>
+            <select
+              value={form.cover_video ?? ""}
+              onChange={(e) => updateField("cover_video", e.target.value || null)}
+              className="admin-select"
+            >
+              <option value="">No cover video</option>
+              {coverVideos.map((video) => (
+                <option key={video.id} value={video.id}>
+                  {[video.product_name, video.title || "Untitled video"].filter(Boolean).join(" — ")}
+                </option>
+              ))}
+            </select>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              Choose an uploaded product video. Add videos in Catalog → Product Videos first.
+            </Typography.Text>
           </Flex>
 
           {/* Icon */}

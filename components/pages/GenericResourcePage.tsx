@@ -18,6 +18,7 @@ import type { AdminOptionsResponse, AdminResourceConfig, ResourceViewAction } fr
 import { formatValue, humanizeLabel, pickVisibleKeys } from "@/lib/admin/utils";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { OrderOperationsPanel } from "@/components/pages/OrderOperationsPanel";
+import { PreOrderOperationsPanel } from "@/components/pages/PreOrderOperationsPanel";
 import { useQuery } from "@tanstack/react-query";
 
 export type GenericResourcePageProps = {
@@ -349,6 +350,12 @@ function ResourceShowView({ resource, id }: { resource: AdminResourceConfig; id:
       {resource.name === "orders" && record.id ? (
         <OrderOperationsPanel
           orderId={record.id as BaseKey}
+          onUpdated={async () => { await recordQuery.query.refetch(); }}
+        />
+      ) : null}
+      {resource.name === "preorders/orders" && record.preorder_number ? (
+        <PreOrderOperationsPanel
+          preorderNumber={record.preorder_number as BaseKey}
           onUpdated={async () => { await recordQuery.query.refetch(); }}
         />
       ) : null}
