@@ -8,7 +8,7 @@ import {
 import {
   Users, Package, ShoppingCart, DollarSign,
   AlertCircle, Activity, BarChart3, RefreshCcw,
-  Database, Server, HardDrive,
+  Database, Server, HardDrive, Radio,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -325,6 +325,13 @@ export function AdminDashboardPage() {
     staleTime: 30_000,
   });
 
+  const activeVisitorsQuery = useQuery({
+    queryKey: ["admin", "active-visitors"],
+    queryFn: () => requestAdminData<{ active_visitors: number; window_minutes: number; as_of: string }>("/admin/active-visitors/"),
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  });
+
   const revenueQuery = useQuery({
     queryKey: ["admin", "analytics", "revenue", 7],
     queryFn: () => requestAdminData<RevenueDataPoint[]>("/admin/analytics/dashboard/revenue/?days=7"),
@@ -381,7 +388,8 @@ export function AdminDashboardPage() {
     { key: "orders_pending" as const, title: "Pending", icon: <AlertCircle size={18} />, color: "var(--admin-warning)", value: formatNumber(d?.orders_pending) },
     { key: "products" as const, title: "Products", icon: <Package size={18} />, color: "#0891b2", value: formatNumber(d?.products) },
     { key: "conversion_rate" as const, title: "Conversion", icon: <Activity size={18} />, color: "var(--admin-danger)", value: formatPercent(d?.conversion_rate) },
-  ], [d]);
+    { key: "active_visitors" as const, title: "Live visitors", icon: <Radio size={18} />, color: "#059669", value: formatNumber(activeVisitorsQuery.data?.active_visitors) },
+  ], [activeVisitorsQuery.data?.active_visitors, d]);
 
   return (
     <Flex vertical gap={isMobile ? 16 : 24}>
@@ -389,10 +397,10 @@ export function AdminDashboardPage() {
       <div style={{
         display: "grid",
         gap: isMobile ? 12 : 16,
-        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(7, minmax(0, 1fr))",
       }}>
         {dashboardQuery.isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
+          ? Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="bento-cell kpi-card" style={{ padding: isMobile ? 14 : 18 }}>
                 <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
               </div>
@@ -404,6 +412,7 @@ export function AdminDashboardPage() {
                     <div className="kpi-icon" style={{ background: `${card.color}18`, color: card.color, width: 34, height: 34, borderRadius: 10 }}>
                       {card.icon}
                     </div>
+                    {card.key === "active_visitors" ? <Tag color="green" bordered={false} style={{ margin: 0, fontSize: 9 }}>5 MIN</Tag> : null}
                   </Flex>
                   <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     {card.title}

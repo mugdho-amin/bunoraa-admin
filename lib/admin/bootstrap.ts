@@ -1,6 +1,5 @@
 "use client";
 
-import type { BaseKey } from "@refinedev/core";
 import { requestAdminData, requestAdminRaw } from "@/lib/admin/http";
 import type { AdminBootstrap, AdminOptionsResponse } from "@/lib/admin/types";
 
@@ -8,15 +7,10 @@ export async function fetchAdminBootstrap() {
   return requestAdminData<AdminBootstrap>("/admin/bootstrap/");
 }
 
-export async function fetchOptionsForResource(resource: string, id?: BaseKey) {
-  const useGetSchema = resource === "cms/pages";
-  const suffix = useGetSchema
-    ? `/admin/${resource}/write-schema/`
-    : id
-      ? `/admin/${resource}/${id}`
-      : `/admin/${resource}`;
+export async function fetchOptionsForResource(resource: string) {
+  const suffix = `/admin/schema/${resource}/`;
   const response = await requestAdminRaw<AdminOptionsResponse | { data?: AdminOptionsResponse }>(suffix, {
-    method: useGetSchema ? "GET" : "OPTIONS",
+    method: "GET",
   });
   // OPTIONS is normally returned as bare DRF metadata, but API gateways and
   // response middleware may wrap it in the standard {data: ...} envelope.

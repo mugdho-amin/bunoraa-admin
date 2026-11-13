@@ -366,7 +366,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
   const [submitting, setSubmitting] = useState(false);
   const optionsQuery = useQuery({
     queryKey: ["resource-options", resource.name, action, id],
-    queryFn: () => fetchOptionsForResource(resource.name, action === "edit" ? (id as BaseKey) : undefined),
+    queryFn: () => fetchOptionsForResource(resource.name),
   });
   const recordQuery = useOne<BaseRecord>({
     resource: resource.name,
