@@ -9,10 +9,12 @@ import {
   Card,
   Flex,
   Form,
+  Grid,
   Input,
   InputNumber,
   Modal,
   Select,
+  Skeleton,
   Space,
   Switch,
   Table,
@@ -20,8 +22,9 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { BrainCircuit, PlugZap, Plus, Pencil, RefreshCw, Trash2, X } from "lucide-react";
+import { PlugZap, Plus, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { requestAdminEnvelope } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 const PRESETS: Record<
   string,
@@ -132,6 +135,8 @@ const emptyForm: FormValues = {
 };
 
 export function AdminAiProvidersPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md === false;
   const { message } = App.useApp();
   const [form] = Form.useForm<FormValues>();
   const [editing, setEditing] = useState<AiProviderRecord | null>(null);
@@ -493,17 +498,12 @@ export function AdminAiProvidersPage() {
 
   return (
     <Flex vertical gap={16}>
-      <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Flex align="center" gap={10}>
-          <BrainCircuit size={22} />
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            AI Providers
-          </Typography.Title>
-        </Flex>
-        <Button type="primary" icon={<Plus size={14} />} onClick={openCreate}>
-          Add provider
-        </Button>
-      </Flex>
+      <AdminPageHeader
+        title="AI Providers"
+        eyebrow="AI configuration"
+        description="Manage provider connections and model availability."
+        actions={<Button type="primary" icon={<Plus size={14} />} onClick={openCreate}>Add provider</Button>}
+      />
 
       <Alert
         type="info"
@@ -519,14 +519,49 @@ export function AdminAiProvidersPage() {
       />
 
       <Card className="admin-soft-panel" variant="borderless">
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={providers}
-          loading={isLoading}
-          pagination={false}
-          scroll={{ x: 980 }}
-        />
+        {isMobile ? (
+          <div className="admin-mobile-record-list">
+            {isLoading ? <Skeleton active paragraph={{ rows: 3 }} /> : providers.map((provider) => (
+              <article className="admin-mobile-record" key={provider.id}>
+                <div className="admin-mobile-record-body">
+                  <div className="admin-mobile-record-heading">
+                    <div className="category-mobile-summary">
+                      <strong className="admin-mobile-record-title">{provider.label}</strong>
+                      <span>{provider.key} · {provider.provider_type}</span>
+                    </div>
+                    <Space size={6}>
+                      {provider.is_default && <Tag color="blue">Default</Tag>}
+                      <Switch size="small" checked={provider.enabled} onChange={(checked) => toggleEnabled(provider, checked)} />
+                    </Space>
+                  </div>
+                  <div className="product-mobile-facts">
+                    <div><span>Model</span><strong>{provider.model}</strong></div>
+                    <div><span>Priority</span><strong>{provider.priority}</strong></div>
+                    <div><span>API key</span><strong>{provider.masked_key || "Missing"}</strong></div>
+                    <div><span>Timeout</span><strong>{provider.timeout_seconds}s</strong></div>
+                  </div>
+                  <div className="ai-provider-mobile-actions">
+                    <Button icon={<PlugZap size={14} />} disabled={!provider.masked_key} loading={testing[provider.id]} onClick={() => handleTest(provider)}>Test</Button>
+                    <Button icon={<RefreshCw size={14} />} onClick={() => openManageModels(provider)}>Models</Button>
+                    <Button icon={<Pencil size={14} />} onClick={() => openEdit(provider)}>Edit</Button>
+                    <Button aria-label={`Delete ${provider.label}`} danger icon={<Trash2 size={14} />} onClick={() => handleDelete(provider)} />
+                    {!provider.is_default && provider.masked_key && <Button onClick={() => setDefault(provider)}>Set default</Button>}
+                  </div>
+                  {testResults[provider.id] && <Typography.Text type={testResults[provider.id].ok ? "success" : "danger"}>{testResults[provider.id].text}</Typography.Text>}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={providers}
+            loading={isLoading}
+            pagination={false}
+            scroll={{ x: 980 }}
+          />
+        )}
       </Card>
 
       <Modal
@@ -539,7 +574,7 @@ export function AdminAiProvidersPage() {
         okButtonProps={{ loading: saving }}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" initialValues={emptyForm} style={{ marginTop: 8 }}>
+        <Form form={form} layout="vertical" initialValues={emptyForm} className="admin-ai-provider-form" style={{ marginTop: 8 }}>
           <Form.Item name="available_models" hidden>
             <Input type="hidden" />
           </Form.Item>

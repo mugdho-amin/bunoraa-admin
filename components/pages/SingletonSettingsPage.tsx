@@ -7,6 +7,7 @@ import { fetchOptionsForSingleton } from "@/lib/admin/bootstrap";
 import { requestAdminData } from "@/lib/admin/http";
 import { pickWritableAction } from "@/lib/admin/write-schema";
 import { SchemaForm } from "@/components/forms/SchemaForm";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 export type SingletonSettingsPageProps = {
   title: string;
@@ -34,11 +35,9 @@ export function SingletonSettingsPage({
   const writeAction = pickWritableAction(optionsQuery.data, ["PATCH", "PUT"], path);
 
   return (
-    <Card className="admin-soft-panel" bordered={false}>
-      <Typography.Title level={3} className="admin-display">
-        {title}
-      </Typography.Title>
-      {description ? <Typography.Paragraph type="secondary">{description}</Typography.Paragraph> : null}
+    <div className="admin-page-stack">
+      <AdminPageHeader title={title} eyebrow="Store configuration" description={description} />
+      <Card className="admin-soft-panel" bordered={false}>
       {dataQuery.isError ? (
         <Alert type="error" showIcon message="Failed to load settings data." />
       ) : optionsQuery.isError ? (
@@ -67,6 +66,7 @@ export function SingletonSettingsPage({
           }}
         />
       )}
-    </Card>
+      </Card>
+    </div>
   );
 }

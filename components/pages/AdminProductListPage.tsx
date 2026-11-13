@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDelete, useList, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Pagination, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch, Upload, Download } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import type { SorterResult } from "antd/es/table/interface";
 import { requestAdminData } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type ProductRecord = BaseRecord & {
   id: string;
@@ -45,7 +46,7 @@ const ROW_HOVER = { background: "var(--admin-hover-bg)" };
 export function AdminProductListPage() {
   const router = useRouter();
   const screens = Grid.useBreakpoint();
-  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
+  const isMobile = screens.md === false;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -443,14 +444,12 @@ export function AdminProductListPage() {
 
   return (
     <Flex vertical gap={20}>
-      <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Flex vertical gap={4}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Products
-          </Typography.Title>
-          <Typography.Text type="secondary">Manage your product catalog</Typography.Text>
-        </Flex>
-        <Space wrap>
+      <AdminPageHeader
+        title="Products"
+        eyebrow="Catalog"
+        description="Manage your product catalog."
+        meta={!isLoading ? `${search ? `${products.length} of ` : ""}${total} products` : undefined}
+        actions={<Space wrap>
           <input
             ref={importFileRef}
             type="file"
@@ -481,13 +480,13 @@ export function AdminProductListPage() {
           <Button type="primary" icon={<Plus size={16} />} onClick={() => router.push("/catalog/products/create")}>
             Create Product
           </Button>
-        </Space>
-      </Flex>
+        </Space>}
+      />
 
       <Card className="admin-soft-panel" variant="borderless">
         <Flex vertical gap={16}>
 
-          <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={12} className="admin-resource-search-row">
             <Input
               ref={searchRef}
               placeholder="Search products...  (Press / to focus)"
@@ -498,11 +497,12 @@ export function AdminProductListPage() {
                 setPage(1);
               }}
               allowClear
+              className="admin-resource-search-input"
               style={{ maxWidth: 400 }}
             />
-            {!isLoading && products.length > 0 && (
+            {!isLoading && search && products.length > 0 && (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {search ? `${products.length} of ${total} products` : `${total} products`}
+                {`${products.length} matching products`}
               </Typography.Text>
             )}
           </Flex>
@@ -531,6 +531,53 @@ export function AdminProductListPage() {
                 </Button>
               )}
             </Flex>
+          ) : isMobile ? (
+            <div className="admin-mobile-record-list">
+              {products.map((product) => (
+                <article className="admin-mobile-record product-mobile-card" key={product.id}>
+                  <div className="admin-mobile-record-body">
+                    <div className="product-mobile-main">
+                      <Image
+                        src={product.primary_image ?? undefined}
+                        alt={product.name}
+                        width={58}
+                        height={58}
+                        style={{ flex: "0 0 58px", borderRadius: 12, objectFit: "cover" }}
+                        fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='58' height='58' fill='%23e5e7eb'%3E%3Crect width='58' height='58' rx='12'/%3E%3C/svg%3E"
+                      />
+                      <div className="product-mobile-summary">
+                        <Typography.Text strong className="admin-mobile-record-title">{product.name}</Typography.Text>
+                        <Typography.Text type="secondary">{product.sku || "No SKU"} · {product.primary_category_name || "Uncategorized"}</Typography.Text>
+                        <Flex wrap gap={5}>
+                          {product.is_active ? <Tag color="green">Published</Tag> : <Tag>Draft</Tag>}
+                          {product.is_on_sale && <Tag color="volcano">Sale</Tag>}
+                          {product.is_featured && <Tag color="purple">Featured</Tag>}
+                          {product.stock_quantity <= 0 && <Tag color="red">Out of stock</Tag>}
+                        </Flex>
+                      </div>
+                    </div>
+                    <div className="product-mobile-facts">
+                      <div><span>Price</span><strong>{inlineInput(product, "price", product.price)} {product.currency}</strong></div>
+                      <div><span>Stock</span><strong>{inlineInput(product, "stock_quantity", product.stock_quantity ?? 0)}</strong></div>
+                      <div><span>Orders</span><strong>{product.sales_count ?? 0}</strong></div>
+                      <div><span>Visibility</span><Switch size="small" checked={product.is_active} onChange={(checked) => handleCellSave(product.id, "is_active", checked)} /></div>
+                    </div>
+                    <div className="product-mobile-actions">
+                      <Button block icon={<Pencil size={14} />} onClick={() => router.push(`/catalog/products/edit/${product.id}`)}>Edit product</Button>
+                      <Button aria-label={`Delete ${product.name}`} danger icon={<Trash2 size={15} />} loading={isDeleting} onClick={() => handleDelete(product)} />
+                    </div>
+                  </div>
+                </article>
+              ))}
+              <Pagination
+                className="admin-mobile-pagination"
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                showSizeChanger={false}
+                onChange={(nextPage) => setPage(nextPage)}
+              />
+            </div>
           ) : (
             <Table<ProductRecord>
               dataSource={products}

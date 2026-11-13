@@ -18,6 +18,7 @@ import { pickWritableAction } from "@/lib/admin/write-schema";
 import type { AdminResourceConfig, ResourceViewAction } from "@/lib/admin/types";
 import { formatValue, humanizeLabel, pickVisibleKeys } from "@/lib/admin/utils";
 import { SchemaForm } from "@/components/forms/SchemaForm";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 import { OrderOperationsPanel } from "@/components/pages/OrderOperationsPanel";
 import { PreOrderOperationsPanel } from "@/components/pages/PreOrderOperationsPanel";
 import { useQuery } from "@tanstack/react-query";
@@ -183,25 +184,19 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
 
   return (
     <Flex vertical gap={18}>
-      <section className="resource-page-heading">
-        <div className="resource-page-heading-copy">
-          <span className="resource-page-kicker">{resource.group}</span>
-          <Typography.Title level={2} className="admin-display" style={{ margin: "5px 0 4px", fontSize: 26 }}>
-            {resource.label}
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {resource.description || `Review and manage ${resource.label.toLowerCase()} records.`}
-          </Typography.Text>
-        </div>
-        {resource.meta.capabilities.create ? (
+      <AdminPageHeader
+        title={resource.label}
+        eyebrow={resource.group}
+        description={resource.description || `Review and manage ${resource.label.toLowerCase()} records.`}
+        actions={resource.meta.capabilities.create ? (
           <Button type="primary" icon={<Plus size={15} />} onClick={() => router.push(`/${resource.name}/create`)}>
             Create {resource.label}
           </Button>
         ) : null}
-      </section>
+      />
       {/* Toolbar */}
-      <Flex justify="space-between" gap={12} wrap="wrap" align="center">
-        <Flex gap={8} wrap="wrap" flex={1}>
+      <Flex justify="space-between" gap={12} wrap="wrap" align="center" className="admin-resource-toolbar">
+        <Flex gap={8} wrap="wrap" flex={1} className="admin-resource-search">
           <Input.Search
             allowClear
             placeholder={`Search ${resource.label.toLowerCase()}...`}
@@ -218,7 +213,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
             />
           </Tooltip>
         </Flex>
-        <Space wrap>
+        <Space wrap className="admin-resource-toolbar-actions">
           <Dropdown
             menu={{
               items: [
@@ -286,7 +281,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
 
       {/* Table */}
       <Card className="admin-soft-panel" bordered={false} styles={{ body: { padding: 0 } }}>
-        {isMobile && isAnalyticsResource ? (
+        {isMobile ? (
           query.isLoading ? (
             <div style={{ padding: 16 }}><Skeleton active paragraph={{ rows: 5 }} /></div>
           ) : result.data.length === 0 ? (
@@ -295,47 +290,40 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
             <List
               dataSource={result.data}
               split={false}
-              renderItem={(record, index) => (
-                <List.Item
-                  key={String(getRecordKey(record) ?? record.created_at ?? index)}
-                  className="admin-analytics-mobile-item"
-                  role={getRecordKey(record) != null && resource.meta.capabilities.show ? "button" : undefined}
-                  tabIndex={getRecordKey(record) != null && resource.meta.capabilities.show ? 0 : undefined}
-                  onClick={() => {
-                    const key = getRecordKey(record);
-                    if (key != null && resource.meta.capabilities.show) {
-                      router.push(`/${resource.name}/show/${key}`);
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    const key = getRecordKey(record);
-                    if ((event.key === "Enter" || event.key === " ") && key != null && resource.meta.capabilities.show) {
-                      event.preventDefault();
-                      router.push(`/${resource.name}/show/${key}`);
-                    }
-                  }}
-                  aria-label={`View ${resource.label} record`}
-                >
-                  <Flex vertical gap={10} style={{ width: "100%", minWidth: 0 }}>
-                    <Flex align="flex-start" justify="space-between" gap={10}>
-                      <Typography.Text strong className="admin-analytics-mobile-title">
-                        {formatValue(analyticsTitleField ? record[analyticsTitleField] : resource.label)}
-                      </Typography.Text>
-                      {resource.meta.capabilities.show && getRecordKey(record) != null ? (
-                        <Eye size={16} aria-hidden="true" style={{ color: "var(--admin-muted)", flexShrink: 0 }} />
-                      ) : null}
-                    </Flex>
-                    <div className="admin-analytics-mobile-fields">
-                      {analyticsSecondaryFields.filter((key) => key in record).map((key) => (
-                        <div key={key} className="admin-analytics-mobile-field">
-                          <Typography.Text type="secondary">{humanizeLabel(key)}</Typography.Text>
-                          <Typography.Text className="admin-analytics-mobile-value">{formatValue(record[key])}</Typography.Text>
+              renderItem={(record, index) => {
+                const key = getRecordKey(record);
+                const preferredTitleFields = [analyticsTitleField, "name", "title", "order_number", "code", "email", "product_name", "category_name", "query", "path", "date"]
+                  .filter((field): field is string => Boolean(field));
+                const titleField = preferredTitleFields.find((field) => record[field] !== undefined && record[field] !== null)
+                  || pickVisibleKeys(record).find((field) => !["id", "uuid"].includes(field));
+                const fields = isAnalyticsResource
+                  ? analyticsSecondaryFields.filter((field) => field in record)
+                  : pickVisibleKeys(record).filter((field) => field !== titleField && !["id", "uuid", "created_at", "updated_at"].includes(field)).slice(0, 4);
+                return (
+                  <List.Item key={String(key ?? record.created_at ?? index)} className="admin-mobile-record">
+                    <div className="admin-mobile-record-body">
+                      <div className="admin-mobile-record-heading">
+                        <div className="admin-mobile-record-title">
+                          {titleField ? formatValue(record[titleField]) : `${resource.label} record`}
                         </div>
-                      ))}
+                        <Space size={2} className="admin-mobile-record-actions">
+                          {resource.meta.capabilities.show && key != null && <Button aria-label="View record" type="text" icon={<Eye size={16} />} onClick={() => router.push(`/${resource.name}/show/${key}`)} />}
+                          {resource.meta.capabilities.edit && key != null && <Button aria-label="Edit record" type="text" icon={<Pencil size={16} />} onClick={() => router.push(`/${resource.name}/edit/${key}`)} />}
+                          {resource.meta.capabilities.delete && key != null && <Button aria-label="Delete record" danger type="text" icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />}
+                        </Space>
+                      </div>
+                      <div className="admin-mobile-record-fields">
+                        {fields.map((field) => (
+                          <div key={field} className="admin-mobile-record-field">
+                            <span>{humanizeLabel(field)}</span>
+                            <strong>{formatValue(record[field])}</strong>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </Flex>
-                </List.Item>
-              )}
+                  </List.Item>
+                );
+              }}
             />
           )
         ) : (
@@ -401,25 +389,20 @@ function ResourceShowView({ resource, id }: { resource: AdminResourceConfig; id:
 
   return (
     <Flex vertical gap={18}>
-      <Flex justify="space-between" wrap="wrap" gap={12}>
-        <Space wrap>
+      <AdminPageHeader
+        title={String(record.name ?? record.title ?? record.order_number ?? record.code ?? `${resource.label} details`)}
+        eyebrow={resource.label}
+        description={`Record ${String(id)}`}
+        actions={<Space wrap>
           {resource.meta.capabilities.edit ? (
-            <Button type="primary" icon={<Pencil size={14} />} onClick={() => router.push(`/${resource.name}/edit/${id}`)}>
-              Edit
-            </Button>
+            <Button type="primary" icon={<Pencil size={14} />} onClick={() => router.push(`/${resource.name}/edit/${id}`)}>Edit</Button>
           ) : null}
-          <Button icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}`)}>
-            Back to list
-          </Button>
-        </Space>
-        <Space wrap>
-          {resource.meta.extra_actions?.map((action) => (
-            <Tag key={action.name} bordered={false}>
-              {action.name} | {action.methods.join(", ")}
-            </Tag>
-          ))}
-        </Space>
-      </Flex>
+          <Button icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}`)}>Back to list</Button>
+        </Space>}
+      />
+      {resource.meta.extra_actions?.length ? (
+        <Space wrap>{resource.meta.extra_actions.map((action) => <Tag key={action.name} bordered={false}>{action.name} | {action.methods.join(", ")}</Tag>)}</Space>
+      ) : null}
 
       <Card className="admin-soft-panel" bordered={false}>
         <Descriptions column={{ xs: 1, lg: 2 }} bordered size="small" style={{ borderRadius: 16 }}>
@@ -481,10 +464,13 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
   }
 
   return (
-    <Card className="admin-soft-panel" bordered={false}>
-      <Typography.Title level={4} className="admin-display resource-form-title" style={{ marginBottom: 20 }}>
-        {action === "create" ? `Create ${resource.label}` : `Edit ${resource.label}`}
-      </Typography.Title>
+    <Flex vertical gap={18}>
+      <AdminPageHeader
+        title={action === "create" ? `Create ${resource.label}` : `Edit ${resource.label}`}
+        eyebrow={resource.group}
+        description={resource.description}
+      />
+      <Card className="admin-soft-panel" bordered={false}>
       <SchemaForm
         fields={writeAction?.fields ?? {}}
         schemaSource={`/admin/schema/${resource.name}/`}
@@ -513,7 +499,8 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
           }
         }}
       />
-    </Card>
+      </Card>
+    </Flex>
   );
 }
 

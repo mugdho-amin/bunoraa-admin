@@ -24,6 +24,7 @@ import {
 import type { UploadFile } from "antd/es/upload/interface";
 import { Save, UploadCloud } from "lucide-react";
 import { requestAdminData } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type SiteSettings = Record<string, unknown>;
 type SettingsFormValues = Record<string, unknown> & {
@@ -124,13 +125,14 @@ export function AdminSiteSettingsPage() {
   }
 
   return (
-    <Form form={form} layout="vertical" onFinish={save}>
+    <Form form={form} layout="vertical" onFinish={save} className="admin-site-settings-form">
+      <AdminPageHeader
+        title="Site Settings"
+        eyebrow="Store configuration"
+        description="Global branding, messaging, and site-wide experience controls."
+        actions={<Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>Save settings</Button>}
+      />
       <Card className="admin-soft-panel" bordered={false}>
-        <Space direction="vertical" size={2} style={{ marginBottom: 20 }}>
-          <Typography.Title level={3} className="admin-display">Site Settings</Typography.Title>
-          <Typography.Paragraph type="secondary">Global branding, messaging, and site-wide experience controls.</Typography.Paragraph>
-        </Space>
-
         <Typography.Title level={4}>Brand identity</Typography.Title>
         <Row gutter={16}>
           <Col xs={24} md={12}><Form.Item name="site_name" label="Site name" rules={[{ required: true }]}><Input /></Form.Item></Col>
@@ -198,7 +200,6 @@ export function AdminSiteSettingsPage() {
         </Row>
 
         <Divider />
-        <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>Save site settings</Button>
       </Card>
     </Form>
   );

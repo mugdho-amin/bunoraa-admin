@@ -15,6 +15,7 @@ import {
   ResponsiveContainer, Tooltip as RechartsTooltip, PieChart, Pie, Cell,
 } from "recharts";
 import { requestAdminData } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type DashboardData = {
   generated_at: string;
@@ -317,7 +318,7 @@ function InfrastructureCard({
 
 export function AdminDashboardPage() {
   const screens = Grid.useBreakpoint();
-  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
+  const isMobile = screens.md === false;
 
   const dashboardQuery = useQuery({
     queryKey: ["admin", "dashboard"],
@@ -393,23 +394,18 @@ export function AdminDashboardPage() {
 
   return (
     <Flex vertical gap={isMobile ? 16 : 22} className="admin-dashboard">
-      <section className="dashboard-welcome">
-        <div className="dashboard-welcome-copy">
-          <span className="dashboard-eyebrow">BUNORAA · STORE OPERATIONS</span>
-          <Typography.Title level={2} className="admin-display" style={{ margin: "8px 0 6px", fontSize: isMobile ? 24 : 30 }}>
-            Store overview
-          </Typography.Title>
-          <Typography.Text style={{ color: "var(--admin-muted)" }}>
-            A clear view of your store performance and operations.
-          </Typography.Text>
-        </div>
-        <Button
+      <AdminPageHeader
+        title="Store overview"
+        eyebrow="Store operations"
+        description="A clear view of your store performance and operations."
+        actions={<Button
           className="dashboard-refresh"
           icon={<RotateCw size={15} className={dashboardQuery.isFetching ? "dashboard-spinning" : undefined} />}
           loading={dashboardQuery.isFetching}
           onClick={() => void Promise.all([dashboardQuery.refetch(), activeVisitorsQuery.refetch(), revenueQuery.refetch(), categoryQuery.refetch(), healthQuery.refetch(), eventsQuery.refetch()])}
         >Refresh overview</Button>
-      </section>
+        }
+      />
       {/* ── KPI Grid ── */}
       <div className="dashboard-kpi-grid">
         {dashboardQuery.isLoading

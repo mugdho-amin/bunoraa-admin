@@ -197,13 +197,6 @@ export function AdminShell({ route, children }: AdminShellProps) {
     return idx === -1 ? 999 : idx;
   }
 
-  const title =
-    route.type === "page"
-      ? route.page.label
-      : route.type === "resource"
-        ? route.resource.label
-        : "Not Found";
-
   const handleMenuClick = (event: { key: string }) => {
     router.push(event.key);
     setMobileNavOpen(false);
@@ -459,16 +452,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 44, minHeight: 44, flexShrink: 0 }}
                   />
                 )}
-                <Flex vertical gap={0} style={{ minWidth: 0, flex: 1 }}>
-                  {!isMobile && <span className="admin-header-context">{currentSection} <span>/</span> Admin workspace</span>}
-                  <Typography.Title
-                    level={4}
-                    className="admin-display"
-                    style={{ margin: 0, fontSize: isMobile ? 17 : 21, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 650 }}
-                  >
-                    {title}
-                  </Typography.Title>
-                </Flex>
+                {isMobile ? (
+                  <Flex align="center" gap={8} style={{ minWidth: 0, flex: 1 }}>
+                    <BrandMark size={26} />
+                    <Typography.Text strong className="admin-display">Bunoraa Admin</Typography.Text>
+                  </Flex>
+                ) : (
+                  <span className="admin-header-context">{currentSection} <span>/</span> Workspace</span>
+                )}
               </Flex>
 
               <Space size={isMobile ? 2 : 7} className="admin-header-actions">

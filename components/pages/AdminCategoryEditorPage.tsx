@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Image, Input, Modal, Space, Table, Tag, Typography, Skeleton, App, Switch } from "antd";
+import { Button, Card, Flex, Grid, Image, Input, Modal, Pagination, Space, Table, Tag, Typography, Skeleton, App, Switch } from "antd";
 import { Upload } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
 import type { InputRef } from "antd";
@@ -12,6 +12,7 @@ import type { BaseKey, BaseRecord } from "@refinedev/core";
 import type { ColumnsType } from "antd/es/table";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type CategoryRecord = BaseRecord & {
   id: string;
@@ -93,7 +94,7 @@ const emptyForm: CategoryFormData = {
 function CategoryListView() {
   const router = useRouter();
   const screens = Grid.useBreakpoint();
-  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
+  const isMobile = screens.md === false;
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -270,37 +271,29 @@ function CategoryListView() {
 
   return (
     <Flex vertical gap={18}>
-      <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Flex vertical gap={2}>
-          <Typography.Title level={4} style={{ margin: 0 }}>Categories</Typography.Title>
-          {total > 0 && (
-            <Flex gap={12} align="center">
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>{total} total</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>·</Typography.Text>
-              <Typography.Text style={{ fontSize: 12, color: "var(--admin-success)" }}>{stats.active} active</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>·</Typography.Text>
-              <Typography.Text style={{ fontSize: 12, color: "var(--admin-warning)" }}>{stats.featured} featured</Typography.Text>
-            </Flex>
-          )}
-        </Flex>
-        <Button type="primary" icon={<Plus size={14} />} onClick={() => router.push("/catalog/categories/create")}>
-          Create Category
-        </Button>
-      </Flex>
-
-      <Flex gap={12} wrap="wrap" align="center" justify="space-between">
+      <AdminPageHeader
+        title="Categories"
+        eyebrow="Catalog"
+        description="Organize products and merchandising."
+        meta={`${total} total · ${stats.active} active · ${stats.featured} featured`}
+        actions={<Button type="primary" icon={<Plus size={14} />} onClick={() => router.push("/catalog/categories/create")}>
+          Create category
+        </Button>}
+      />
+      <Flex gap={12} wrap="wrap" align="center" justify="space-between" className="admin-resource-search-row">
         <Input
           ref={searchRef}
           allowClear
           placeholder="Search categories...  (Press / to focus)"
+          className="admin-resource-search-input"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           style={{ maxWidth: 320 }}
           prefix={<Search size={14} style={{ color: "var(--admin-muted)" }} />}
         />
-        {!isLoading && categories.length > 0 && (
+        {!isLoading && search && categories.length > 0 && (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {search ? `${categories.length} of ${total} categories` : `${total} categories`}
+            {`${categories.length} matching categories`}
           </Typography.Text>
         )}
       </Flex>
@@ -326,6 +319,36 @@ function CategoryListView() {
             </Button>
           )}
         </Flex>
+      ) : isMobile ? (
+        <div className="admin-mobile-record-list">
+          {categories.map((category) => (
+            <article className="admin-mobile-record" key={category.id}>
+              <div className="admin-mobile-record-body">
+                <div className="admin-mobile-record-heading">
+                  <div className="category-mobile-main">
+                    {category.image ? <Image src={category.image} alt="" width={44} height={44} style={{ borderRadius: 10, objectFit: "cover", flexShrink: 0 }} /> : <div className="category-mobile-placeholder"><FolderTree size={18} /></div>}
+                    <div className="category-mobile-summary">
+                      <strong className="admin-mobile-record-title">{category.name}</strong>
+                      <span>/{category.slug}</span>
+                    </div>
+                  </div>
+                  <Space size={0} className="admin-mobile-record-actions">
+                    <Button aria-label={`View ${category.name}`} type="text" icon={<Eye size={16} />} onClick={() => router.push(`/catalog/categories/show/${category.id}`)} />
+                    <Button aria-label={`Edit ${category.name}`} type="text" icon={<Pencil size={16} />} onClick={() => router.push(`/catalog/categories/edit/${category.id}`)} />
+                    <Button aria-label={`Delete ${category.name}`} danger type="text" icon={<Trash2 size={16} />} onClick={() => handleDelete(category)} />
+                  </Space>
+                </div>
+                <div className="product-mobile-facts">
+                  <div><span>Products</span><strong>{category.product_count}</strong></div>
+                  <div><span>Parent</span><strong>{category.parent_name || "Top level"}</strong></div>
+                  <div><span>Status</span><strong>{category.is_active ? "Active" : "Inactive"}</strong></div>
+                  <div><span>Featured</span><strong>{category.is_featured ? "Yes" : "No"}</strong></div>
+                </div>
+              </div>
+            </article>
+          ))}
+          <Pagination className="admin-mobile-pagination" current={page} pageSize={pageSize} total={total} showSizeChanger={false} onChange={(nextPage) => setPage(nextPage)} />
+        </div>
       ) : (
         <Card className="admin-soft-panel" bordered={false} styles={{ body: { padding: 0 } }}>
           <Table

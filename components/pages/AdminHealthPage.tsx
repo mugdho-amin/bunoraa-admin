@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, Col, Descriptions, Flex, Row, Skeleton, Tag, Typography } from "antd";
 import { requestAdminData } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type HealthDetails = {
   status: string;
@@ -57,8 +58,10 @@ export function AdminHealthPage({ detailed = false }: { detailed?: boolean }) {
 
   if (!detailed) {
     return (
-      <Card className="admin-soft-panel" bordered={false}>
-        <Flex vertical gap={16}>
+      <Flex vertical gap={18}>
+        <AdminPageHeader title="System health" eyebrow="Platform" description="Monitor the health of your services and integrations." />
+        <Card className="admin-soft-panel" bordered={false}>
+          <Flex vertical gap={16}>
           <Tag color={data.status === "ok" ? "green" : "gold"} style={{ width: "fit-content" }}>
             {data.status}
           </Tag>
@@ -69,13 +72,15 @@ export function AdminHealthPage({ detailed = false }: { detailed?: boolean }) {
               </Descriptions.Item>
             ))}
           </Descriptions>
-        </Flex>
-      </Card>
+          </Flex>
+        </Card>
+      </Flex>
     );
   }
 
   return (
     <Flex vertical gap={20}>
+      <AdminPageHeader title="Health details" eyebrow="Platform" description="Infrastructure status, service checks, and module counts." />
       <Card className="admin-soft-panel" bordered={false}>
         <Flex align="center" gap={12} wrap="wrap">
           <Tag color={data.status === "healthy" ? "green" : "gold"}>{data.status}</Tag>

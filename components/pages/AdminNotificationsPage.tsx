@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  Checkbox,
   Flex,
   Segmented,
   Select,
@@ -19,6 +20,8 @@ import {
   Statistic,
   Row,
   Col,
+  Grid,
+  Pagination,
   Table,
 } from "antd";
 import {
@@ -33,6 +36,7 @@ import {
 } from "lucide-react";
 import { requestAdminEnvelope } from "@/lib/admin/http";
 import { logger } from "@/lib/admin/logger";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type NotificationItem = {
   id: string;
@@ -80,6 +84,8 @@ const priorityColors: Record<string, string> = {
 };
 
 export function AdminNotificationsPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = screens.md === false;
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [total, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -339,6 +345,7 @@ export function AdminNotificationsPage() {
 
   return (
     <Flex vertical gap={16}>
+      <AdminPageHeader title="Notifications" eyebrow="Communications" description="Review and manage store and system notifications." />
       {/* Stats Summary */}
       <Row gutter={16}>
         <Col xs={12} sm={6}>
@@ -384,7 +391,7 @@ export function AdminNotificationsPage() {
       </Row>
 
       {/* Toolbar */}
-      <Card size="small" style={{ borderRadius: 14 }} styles={{ body: { padding: "12px 16px" } }}>
+      <Card className="admin-notification-toolbar" size="small" style={{ borderRadius: 14 }} styles={{ body: { padding: "12px 16px" } }}>
         <Flex align="center" justify="space-between" wrap gap={8}>
           <Space size={12}>
             <Segmented
@@ -535,6 +542,46 @@ export function AdminNotificationsPage() {
             ))}
           </Row>
         )
+      ) : isMobile ? (
+        <div className="admin-mobile-record-list">
+          {notifications.length === 0 ? <Card><Empty description="No notifications" /></Card> : notifications.map((item) => (
+            <article className={`admin-mobile-record notification-mobile-card${item.is_read ? " is-read" : " is-unread"}`} key={item.id}>
+              <div className="admin-mobile-record-body">
+                <div className="admin-mobile-record-heading">
+                  <div className="notification-mobile-copy">
+                    <div className="notification-mobile-tags">
+                      <Tag color={categoryColors[item.category] || "default"}>{item.type_display}</Tag>
+                      <Tag color={priorityColors[item.priority] || "default"}>{item.priority_display}</Tag>
+                    </div>
+                    <strong className="admin-mobile-record-title">{item.title}</strong>
+                  </div>
+                  <Checkbox
+                    aria-label={`Select ${item.title}`}
+                    checked={selectedIds.has(item.id)}
+                    onChange={(event) => setSelectedIds((current) => {
+                      const next = new Set(current);
+                      if (event.target.checked) next.add(item.id); else next.delete(item.id);
+                      return next;
+                    })}
+                  />
+                </div>
+                <Typography.Paragraph className="notification-mobile-message" type="secondary" ellipsis={{ rows: 3, expandable: true, symbol: "More" }}>
+                  {item.message}
+                </Typography.Paragraph>
+                <div className="notification-mobile-footer">
+                  <span>{new Date(item.created_at).toLocaleString()}</span>
+                  <Space size={4}>
+                    {!item.is_read && <Button size="small" icon={<CheckCheck size={13} />} onClick={() => handleMarkRead(item.id)}>Read</Button>}
+                    <Popconfirm title="Delete this notification?" onConfirm={() => handleDelete(item.id)}>
+                      <Button aria-label="Delete notification" size="small" danger icon={<Trash2 size={13} />} />
+                    </Popconfirm>
+                  </Space>
+                </div>
+              </div>
+            </article>
+          ))}
+          {notifications.length > 0 && <Pagination className="admin-mobile-pagination" current={page} pageSize={PAGE_SIZE} total={total} showSizeChanger={false} onChange={setPage} />}
+        </div>
       ) : (
         <Card style={{ borderRadius: 14 }} styles={{ body: { padding: 0 } }}>
           <Table

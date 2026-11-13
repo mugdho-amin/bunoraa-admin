@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, List, Skeleton, Space, Tag, Typography } from "antd";
 import { requestAdminData } from "@/lib/admin/http";
+import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
 
 type EventFeed = {
   events: Array<{
@@ -25,7 +26,9 @@ export function AdminRealtimeEventsPage() {
   });
 
   return (
-    <Card className="admin-soft-panel" title="Realtime Events" bordered={false}>
+    <div className="admin-page-stack">
+      <AdminPageHeader title="Realtime events" eyebrow="Operations" description="Recent changes across your store and connected modules." />
+      <Card className="admin-soft-panel" bordered={false}>
       {query.isLoading ? (
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : (
@@ -54,6 +57,7 @@ export function AdminRealtimeEventsPage() {
           )}
         />
       )}
-    </Card>
+      </Card>
+    </div>
   );
 }
