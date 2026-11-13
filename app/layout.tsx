@@ -25,7 +25,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
+    shortcut: "/favicon.ico",
     icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
       { url: "/icons/bunoraa-admin.svg", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
