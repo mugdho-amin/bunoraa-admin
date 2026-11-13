@@ -102,17 +102,30 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const isMobile = !isDesktop;
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('admin_sidebar_collapsed') === 'true';
-  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarPreferenceLoaded, setSidebarPreferenceLoaded] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const { mode, setMode } = useThemeStore();
 
-  // Persist sidebar state
+  // Read the persisted preference after hydration to keep server/client markup aligned.
   useEffect(() => {
-    localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed));
-  }, [sidebarCollapsed]);
+    try {
+      setSidebarCollapsed(window.localStorage.getItem("admin_sidebar_collapsed") === "true");
+    } catch {
+      // Keep the expanded default when browser storage is unavailable.
+    } finally {
+      setSidebarPreferenceLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarPreferenceLoaded) return;
+    try {
+      localStorage.setItem('admin_sidebar_collapsed', String(sidebarCollapsed));
+    } catch {
+      // The sidebar remains usable for this session if persistence is blocked.
+    }
+  }, [sidebarCollapsed, sidebarPreferenceLoaded]);
 
   const toggleTheme = useCallback(() => {
     const next: Record<string, ThemeMode> = { light: "dark", dark: "system", system: "light" };
@@ -158,6 +171,16 @@ export function AdminShell({ route, children }: AdminShellProps) {
     },
     [bootstrap?.navigation],
   );
+
+  const selectedNavKey = useMemo(() => {
+    const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+    return flatNavItems
+      .filter((item) => {
+        const itemPath = item.key.replace(/\/+$/, "") || "/";
+        return normalizedPath === itemPath || normalizedPath.startsWith(`${itemPath}/`);
+      })
+      .sort((a, b) => b.key.length - a.key.length)[0]?.key;
+  }, [flatNavItems, pathname]);
 
   function itemPriority(name: string): number {
     const order = ["dashboard", "orders", "catalog/products", "catalog/categories", "users"];
@@ -283,8 +306,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
       >
         <Menu
           mode="inline"
-          inlineCollapsed={sidebarCollapsed}
-          selectedKeys={[pathname]}
+          inlineCollapsed={isDesktop && sidebarCollapsed}
+          selectedKeys={selectedNavKey ? [selectedNavKey] : []}
           items={navigationItems}
           onClick={handleMenuClick}
           style={{ borderInlineEnd: "none", background: "transparent" }}
