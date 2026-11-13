@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
-  Alert, App, Button, Card, Descriptions, Empty, Flex, Grid, Input, Modal, Pagination,
+  Alert, App, Button, Card, Descriptions, Empty, Flex, Grid, Input, List, Modal, Pagination,
   Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -28,6 +28,21 @@ export type GenericResourcePageProps = {
   id?: BaseKey;
 };
 
+const ANALYTICS_LIST_FIELDS: Record<string, string[]> = {
+  "analytics/dashboard": ["total_revenue", "total_orders", "total_visitors", "avg_order_value", "avg_conversion_rate", "period_days"],
+  "analytics/daily": ["date", "page_views", "unique_visitors", "orders_count", "orders_revenue"],
+  "analytics/product-stats": ["product_name", "date", "views", "add_to_cart_count", "orders_count", "revenue"],
+  "analytics/category-stats": ["category_name", "date", "views", "product_views", "orders_count", "revenue"],
+  "analytics/search-queries": ["query", "results_count", "clicked_product_name", "visitor", "created_at"],
+  "analytics/cart-events": ["event_label", "product_name", "visitor", "quantity", "cart_value", "created_at"],
+  "analytics/page-views": ["path", "visitor", "device_type", "country", "city", "time_on_page", "created_at"],
+};
+
+function getRecordKey(record: BaseRecord): BaseKey | undefined {
+  const key = record.id ?? record.date;
+  return typeof key === "string" || typeof key === "number" ? key : undefined;
+}
+
 function buildColumns(
   records: BaseRecord[],
   resource: AdminResourceConfig,
@@ -35,7 +50,8 @@ function buildColumns(
   onDelete: ((record: BaseRecord) => void) | null,
 ): ColumnsType<BaseRecord> {
   const sample = records[0] ?? {};
-  const keys = pickVisibleKeys(sample).slice(0, 8);
+  const keys = (ANALYTICS_LIST_FIELDS[resource.name] ?? pickVisibleKeys(sample).slice(0, 8))
+    .filter((key) => key in sample);
   const columns: ColumnsType<BaseRecord> = keys.map((key) => ({
     title: (
       <Flex align="center" gap={4}>
@@ -55,9 +71,9 @@ function buildColumns(
     width: 100,
     render: (_, record) => (
       <Space size={4}>
-        {resource.meta.capabilities.show && record.id != null ? (
+        {resource.meta.capabilities.show && getRecordKey(record) != null ? (
           <Tooltip title="View details">
-            <Button type="text" size="small" icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}/show/${record.id}`)} />
+            <Button type="text" size="small" icon={<Eye size={14} />} onClick={() => router.push(`/${resource.name}/show/${getRecordKey(record)}`)} />
           </Tooltip>
         ) : null}
         {resource.meta.capabilities.edit ? (
@@ -150,6 +166,9 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
     () => buildColumns(result.data || [], resource, router, resource.meta.capabilities.delete ? handleDelete : null),
     [handleDelete, resource, result.data, router],
   );
+  const isAnalyticsResource = resource.name.startsWith("analytics/");
+  const analyticsTitleField = ANALYTICS_LIST_FIELDS[resource.name]?.[0];
+  const analyticsSecondaryFields = (ANALYTICS_LIST_FIELDS[resource.name] ?? []).slice(1, 7);
 
   const updateQuery = (next: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -254,26 +273,81 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
 
       {/* Table */}
       <Card className="admin-soft-panel" bordered={false} styles={{ body: { padding: 0 } }}>
-        <Table
-          rowKey={(record) => String(record.id)}
-          dataSource={result.data}
-          columns={columns}
-          loading={query.isLoading}
-          pagination={false}
-          scroll={{ x: isMobile ? 500 : 980 }}
-          locale={{ emptyText: <Empty description={`No ${resource.label.toLowerCase()} found.`} /> }}
-          onRow={(record) => ({
-            onDoubleClick: () => {
-            if (record.id != null && resource.meta.capabilities.show) {
-              router.push(`/${resource.name}/show/${record.id}`);
-            }
-          },
-            style: { cursor: "pointer", transition: "background 0.1s" },
-            onMouseEnter: (e) => { e.currentTarget.style.background = "var(--admin-hover-brand)"; },
-            onMouseLeave: (e) => { e.currentTarget.style.background = ""; },
-          })}
-          size="middle"
-        />
+        {isMobile && isAnalyticsResource ? (
+          query.isLoading ? (
+            <div style={{ padding: 16 }}><Skeleton active paragraph={{ rows: 5 }} /></div>
+          ) : result.data.length === 0 ? (
+            <Empty style={{ padding: 32 }} description={`No ${resource.label.toLowerCase()} found.`} />
+          ) : (
+            <List
+              dataSource={result.data}
+              split={false}
+              renderItem={(record, index) => (
+                <List.Item
+                  key={String(getRecordKey(record) ?? record.created_at ?? index)}
+                  className="admin-analytics-mobile-item"
+                  role={getRecordKey(record) != null && resource.meta.capabilities.show ? "button" : undefined}
+                  tabIndex={getRecordKey(record) != null && resource.meta.capabilities.show ? 0 : undefined}
+                  onClick={() => {
+                    const key = getRecordKey(record);
+                    if (key != null && resource.meta.capabilities.show) {
+                      router.push(`/${resource.name}/show/${key}`);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    const key = getRecordKey(record);
+                    if ((event.key === "Enter" || event.key === " ") && key != null && resource.meta.capabilities.show) {
+                      event.preventDefault();
+                      router.push(`/${resource.name}/show/${key}`);
+                    }
+                  }}
+                  aria-label={`View ${resource.label} record`}
+                >
+                  <Flex vertical gap={10} style={{ width: "100%", minWidth: 0 }}>
+                    <Flex align="flex-start" justify="space-between" gap={10}>
+                      <Typography.Text strong className="admin-analytics-mobile-title">
+                        {formatValue(analyticsTitleField ? record[analyticsTitleField] : resource.label)}
+                      </Typography.Text>
+                      {resource.meta.capabilities.show && getRecordKey(record) != null ? (
+                        <Eye size={16} aria-hidden="true" style={{ color: "var(--admin-muted)", flexShrink: 0 }} />
+                      ) : null}
+                    </Flex>
+                    <div className="admin-analytics-mobile-fields">
+                      {analyticsSecondaryFields.filter((key) => key in record).map((key) => (
+                        <div key={key} className="admin-analytics-mobile-field">
+                          <Typography.Text type="secondary">{humanizeLabel(key)}</Typography.Text>
+                          <Typography.Text className="admin-analytics-mobile-value">{formatValue(record[key])}</Typography.Text>
+                        </div>
+                      ))}
+                    </div>
+                  </Flex>
+                </List.Item>
+              )}
+            />
+          )
+        ) : (
+          <Table
+            rowKey={(record) => String(getRecordKey(record) ?? record.created_at)}
+            dataSource={result.data}
+            columns={columns}
+            loading={query.isLoading}
+            pagination={false}
+            scroll={{ x: isMobile ? 500 : 980 }}
+            locale={{ emptyText: <Empty description={`No ${resource.label.toLowerCase()} found.`} /> }}
+            onRow={(record) => ({
+              onDoubleClick: () => {
+                const key = getRecordKey(record);
+                if (key != null && resource.meta.capabilities.show) {
+                  router.push(`/${resource.name}/show/${key}`);
+                }
+              },
+              style: { cursor: "pointer", transition: "background 0.1s" },
+              onMouseEnter: (e) => { e.currentTarget.style.background = "var(--admin-hover-brand)"; },
+              onMouseLeave: (e) => { e.currentTarget.style.background = ""; },
+            })}
+            size="middle"
+          />
+        )}
         <Flex justify="space-between" align="center" style={{ padding: "16px 20px", borderTop: "1px solid var(--admin-border)" }} wrap="wrap" gap={12}>
           <Space wrap>
             <Tag color="blue" bordered={false}>{result.total ?? 0} records</Tag>

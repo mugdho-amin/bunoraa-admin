@@ -772,6 +772,50 @@ button, input, select, textarea { font: inherit; }
   .ant-form-item-label { padding-bottom: 4px !important; }
   .ant-pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 
+  .admin-analytics-mobile-item {
+    display: flex !important;
+    margin: 10px !important;
+    padding: 14px !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 16px;
+    background: var(--admin-panel);
+    box-shadow: var(--admin-shadow-sm);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .admin-analytics-mobile-item:focus-visible {
+    outline: 2px solid var(--admin-brand);
+    outline-offset: 2px;
+  }
+  .admin-analytics-mobile-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+  .admin-analytics-mobile-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+    width: 100%;
+  }
+  .admin-analytics-mobile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .admin-analytics-mobile-field .ant-typography-secondary {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .admin-analytics-mobile-value {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+  }
+
   /* Mobile: modal fullscreen */
   .ant-modal { margin: 8px !important; max-width: calc(100vw - 16px) !important; }
   .ant-modal-content { border-radius: 16px !important; padding: 16px !important; }
