@@ -9,9 +9,14 @@ export async function fetchAdminBootstrap() {
 }
 
 export async function fetchOptionsForResource(resource: string, id?: BaseKey) {
-  const suffix = id ? `/admin/${resource}/${id}` : `/admin/${resource}`;
+  const useGetSchema = resource === "cms/pages";
+  const suffix = useGetSchema
+    ? `/admin/${resource}/write-schema/`
+    : id
+      ? `/admin/${resource}/${id}`
+      : `/admin/${resource}`;
   const response = await requestAdminRaw<AdminOptionsResponse | { data?: AdminOptionsResponse }>(suffix, {
-    method: "OPTIONS",
+    method: useGetSchema ? "GET" : "OPTIONS",
   });
   // OPTIONS is normally returned as bare DRF metadata, but API gateways and
   // response middleware may wrap it in the standard {data: ...} envelope.
