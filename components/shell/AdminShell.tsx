@@ -26,8 +26,6 @@ import {
   RefreshCcw,
   Search,
   Sun,
-  Settings,
-  User,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
@@ -102,6 +100,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const isMobile = !isDesktop;
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sidebarIsCollapsed = isDesktop && sidebarCollapsed;
   const [sidebarPreferenceLoaded, setSidebarPreferenceLoaded] = useState(false);
@@ -209,51 +208,36 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const userName = bootstrap?.identity.full_name || "Admin";
   const userEmail = bootstrap?.identity.email;
 
-  const userMenu = {
-    items: [
-      {
-        key: "profile",
-        icon: <User size={16} />,
-        label: (
-          <Flex vertical gap={2} style={{ minWidth: 0, maxWidth: "min(240px, calc(100vw - 72px))", paddingBlock: 4 }}>
-            <span style={{ fontWeight: 600, fontSize: 13, overflowWrap: "anywhere" }}>{userName}</span>
-            <span style={{ fontSize: 11, color: "var(--admin-muted)", overflowWrap: "anywhere" }}>{userEmail || ""}</span>
-          </Flex>
-        ),
-        disabled: true,
-        style: { cursor: "default", padding: "4px 12px", background: "none !important" },
-      },
-      { type: "divider" as const },
-      {
-        key: "command",
-        icon: <Search size={16} />,
-        label: "Command palette",
-        onClick: () => setCommandOpen(true),
-      },
-      {
-        key: "settings",
-        icon: <Settings size={16} />,
-        label: "Settings",
-        disabled: true,
-      },
-      { type: "divider" as const },
-      {
-        key: "refresh",
-        icon: <RefreshCcw size={16} />,
-        label: "Refresh data",
-        onClick: () => void refreshBootstrap(),
-      },
-      {
-        key: "logout",
-        icon: <LogOut size={16} />,
-        label: "Sign out",
-        danger: true,
-        onClick: () => {
-          clearAuthState();
-          window.location.href = "/login";
-        },
-      },
-    ],
+  const accountMenuContent = (
+    <div className="admin-account-menu" role="menu" aria-label="Account menu">
+      <div className="admin-account-menu-identity">
+        <Avatar size={38} style={{ background: "var(--admin-brand)", flexShrink: 0 }}>{nameInitial}</Avatar>
+        <div style={{ minWidth: 0 }}>
+          <div className="admin-account-menu-name">{userName}</div>
+          {userEmail && <div className="admin-account-menu-email">{userEmail}</div>}
+        </div>
+      </div>
+      <div className="admin-account-menu-divider" />
+      <button className="admin-account-menu-action" role="menuitem" onClick={() => { setAccountMenuOpen(false); setCommandOpen(true); }}>
+        <Search size={16} /> <span>Command palette</span>
+      </button>
+      <button className="admin-account-menu-action" role="menuitem" onClick={() => { setAccountMenuOpen(false); void refreshBootstrap(); }}>
+        <RefreshCcw size={16} /> <span>Refresh data</span>
+      </button>
+      <div className="admin-account-menu-divider" />
+      <button className="admin-account-menu-action danger" role="menuitem" onClick={() => { clearAuthState(); window.location.href = "/login"; }}>
+        <LogOut size={16} /> <span>Sign out</span>
+      </button>
+    </div>
+  );
+
+  const accountDropdownProps = {
+    trigger: ["click"] as ("click")[],
+    open: accountMenuOpen,
+    onOpenChange: setAccountMenuOpen,
+    popupRender: () => accountMenuContent,
+    getPopupContainer: () => document.body,
+    overlayStyle: { maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)" },
   };
 
   const sideMenu = (
@@ -326,11 +310,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
       >
         {sidebarIsCollapsed ? (
           <Dropdown
-            menu={userMenu}
-            trigger={["click"]}
+            {...accountDropdownProps}
             placement="topLeft"
-            getPopupContainer={() => document.body}
-            overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
           >
             <Button type="text" aria-label={`Open account menu for ${userName}`} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
@@ -344,11 +325,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
           </Dropdown>
         ) : (
           <Dropdown
-            menu={userMenu}
-            trigger={["click"]}
+            {...accountDropdownProps}
             placement="topLeft"
-            getPopupContainer={() => document.body}
-            overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
           >
             <Button
               type="text"
@@ -488,11 +466,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 </Tooltip>
                 <NotificationBell />
                 <Dropdown
-                  menu={userMenu}
-                  trigger={["click"]}
+                  {...accountDropdownProps}
                   placement="bottomRight"
-                  getPopupContainer={() => document.body}
-                  overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
                 >
                   <Button
                     type="text"

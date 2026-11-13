@@ -3,12 +3,12 @@
 import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Col, Flex, List, Row, Skeleton, Tag, Typography, Grid,
+  Button, Col, Flex, List, Row, Skeleton, Tag, Typography, Grid,
 } from "antd";
 import {
   Users, Package, ShoppingCart, DollarSign,
   AlertCircle, Activity, BarChart3, RefreshCcw,
-  Database, Server, HardDrive, Radio,
+  Database, Server, HardDrive, Radio, RotateCw,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -392,34 +392,48 @@ export function AdminDashboardPage() {
   ], [activeVisitorsQuery.data?.active_visitors, d]);
 
   return (
-    <Flex vertical gap={isMobile ? 16 : 24}>
+    <Flex vertical gap={isMobile ? 16 : 22} className="admin-dashboard">
+      <section className="dashboard-welcome">
+        <div className="dashboard-welcome-copy">
+          <span className="dashboard-eyebrow">BUNORAA · STORE OPERATIONS</span>
+          <Typography.Title level={2} className="admin-display" style={{ margin: "8px 0 6px", fontSize: isMobile ? 24 : 30 }}>
+            Store overview
+          </Typography.Title>
+          <Typography.Text style={{ color: "var(--admin-muted)" }}>
+            A clear view of your store performance and operations.
+          </Typography.Text>
+        </div>
+        <Button
+          className="dashboard-refresh"
+          icon={<RotateCw size={15} className={dashboardQuery.isFetching ? "dashboard-spinning" : undefined} />}
+          loading={dashboardQuery.isFetching}
+          onClick={() => void Promise.all([dashboardQuery.refetch(), activeVisitorsQuery.refetch(), revenueQuery.refetch(), categoryQuery.refetch(), healthQuery.refetch(), eventsQuery.refetch()])}
+        >Refresh overview</Button>
+      </section>
       {/* ── KPI Grid ── */}
-      <div style={{
-        display: "grid",
-        gap: isMobile ? 12 : 16,
-        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(7, minmax(0, 1fr))",
-      }}>
+      <div className="dashboard-kpi-grid">
         {dashboardQuery.isLoading
           ? Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="bento-cell kpi-card" style={{ padding: isMobile ? 14 : 18 }}>
+              <div key={i} className="bento-cell kpi-card dashboard-kpi-card" style={{ padding: isMobile ? 14 : 18 }}>
                 <Skeleton active paragraph={{ rows: 1 }} title={{ width: "60%" }} />
               </div>
             ))
           : kpiCards.map((card) => (
-              <div key={card.key} className="bento-cell kpi-card" style={{ padding: isMobile ? 14 : 18 }}>
+              <div key={card.key} className={`bento-cell kpi-card dashboard-kpi-card${card.key === "revenue_30d" ? " dashboard-kpi-featured" : ""}`} style={{ padding: isMobile ? 14 : 18 }}>
                 <Flex vertical gap={6}>
                   <Flex align="center" justify="space-between">
                     <div className="kpi-icon" style={{ background: `${card.color}18`, color: card.color, width: 34, height: 34, borderRadius: 10 }}>
                       {card.icon}
                     </div>
-                    {card.key === "active_visitors" ? <Tag color="green" bordered={false} style={{ margin: 0, fontSize: 9 }}>5 MIN</Tag> : null}
+                    {card.key === "active_visitors" ? <span className="dashboard-live-indicator"><i /> LIVE</span> : null}
                   </Flex>
                   <Typography.Text style={{ fontSize: 11, color: "var(--admin-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     {card.title}
                   </Typography.Text>
-                  <Typography.Title level={isMobile ? 5 : 4} className="admin-display" style={{ margin: 0, fontSize: isMobile ? 16 : 22 }}>
+                  <Typography.Title level={isMobile ? 5 : 4} className="admin-display dashboard-kpi-value" style={{ margin: 0, fontSize: isMobile ? 19 : 25 }}>
                     {card.value}
                   </Typography.Title>
+                  {card.key === "revenue_30d" && <span className="dashboard-kpi-caption">Last 30 days</span>}
                 </Flex>
               </div>
             ))}
@@ -432,11 +446,9 @@ export function AdminDashboardPage() {
             <Flex align="center" justify="space-between" style={{ marginBottom: 16 }}>
               <Flex align="center" gap={8}>
                 <BarChart3 size={16} style={{ color: "var(--admin-muted)" }} />
-                <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Revenue & Orders
-                </Typography.Text>
+                <div><Typography.Text strong className="dashboard-panel-title">Revenue &amp; orders</Typography.Text><div className="dashboard-panel-subtitle">Daily store performance</div></div>
               </Flex>
-              <Tag bordered={false} style={{ fontSize: 10 }}>Last 7 days</Tag>
+              <span className="dashboard-period">Last 7 days</span>
             </Flex>
             <div style={{ width: "100%", height: isMobile ? 200 : 280 }}>
               {revenueQuery.isLoading ? (
@@ -472,9 +484,7 @@ export function AdminDashboardPage() {
           <div className="bento-cell" style={{ padding: isMobile ? 14 : 20 }}>
             <Flex align="center" gap={8} style={{ marginBottom: 16 }}>
               <BarChart3 size={16} style={{ color: "var(--admin-muted)" }} />
-              <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Category Views
-              </Typography.Text>
+              <div><Typography.Text strong className="dashboard-panel-title">Category views</Typography.Text><div className="dashboard-panel-subtitle">Share of category interest</div></div>
             </Flex>
             <div style={{ width: "100%", height: isMobile ? 180 : 240 }}>
               {categoryQuery.isLoading ? (
@@ -519,9 +529,7 @@ export function AdminDashboardPage() {
           <div className="bento-cell" style={{ padding: isMobile ? 14 : 20 }}>
             <Flex align="center" gap={8} style={{ marginBottom: 12 }}>
               <Activity size={16} style={{ color: "var(--admin-muted)" }} />
-              <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                System Pulse
-              </Typography.Text>
+              <div><Typography.Text strong className="dashboard-panel-title">System health</Typography.Text><div className="dashboard-panel-subtitle">Connected services and infrastructure</div></div>
             </Flex>
             {healthQuery.isLoading ? (
               <Skeleton active paragraph={{ rows: 4 }} />
@@ -552,9 +560,7 @@ export function AdminDashboardPage() {
           <div className="bento-cell" style={{ padding: isMobile ? 14 : 20 }}>
             <Flex align="center" gap={8} style={{ marginBottom: 12 }}>
               <RefreshCcw size={16} style={{ color: "var(--admin-muted)" }} />
-              <Typography.Text strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Live Events
-              </Typography.Text>
+              <div><Typography.Text strong className="dashboard-panel-title">Live activity</Typography.Text><div className="dashboard-panel-subtitle">Latest changes across your store</div></div>
               <Tag color="green" bordered={false} style={{ fontSize: 9, marginLeft: "auto" }}>Auto-refresh</Tag>
             </Flex>
             {eventsQuery.isLoading ? (
