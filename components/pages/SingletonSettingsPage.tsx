@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, App, Card, Skeleton, Typography } from "antd";
 import { fetchOptionsForSingleton } from "@/lib/admin/bootstrap";
 import { requestAdminData } from "@/lib/admin/http";
-import type { AdminOptionsResponse } from "@/lib/admin/types";
+import { pickWritableAction } from "@/lib/admin/write-schema";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 
 export type SingletonSettingsPageProps = {
@@ -13,10 +13,6 @@ export type SingletonSettingsPageProps = {
   path: string;
   description?: string;
 };
-
-function pickActionFields(options?: AdminOptionsResponse) {
-  return options?.actions?.PATCH || options?.actions?.PUT || options?.actions?.POST || {};
-}
 
 export function SingletonSettingsPage({
   title,
@@ -35,6 +31,7 @@ export function SingletonSettingsPage({
     queryKey: ["singleton-options", path],
     queryFn: () => fetchOptionsForSingleton(path),
   });
+  const writeAction = pickWritableAction(optionsQuery.data, ["PATCH", "PUT"]);
 
   return (
     <Card className="admin-soft-panel" bordered={false}>
@@ -50,7 +47,7 @@ export function SingletonSettingsPage({
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : (
         <SchemaForm
-          fields={pickActionFields(optionsQuery.data)}
+          fields={writeAction?.fields ?? {}}
           initialValues={dataQuery.data}
           loading={submitting}
           submitText="Save settings"
@@ -58,7 +55,7 @@ export function SingletonSettingsPage({
             setSubmitting(true);
             try {
               await requestAdminData(`/admin/${path}/`, {
-                method: "PATCH",
+                method: writeAction?.method ?? "PATCH",
                 body: values,
               });
               message.success("Settings updated successfully.");

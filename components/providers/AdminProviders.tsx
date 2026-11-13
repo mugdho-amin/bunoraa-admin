@@ -1,7 +1,7 @@
 "use client";
 
 import "@ant-design/v5-patch-for-react-19";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { App as AntApp, ConfigProvider } from "antd";
 import { RefineThemes } from "@refinedev/antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -29,6 +29,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const subscribeToHydration = () => () => undefined;
+const getClientHydrationSnapshot = () => true;
 
 const adminTheme = {
   ...RefineThemes.Blue,
@@ -200,8 +203,7 @@ export function AdminProviders({
 }>) {
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
-  const [hydrated, setHydrated] = useState(false);
-  if (typeof window !== "undefined" && !hydrated) setHydrated(true);
+  const hydrated = useSyncExternalStore(subscribeToHydration, getClientHydrationSnapshot, () => false);
   const [bootstrap, setBootstrap] = useState<AdminBootstrap | null>(null);
   const [loading, setLoading] = useState(false);
   const bootstrapped = useRef(false);

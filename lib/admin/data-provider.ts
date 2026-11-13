@@ -139,8 +139,9 @@ export const dataProvider = {
 
   update: async (params: UpdateParams<unknown>) => {
     const { resource, id, variables } = params;
+    const method = params.meta?.method === "PUT" ? "PUT" : "PATCH";
     const data = await requestAdminData<BaseRecord>(adminResourcePath(resource, id), {
-      method: "PATCH",
+      method,
       body: variables,
     });
     return { data };

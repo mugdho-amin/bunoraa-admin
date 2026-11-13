@@ -14,7 +14,8 @@ import {
   ArrowUpDown, FileSpreadsheet, RefreshCcw, SlidersHorizontal,
 } from "lucide-react";
 import { fetchOptionsForResource } from "@/lib/admin/bootstrap";
-import type { AdminOptionsResponse, AdminResourceConfig, ResourceViewAction } from "@/lib/admin/types";
+import { pickWritableAction } from "@/lib/admin/write-schema";
+import type { AdminResourceConfig, ResourceViewAction } from "@/lib/admin/types";
 import { formatValue, humanizeLabel, pickVisibleKeys } from "@/lib/admin/utils";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { OrderOperationsPanel } from "@/components/pages/OrderOperationsPanel";
@@ -80,10 +81,6 @@ function listSearchFilter(search: string) {
   return search
     ? [{ field: "search", operator: "eq" as const, value: search }]
     : [];
-}
-
-function pickActionFields(options?: AdminOptionsResponse) {
-  return options?.actions?.PATCH || options?.actions?.PUT || options?.actions?.POST || {};
 }
 
 function exportToCsv(data: BaseRecord[], filename: string) {
@@ -378,6 +375,10 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
   });
   const createOne = useCreate();
   const updateOne = useUpdate();
+  const writeAction = pickWritableAction(
+    optionsQuery.data,
+    action === "create" ? ["POST"] : ["PATCH", "PUT"],
+  );
 
   if (optionsQuery.isError) {
     return (
@@ -397,7 +398,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
         {action === "create" ? `Create ${resource.label}` : `Edit ${resource.label}`}
       </Typography.Title>
       <SchemaForm
-        fields={pickActionFields(optionsQuery.data)}
+        fields={writeAction?.fields ?? {}}
         initialValues={recordQuery.query.data?.data}
         loading={submitting}
         submitText={action === "create" ? `Create ${resource.label}` : `Save ${resource.label}`}
@@ -410,7 +411,12 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
               router.push(`/${resource.name}/show/${created.data.id}`);
               return;
             }
-            const updated = await updateOne.mutateAsync({ resource: resource.name, id: id as BaseKey, values });
+            const updated = await updateOne.mutateAsync({
+              resource: resource.name,
+              id: id as BaseKey,
+              values,
+              meta: { method: writeAction?.method ?? "PATCH" },
+            });
             message.success(`${resource.label} updated.`);
             router.push(`/${resource.name}/show/${updated.data.id}`);
           } finally {
