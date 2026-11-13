@@ -12,27 +12,27 @@ export async function fetchOptionsForResource(resource: string) {
   const response = await requestAdminRaw<AdminOptionsResponse | { data?: AdminOptionsResponse }>(suffix, {
     method: "GET",
   });
-  // OPTIONS is normally returned as bare DRF metadata, but API gateways and
-  // response middleware may wrap it in the standard {data: ...} envelope.
-  // Normalize both shapes so forms can consume serializer actions reliably.
-  if (response && typeof response === "object" && "data" in response) {
-    const data = response.data;
-    if (data && typeof data === "object" && ("actions" in data || "name" in data || "description" in data)) {
-      return data;
-    }
-  }
-  return response as AdminOptionsResponse;
+  return normalizeOptionsResponse(response);
 }
 
 export async function fetchOptionsForSingleton(path: string) {
   const response = await requestAdminRaw<AdminOptionsResponse | { data?: AdminOptionsResponse }>(`/admin/${path}`, {
     method: "OPTIONS",
   });
-  if (response && typeof response === "object" && "data" in response) {
-    const data = response.data;
-    if (data && typeof data === "object" && ("actions" in data || "name" in data || "description" in data)) {
-      return data;
+  return normalizeOptionsResponse(response);
+}
+
+/** Accept bare DRF metadata plus one or more API/gateway envelope layers. */
+function normalizeOptionsResponse(response: unknown): AdminOptionsResponse {
+  let current = response;
+  for (let depth = 0; depth < 5; depth += 1) {
+    if (!current || typeof current !== "object") break;
+    const record = current as Record<string, unknown>;
+    if (record.actions && typeof record.actions === "object") {
+      return record as AdminOptionsResponse;
     }
+    if (!("data" in record)) break;
+    current = record.data;
   }
-  return response as AdminOptionsResponse;
+  return (current && typeof current === "object" ? current : {}) as AdminOptionsResponse;
 }

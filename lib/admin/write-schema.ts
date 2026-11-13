@@ -128,6 +128,26 @@ const SAFE_WRITE_SCHEMA_FALLBACKS: Record<string, Record<string, AdminFieldSchem
     text_template: { type: "textarea", label: "Plain text template" },
     is_active: { type: "boolean", label: "Active" },
   },
+  "shipping/settings": {
+    origin_city: { type: "string", required: true, label: "Origin city", max_length: 100 },
+    origin_state: { type: "string", required: true, label: "Origin state or region", max_length: 100 },
+    origin_country: { type: "string", required: true, label: "Origin country code", max_length: 2 },
+    default_weight_unit: {
+      type: "choice",
+      label: "Default weight unit",
+      choices: [CHOICE("kg", "Kilograms"), CHOICE("lb", "Pounds")],
+    },
+    default_dimension_unit: {
+      type: "choice",
+      label: "Default dimension unit",
+      choices: [CHOICE("cm", "Centimeters"), CHOICE("in", "Inches")],
+    },
+    show_delivery_estimates: { type: "boolean", label: "Show delivery estimates" },
+    show_carrier_logos: { type: "boolean", label: "Show carrier logos" },
+    enable_free_shipping: { type: "boolean", label: "Enable free shipping" },
+    free_shipping_threshold: { type: "decimal", label: "Free shipping threshold" },
+    handling_days: { type: "integer", label: "Handling days" },
+  },
 };
 
 export function pickWritableAction(

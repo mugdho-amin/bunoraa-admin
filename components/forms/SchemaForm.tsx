@@ -23,6 +23,7 @@ type SchemaFormProps = {
   initialValues?: Record<string, unknown> | null;
   loading?: boolean;
   submitText?: string;
+  schemaSource?: string;
   onSubmit: (values: Record<string, unknown>) => Promise<void>;
 };
 
@@ -173,6 +174,7 @@ export function SchemaForm({
   initialValues,
   loading = false,
   submitText = "Save changes",
+  schemaSource,
   onSubmit,
 }: SchemaFormProps) {
   const [form] = Form.useForm<Record<string, unknown>>();
@@ -203,8 +205,10 @@ export function SchemaForm({
       <Alert
         type="warning"
         showIcon
-        message="This endpoint did not expose editable serializer fields through OPTIONS metadata."
-        description="You can still use the detail and list views, but this screen needs a custom implementation for safe editing."
+        message="No editable fields were returned for this admin schema."
+        description={schemaSource
+          ? `Schema source: ${schemaSource} Check that the deployed API and admin app are using matching versions.`
+          : "Check the endpoint’s write serializer and the deployed API schema before editing this record."}
       />
     );
   }

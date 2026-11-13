@@ -487,6 +487,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
       </Typography.Title>
       <SchemaForm
         fields={writeAction?.fields ?? {}}
+        schemaSource={`/admin/schema/${resource.name}/`}
         initialValues={recordQuery.query.data?.data}
         loading={submitting}
         submitText={action === "create" ? `Create ${resource.label}` : `Save ${resource.label}`}

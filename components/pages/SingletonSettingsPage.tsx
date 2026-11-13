@@ -31,7 +31,7 @@ export function SingletonSettingsPage({
     queryKey: ["singleton-options", path],
     queryFn: () => fetchOptionsForSingleton(path),
   });
-  const writeAction = pickWritableAction(optionsQuery.data, ["PATCH", "PUT"]);
+  const writeAction = pickWritableAction(optionsQuery.data, ["PATCH", "PUT"], path);
 
   return (
     <Card className="admin-soft-panel" bordered={false}>
@@ -48,6 +48,7 @@ export function SingletonSettingsPage({
       ) : (
         <SchemaForm
           fields={writeAction?.fields ?? {}}
+          schemaSource={`/admin/${path}/`}
           initialValues={dataQuery.data}
           loading={submitting}
           submitText="Save settings"
