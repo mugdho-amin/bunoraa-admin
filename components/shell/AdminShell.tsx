@@ -103,6 +103,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarIsCollapsed = isDesktop && sidebarCollapsed;
   const [sidebarPreferenceLoaded, setSidebarPreferenceLoaded] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const { mode, setMode } = useThemeStore();
@@ -140,11 +141,11 @@ export function AdminShell({ route, children }: AdminShellProps) {
         type: "group" as const,
         children: section.items.map((item) => ({
           key: item.path,
-          icon: getIconNode(item.icon, sidebarCollapsed ? 20 : 16),
+          icon: getIconNode(item.icon, sidebarIsCollapsed ? 20 : 16),
           label: item.label,
         })),
       })),
-    [bootstrap?.navigation, sidebarCollapsed],
+    [bootstrap?.navigation, sidebarIsCollapsed],
   );
 
   const flatNavItems = useMemo(
@@ -256,21 +257,21 @@ export function AdminShell({ route, children }: AdminShellProps) {
   };
 
   const sideMenu = (
-    <Flex vertical style={{ height: "100%" }}>
+    <Flex vertical style={{ height: "100%", minHeight: 0, minWidth: 0 }}>
       <div
         style={{
-          padding: sidebarCollapsed ? "16px 0" : "16px 16px",
-          textAlign: sidebarCollapsed ? "center" : "left",
+          padding: sidebarIsCollapsed ? "16px 0" : "16px 16px",
+          textAlign: sidebarIsCollapsed ? "center" : "left",
           transition: "padding 0.2s, text-align 0.2s",
         }}
       >
-        {isDesktop && sidebarCollapsed ? (
+        {sidebarIsCollapsed ? (
           <Tooltip title="Expand sidebar" placement="right">
             <Button
               type="text"
               onClick={() => setSidebarCollapsed(false)}
               aria-label="Expand sidebar"
-              style={{ color: "var(--admin-muted)", width: "100%", height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ color: "var(--admin-muted)", width: "100%", height: 48, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
             ><Flex align="center" gap={4}><BrandMark size={30} /><ChevronRight size={16} /></Flex></Button>
           </Tooltip>
         ) : (
@@ -297,16 +298,18 @@ export function AdminShell({ route, children }: AdminShellProps) {
       <div
         className="sidebar-scroll"
         style={{
-          flex: 1,
+          flex: "1 1 auto",
+          minHeight: 0,
+          minWidth: 0,
           overflowY: "auto",
           overflowX: "hidden",
-          paddingInline: sidebarCollapsed ? 4 : 10,
+          paddingInline: sidebarIsCollapsed ? 4 : 10,
           transition: "padding 0.2s",
         }}
       >
         <Menu
           mode="inline"
-          inlineCollapsed={isDesktop && sidebarCollapsed}
+          inlineCollapsed={sidebarIsCollapsed}
           selectedKeys={selectedNavKey ? [selectedNavKey] : []}
           items={navigationItems}
           onClick={handleMenuClick}
@@ -317,11 +320,11 @@ export function AdminShell({ route, children }: AdminShellProps) {
       <div
         style={{
           borderTop: "1px solid var(--admin-border)",
-          padding: sidebarCollapsed ? "12px 0" : "14px 16px",
+          padding: sidebarIsCollapsed ? "12px 0" : "14px 16px",
           transition: "padding 0.2s",
         }}
       >
-        {sidebarCollapsed ? (
+        {sidebarIsCollapsed ? (
           <Dropdown menu={userMenu} trigger={["click"]} placement="topRight">
             <Button type="text" style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
@@ -382,10 +385,10 @@ export function AdminShell({ route, children }: AdminShellProps) {
             width={280}
             collapsedWidth={72}
             collapsible
-            collapsed={isDesktop ? sidebarCollapsed : false}
+            collapsed={sidebarIsCollapsed}
             onCollapse={(v) => isDesktop && setSidebarCollapsed(v)}
             trigger={null}
-            style={{ background: "transparent", padding: 16 }}
+            style={{ background: "transparent", padding: sidebarIsCollapsed ? "16px 8px" : 16 }}
           >
             <div className="admin-glass-card admin-sidebar-glass" style={{ height: "100%", overflow: "hidden" }}>
               {sideMenu}
