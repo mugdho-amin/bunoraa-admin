@@ -23,6 +23,7 @@ import {
   Menu as MenuIcon,
   Monitor,
   Moon,
+  MoreHorizontal,
   RefreshCcw,
   Search,
   Sun,
@@ -36,6 +37,7 @@ import type { ParsedAdminRoute } from "@/lib/admin/types";
 import { getIconNode } from "@/lib/admin/utils";
 import { useThemeStore, type ThemeMode } from "@/lib/admin/theme-store";
 import { CommandPalette } from "@/components/shared/CommandPalette";
+import { InstallAppBanner } from "@/components/common/InstallAppBanner";
 
 type AdminShellProps = {
   route: ParsedAdminRoute;
@@ -52,30 +54,40 @@ const MOBILE_PRIORITY_NAMES = new Set([
   "users",
 ]);
 
-function MobileBottomNav({ items, pathname, onNavigate }: {
+function MobileBottomNav({ items, pathname, onNavigate, onMore }: {
   items: Array<{ key: string; icon: React.ReactNode; label: string }>;
   pathname: string;
   onNavigate: (key: string) => void;
+  onMore: () => void;
 }) {
-  const topItems = items.slice(0, 5);
-  const normalizedPathname = pathname.replace(/^\/admin/, "") || "/dashboard";
+  const topItems = items.slice(0, 4);
+  const isMoreActive = !topItems.some((item) => pathname === item.key || pathname.startsWith(`${item.key}/`));
   return (
     <nav className="admin-mobile-bottom-nav">
       {topItems.map((item) => {
-        const itemPath = item.key.replace(/^\/admin/, "") || "/dashboard";
-        const isActive = pathname === item.key || normalizedPathname === itemPath;
+        const isActive = pathname === item.key || pathname.startsWith(`${item.key}/`);
         return (
           <button
             key={item.key}
             className={`admin-mobile-nav-item${isActive ? " active" : ""}`}
             onClick={() => onNavigate(item.key)}
             aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
           >
             {item.icon}
             <span className="admin-mobile-nav-label">{item.label}</span>
           </button>
         );
       })}
+      <button
+        className={`admin-mobile-nav-item${isMoreActive ? " active" : ""}`}
+        onClick={onMore}
+        aria-label="More sections"
+        aria-haspopup="dialog"
+      >
+        <MoreHorizontal size={20} />
+        <span className="admin-mobile-nav-label">More</span>
+      </button>
     </nav>
   );
 }
@@ -84,9 +96,10 @@ export function AdminShell({ route, children }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const screens = Grid.useBreakpoint();
-  const isDesktop = Boolean(screens.lg);
-  const isTablet = !isDesktop && Boolean(screens.md);
-  const isMobile = Boolean(screens.xs) || (!isDesktop && !isTablet && Boolean(screens.sm));
+  // Keep the full navigation rail for laptop/desktop widths. Tablets use the
+  // same compact drawer and bottom tabs as phones to preserve content space.
+  const isDesktop = Boolean(screens.xl);
+  const isMobile = !isDesktop;
   const { bootstrap, refreshBootstrap } = useAdminBootstrap();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -342,7 +355,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
   return (
     <>
       <Layout className="admin-page" style={{ background: "transparent", paddingBottom: isMobile ? 64 : 0 }}>
-        {isDesktop || isTablet ? (
+        {isDesktop ? (
           <Sider
             width={280}
             collapsedWidth={72}
@@ -382,8 +395,9 @@ export function AdminShell({ route, children }: AdminShellProps) {
 
         <Layout style={{ background: "transparent", overflow: "hidden" }}>
           <Header
+            className="admin-app-header"
             style={{
-              padding: isDesktop || isTablet ? "16px 24px 0 0" : "10px 12px 0",
+              padding: isDesktop ? "16px 24px 0 0" : "10px 14px 8px",
               background: "transparent",
               height: "auto",
               lineHeight: "inherit",
@@ -459,12 +473,13 @@ export function AdminShell({ route, children }: AdminShellProps) {
           <Content
             className="admin-page-scroll"
             style={{
-              padding: isDesktop ? "20px 24px 24px 0" : "12px 16px 24px",
+              padding: isDesktop ? "20px 24px 24px 0" : undefined,
               height: "100%",
               overflow: "auto",
             }}
           >
             <div className="animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+              {isMobile ? <InstallAppBanner /> : null}
               {children}
             </div>
           </Content>
@@ -477,6 +492,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           items={flatNavItems}
           pathname={pathname}
           onNavigate={handleMobileNav}
+          onMore={() => setMobileNavOpen(true)}
         />
       )}
 

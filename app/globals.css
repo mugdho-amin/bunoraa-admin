@@ -1,4 +1,6 @@
 :root, .light {
+  --font-body: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   /* ── Semantic tokens (HSL channels, matching bunoraa-frontend pattern) ── */
   --background: 220 27% 96%;
   --foreground: 222 47% 11%;
@@ -168,6 +170,8 @@ body {
   min-height: 100vh;
   transition: background-color 0.3s ease;
 }
+
+html, body { overscroll-behavior: none; }
 
 /* ── Dark mode Ant Design component overrides ── */
 .dark .ant-card {
@@ -425,7 +429,7 @@ button, input, select, textarea { font: inherit; }
 }
 
 /* ── Page Layout ── */
-.admin-page { height: 100dvh; }
+.admin-page { height: 100dvh; min-width: 0; overflow: hidden; }
 
 .admin-page-scroll {
   height: 100vh;
@@ -593,11 +597,13 @@ button, input, select, textarea { font: inherit; }
   left: 0;
   right: 0;
   z-index: 1000;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-around;
-  padding: 6px 0 env(safe-area-inset-bottom, 6px);
-  background: var(--admin-surface);
+  min-height: 66px;
+  padding: 5px 8px;
+  padding-bottom: max(5px, env(safe-area-inset-bottom));
+  background: hsl(var(--card) / 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--admin-border);
@@ -609,27 +615,46 @@ button, input, select, textarea { font: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 4px 12px;
+  justify-content: center;
+  padding: 5px 4px;
   border: none;
   background: none;
   cursor: pointer;
   color: var(--admin-muted);
   transition: color 0.15s;
   -webkit-tap-highlight-color: transparent;
-  min-width: 56px;
+  min-width: 0;
+  min-height: 48px;
+  border-radius: 14px;
 }
 
 .admin-mobile-nav-item.active {
   color: var(--admin-brand);
+  background: var(--admin-brand-light);
 }
 
 .admin-mobile-nav-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.admin-install-banner {
+  margin: 0 0 16px;
+  border: 1px solid var(--admin-brand-alpha-15) !important;
+  border-radius: 18px !important;
+  background: var(--admin-surface) !important;
+  box-shadow: var(--admin-shadow-sm);
+}
+.admin-install-banner .ant-alert-content { min-width: 0; }
+.admin-install-banner .ant-alert-message { color: var(--admin-ink); }
+.admin-install-banner .ant-alert-description { color: var(--admin-ink-secondary); }
+.admin-install-title { font-weight: 700; }
 
 /* ── Shimmer/Skeleton loading ── */
 .admin-shimmer {
@@ -691,18 +716,38 @@ button, input, select, textarea { font: inherit; }
   .admin-login-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1199px) {
   .admin-sidebar-glass .ant-menu-item {
     height: 44px !important;
     line-height: 44px !important;
     margin-block: 4px !important;
   }
   .admin-sidebar-glass .ant-btn { min-height: 44px; }
-  .ant-layout-content { overflow-x: auto; }
+  .ant-layout-content { overflow-x: hidden; }
   .admin-login-grid { gap: 16px; }
 
   /* Mobile: compact page padding */
-  .admin-page-scroll { padding: 8px 12px 80px 12px !important; }
+  .admin-page-scroll {
+    height: auto !important;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 12px 12px calc(88px + env(safe-area-inset-bottom)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  .admin-app-header {
+    position: relative;
+    z-index: 5;
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px !important;
+    background: hsl(var(--background) / 0.88) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .admin-app-header > .ant-flex { min-height: 48px; }
+  .admin-install-banner { margin-bottom: 14px; }
+  .admin-install-banner .ant-alert-description { font-size: 12px; line-height: 1.45; }
 
   /* Mobile: full-width cards */
   .bento-cell { padding: 14px !important; }
@@ -718,7 +763,14 @@ button, input, select, textarea { font: inherit; }
   .ant-btn-lg { width: 100% !important; height: 48px !important; }
 
   /* Mobile: table horizontal scroll */
-  .ant-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ant-table-wrapper { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ant-table { min-width: 680px; }
+  .ant-table-cell { white-space: nowrap; }
+  .ant-card { max-width: 100%; border-radius: 18px !important; }
+  .ant-card-body { padding: 14px !important; }
+  .ant-form-item { margin-bottom: 14px; }
+  .ant-form-item-label { padding-bottom: 4px !important; }
+  .ant-pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 
   /* Mobile: modal fullscreen */
   .ant-modal { margin: 8px !important; max-width: calc(100vw - 16px) !important; }
@@ -740,7 +792,7 @@ button, input, select, textarea { font: inherit; }
 
 @media (max-width: 480px) {
   /* Small mobile: even more compact */
-  .admin-page-scroll { padding: 8px 10px 80px 10px !important; }
+  .admin-page-scroll { padding-inline: 10px !important; }
 
   /* Small mobile: KPI cards single column if needed */
   .kpi-card { padding: 12px !important; }
@@ -762,10 +814,10 @@ button, input, select, textarea { font: inherit; }
 /* ── Safe area support for notched devices ── */
 @supports (padding: env(safe-area-inset-bottom)) {
   .admin-mobile-bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
   }
   .admin-page-scroll {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
   }
 }
 

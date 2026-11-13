@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -33,6 +34,7 @@ if (isProduction) {
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  turbopack: { root: path.resolve(process.cwd()) },
   compress: true,
   productionBrowserSourceMaps: false,
   output: isProduction ? "standalone" : undefined,
