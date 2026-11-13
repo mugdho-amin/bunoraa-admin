@@ -183,6 +183,22 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
 
   return (
     <Flex vertical gap={18}>
+      <section className="resource-page-heading">
+        <div className="resource-page-heading-copy">
+          <span className="resource-page-kicker">{resource.group}</span>
+          <Typography.Title level={2} className="admin-display" style={{ margin: "5px 0 4px", fontSize: 26 }}>
+            {resource.label}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {resource.description || `Review and manage ${resource.label.toLowerCase()} records.`}
+          </Typography.Text>
+        </div>
+        {resource.meta.capabilities.create ? (
+          <Button type="primary" icon={<Plus size={15} />} onClick={() => router.push(`/${resource.name}/create`)}>
+            Create {resource.label}
+          </Button>
+        ) : null}
+      </section>
       {/* Toolbar */}
       <Flex justify="space-between" gap={12} wrap="wrap" align="center">
         <Flex gap={8} wrap="wrap" flex={1}>
@@ -221,11 +237,6 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
           <Button icon={<RefreshCcw size={14} />} onClick={() => query.refetch()}>
             Refresh
           </Button>
-          {resource.meta.capabilities.create ? (
-            <Button type="primary" icon={<Plus size={14} />} onClick={() => router.push(`/${resource.name}/create`)}>
-              Create {resource.label}
-            </Button>
-          ) : null}
         </Space>
       </Flex>
 
@@ -471,7 +482,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
 
   return (
     <Card className="admin-soft-panel" bordered={false}>
-      <Typography.Title level={5} style={{ marginBottom: 20 }}>
+      <Typography.Title level={4} className="admin-display resource-form-title" style={{ marginBottom: 20 }}>
         {action === "create" ? `Create ${resource.label}` : `Edit ${resource.label}`}
       </Typography.Title>
       <SchemaForm

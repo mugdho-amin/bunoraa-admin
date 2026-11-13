@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   RefreshCcw,
   Search,
+  Command,
   Sun,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -181,6 +182,13 @@ export function AdminShell({ route, children }: AdminShellProps) {
       })
       .sort((a, b) => b.key.length - a.key.length)[0]?.key;
   }, [flatNavItems, pathname]);
+
+  const currentSection = useMemo(() => {
+    for (const section of bootstrap?.navigation ?? []) {
+      if (section.items.some((item) => item.path === selectedNavKey)) return section.group;
+    }
+    return "Workspace";
+  }, [bootstrap?.navigation, selectedNavKey]);
 
   function itemPriority(name: string): number {
     const order = ["dashboard", "orders", "catalog/products", "catalog/categories", "users"];
@@ -428,7 +436,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
             }}
           >
             <Flex align="center" justify="space-between" gap={8}>
-              <Flex align="center" gap={8} style={{ minWidth: 0, flex: 1 }}>
+              <Flex align="center" gap={isMobile ? 8 : 14} style={{ minWidth: 0, flex: 1 }}>
                 {isMobile && (
                   <Button
                     type="text"
@@ -439,17 +447,23 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   />
                 )}
                 <Flex vertical gap={0} style={{ minWidth: 0, flex: 1 }}>
+                  {!isMobile && <span className="admin-header-context">{currentSection} <span>/</span> Admin workspace</span>}
                   <Typography.Title
                     level={4}
                     className="admin-display"
-                    style={{ margin: 0, fontSize: isMobile ? 16 : 18, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    style={{ margin: 0, fontSize: isMobile ? 17 : 21, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 650 }}
                   >
                     {title}
                   </Typography.Title>
                 </Flex>
               </Flex>
 
-              <Space size={isMobile ? 2 : 4} wrap>
+              <Space size={isMobile ? 2 : 7} className="admin-header-actions">
+                {!isMobile && (
+                  <Button className="admin-command-trigger" icon={<Search size={15} />} onClick={() => setCommandOpen(true)}>
+                    <span>Search pages</span><kbd><Command size={10} /> K</kbd>
+                  </Button>
+                )}
                 <Tooltip title={
                   mode === "light" ? "Switch to dark mode" :
                   mode === "dark" ? "Switch to system theme" :
