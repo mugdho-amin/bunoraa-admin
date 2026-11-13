@@ -454,6 +454,7 @@ function ResourceFormView({ resource, action, id }: { resource: AdminResourceCon
   const writeAction = pickWritableAction(
     optionsQuery.data,
     action === "create" ? ["POST"] : ["PATCH", "PUT"],
+    resource.name,
   );
 
   if (optionsQuery.isError) {

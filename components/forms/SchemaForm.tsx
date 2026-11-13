@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useList } from "@refinedev/core";
 import {
   Alert,
   Button,
@@ -14,6 +15,7 @@ import {
 } from "antd";
 import type { UploadFile } from "antd/es/upload/interface";
 import type { AdminFieldSchema } from "@/lib/admin/types";
+import type { BaseRecord } from "@refinedev/core";
 import { schemaFieldLabel } from "@/lib/admin/utils";
 
 type SchemaFormProps = {
@@ -25,6 +27,31 @@ type SchemaFormProps = {
 };
 
 const JSON_FIELD_NAMES = ["metadata", "payload", "config", "settings", "attributes"];
+
+function CurrencyReferenceInput({ placeholder }: { placeholder: string }) {
+  const { result, query } = useList<BaseRecord>({
+    resource: "pricing/currencies",
+    pagination: { currentPage: 1, pageSize: 100 },
+    sorters: [{ field: "code", order: "asc" }],
+  });
+  const options = (result.data || [])
+    .filter((currency) => currency.is_active !== false)
+    .map((currency) => ({
+      value: String(currency.id),
+      label: `${String(currency.code || "Currency")} — ${String(currency.name || "")}`.trim(),
+    }));
+
+  return (
+    <Select
+      showSearch
+      optionFilterProp="label"
+      loading={query.isLoading}
+      placeholder={placeholder}
+      options={options}
+      notFoundContent={query.isError ? "Could not load currencies." : undefined}
+    />
+  );
+}
 
 function isJsonField(name: string, field: AdminFieldSchema) {
   const type = (field.type || "").toLowerCase();
@@ -102,6 +129,10 @@ function renderInput(name: string, field: AdminFieldSchema) {
     );
   }
 
+  if (type.includes("currency_reference")) {
+    return <CurrencyReferenceInput placeholder={placeholder} />;
+  }
+
   if (type.includes("boolean")) {
     return <Switch />;
   }
@@ -120,6 +151,10 @@ function renderInput(name: string, field: AdminFieldSchema) {
 
   if (type.includes("date") || type.includes("time")) {
     return <Input placeholder="Use an ISO value like 2026-05-13 or 2026-05-13T15:30:00Z" />;
+  }
+
+  if (type.includes("textarea")) {
+    return <Input.TextArea autoSize={{ minRows: 4, maxRows: 14 }} placeholder={placeholder} />;
   }
 
   if (isJsonField(name, field)) {
