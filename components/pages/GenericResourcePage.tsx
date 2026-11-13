@@ -127,7 +127,9 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
   const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
   const screens = Grid.useBreakpoint();
-  const isMobile = Boolean(screens.xs) || Boolean(screens.sm);
+  // Ant Design's `sm` matches every viewport >= 576px, including desktop.
+  // Use the medium breakpoint to keep the card layout limited to phones.
+  const isMobile = screens.md === false;
 
   const { result, query } = useList<BaseRecord>({
     resource: resource.name,
