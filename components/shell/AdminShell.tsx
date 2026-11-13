@@ -215,9 +215,9 @@ export function AdminShell({ route, children }: AdminShellProps) {
         key: "profile",
         icon: <User size={16} />,
         label: (
-          <Flex vertical gap={2} style={{ minWidth: 160, paddingBlock: 4 }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>{userName}</span>
-            <span style={{ fontSize: 11, color: "var(--admin-muted)" }}>{userEmail || ""}</span>
+          <Flex vertical gap={2} style={{ minWidth: 0, maxWidth: "min(240px, calc(100vw - 72px))", paddingBlock: 4 }}>
+            <span style={{ fontWeight: 600, fontSize: 13, overflowWrap: "anywhere" }}>{userName}</span>
+            <span style={{ fontSize: 11, color: "var(--admin-muted)", overflowWrap: "anywhere" }}>{userEmail || ""}</span>
           </Flex>
         ),
         disabled: true,
@@ -325,8 +325,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
         }}
       >
         {sidebarIsCollapsed ? (
-          <Dropdown menu={userMenu} trigger={["click"]} placement="topRight">
-            <Button type="text" style={{ width: "100%", height: "auto", padding: "4px 0" }}>
+          <Dropdown
+            menu={userMenu}
+            trigger={["click"]}
+            placement="topLeft"
+            getPopupContainer={() => document.body}
+            overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
+          >
+            <Button type="text" aria-label={`Open account menu for ${userName}`} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
                 size={32}
                 shape="circle"
@@ -337,40 +343,53 @@ export function AdminShell({ route, children }: AdminShellProps) {
             </Button>
           </Dropdown>
         ) : (
-          <Dropdown menu={userMenu} trigger={["click"]} placement="topLeft">
-            <Flex align="center" gap={10} style={{ cursor: "pointer", padding: "2px 0" }}>
-              <Avatar
-                size={36}
-                shape="circle"
-                style={{
-                  background: "linear-gradient(135deg, var(--admin-brand), var(--admin-accent))",
-                  flexShrink: 0,
-                  lineHeight: "36px", fontSize: 15, fontWeight: 700,
-                }}
-              >
-                {nameInitial}
-              </Avatar>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
+          <Dropdown
+            menu={userMenu}
+            trigger={["click"]}
+            placement="topLeft"
+            getPopupContainer={() => document.body}
+            overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
+          >
+            <Button
+              type="text"
+              block
+              aria-label={`Open account menu for ${userName}`}
+              style={{ height: "auto", padding: "4px 0", textAlign: "left" }}
+            >
+              <Flex align="center" gap={10} style={{ minWidth: 0, width: "100%" }}>
+                <Avatar
+                  size={36}
+                  shape="circle"
                   style={{
-                    fontWeight: 600,
-                    fontSize: 13,
-                    lineHeight: 1.3,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    background: "linear-gradient(135deg, var(--admin-brand), var(--admin-accent))",
+                    flexShrink: 0,
+                    lineHeight: "36px", fontSize: 15, fontWeight: 700,
                   }}
                 >
-                  {userName}
+                  {nameInitial}
+                </Avatar>
+                <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 13,
+                      lineHeight: 1.3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {userName}
+                  </div>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  >
+                    {userEmail}
+                  </Typography.Text>
                 </div>
-                <Typography.Text
-                  type="secondary"
-                  style={{ fontSize: 11, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                >
-                  {userEmail}
-                </Typography.Text>
-              </div>
-            </Flex>
+              </Flex>
+            </Button>
           </Dropdown>
         )}
       </div>
@@ -418,7 +437,7 @@ export function AdminShell({ route, children }: AdminShellProps) {
           </Drawer>
         )}
 
-        <Layout style={{ background: "transparent", overflow: "hidden" }}>
+        <Layout className="admin-main-layout" style={{ background: "transparent", overflow: "hidden" }}>
           <Header
             className="admin-app-header"
             style={{
@@ -468,10 +487,18 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   />
                 </Tooltip>
                 <NotificationBell />
-                <Dropdown menu={userMenu} trigger={["click"]} placement="bottomRight">
+                <Dropdown
+                  menu={userMenu}
+                  trigger={["click"]}
+                  placement="bottomRight"
+                  getPopupContainer={() => document.body}
+                  overlayStyle={{ maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
+                >
                   <Button
                     type="text"
                     className="admin-header-btn admin-user-trigger"
+                    aria-label={`Open account menu for ${userName}`}
+                    aria-haspopup="menu"
                     style={{ gap: 6, width: "auto", paddingInline: isMobile ? 4 : 8, minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40 }}
                   >
                     <Avatar
@@ -499,7 +526,9 @@ export function AdminShell({ route, children }: AdminShellProps) {
             className="admin-page-scroll"
             style={{
               padding: isDesktop ? "20px 24px 24px 0" : undefined,
-              height: "100%",
+              minWidth: 0,
+              minHeight: 0,
+              flex: "1 1 auto",
               overflow: "auto",
             }}
           >
