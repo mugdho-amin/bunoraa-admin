@@ -42,6 +42,9 @@ type ProductRecord = BaseRecord & {
 };
 
 const ROW_HOVER = { background: "var(--admin-hover-bg)" };
+const PRODUCT_THUMBNAIL_SIZE = 48;
+const PRODUCT_THUMBNAIL_FALLBACK =
+  `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${PRODUCT_THUMBNAIL_SIZE}' height='${PRODUCT_THUMBNAIL_SIZE}' fill='%23e5e7eb'%3E%3Crect width='${PRODUCT_THUMBNAIL_SIZE}' height='${PRODUCT_THUMBNAIL_SIZE}' rx='8'/%3E%3C/svg%3E`;
 
 export function AdminProductListPage() {
   const router = useRouter();
@@ -262,10 +265,10 @@ export function AdminProductListPage() {
           <Image
             src={record.primary_image ?? undefined}
             alt={record.name}
-            width={isMobile ? 32 : 48}
-            height={isMobile ? 32 : 48}
-            style={{ borderRadius: 8, objectFit: "cover" }}
-            fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' fill='%23e5e7eb'%3E%3Crect width='48' height='48' rx='8'/%3E%3C/svg%3E"
+            width={PRODUCT_THUMBNAIL_SIZE}
+            height={PRODUCT_THUMBNAIL_SIZE}
+            style={{ width: PRODUCT_THUMBNAIL_SIZE, height: PRODUCT_THUMBNAIL_SIZE, flex: `0 0 ${PRODUCT_THUMBNAIL_SIZE}px`, borderRadius: 8, objectFit: "cover" }}
+            fallback={PRODUCT_THUMBNAIL_FALLBACK}
           />
           <Flex vertical gap={1}>
             <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }} ellipsis={{ tooltip: record.name }}>
@@ -540,10 +543,10 @@ export function AdminProductListPage() {
                       <Image
                         src={product.primary_image ?? undefined}
                         alt={product.name}
-                        width={58}
-                        height={58}
-                        style={{ flex: "0 0 58px", borderRadius: 12, objectFit: "cover" }}
-                        fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='58' height='58' fill='%23e5e7eb'%3E%3Crect width='58' height='58' rx='12'/%3E%3C/svg%3E"
+                        width={PRODUCT_THUMBNAIL_SIZE}
+                        height={PRODUCT_THUMBNAIL_SIZE}
+                        style={{ width: PRODUCT_THUMBNAIL_SIZE, height: PRODUCT_THUMBNAIL_SIZE, flex: `0 0 ${PRODUCT_THUMBNAIL_SIZE}px`, borderRadius: 8, objectFit: "cover" }}
+                        fallback={PRODUCT_THUMBNAIL_FALLBACK}
                       />
                       <div className="product-mobile-summary">
                         <Typography.Text strong className="admin-mobile-record-title">{product.name}</Typography.Text>
