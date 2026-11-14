@@ -1517,13 +1517,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             Cancel
           </Button>
           <div className="product-editor-title-group">
-            <span className="product-editor-eyebrow">Catalog / Products</span>
             <Typography.Title level={3} className="product-editor-title">
               {id ? "Edit product" : "Create product"}
             </Typography.Title>
-            <span className="product-editor-subtitle">
-              {id ? "Product listing · Edit details, media, pricing, and availability" : "New listing · Add the details customers need to choose and buy"}
-            </span>
           </div>
         </Flex>
         <Flex align="center" gap={8} className="product-editor-actions">
