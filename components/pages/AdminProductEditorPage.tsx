@@ -1480,6 +1480,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     { id: "product-categories", label: "Organization", hint: "Categories, tags, ratio", icon: <Grid3X3 size={15} /> },
     { id: "product-pricing", label: "Pricing & stock", hint: "Price, inventory, status", icon: <Package size={15} /> },
     ...(hasVariants ? [{ id: "product-variants", label: "Variants", hint: `${form.variants.length} options`, icon: <Grid3X3 size={15} /> }] : []),
+    ...(form.can_be_customized ? [{ id: "product-customization", label: "Personalization", hint: `${form.customization_options.length} customer fields`, icon: <FileText size={15} /> }] : []),
     { id: "product-seo", label: "Search preview", hint: "Search metadata", icon: <Search size={15} /> },
     ...(!hasVariants ? [{ id: "product-shipping", label: "Shipping", hint: "Weight and dimensions", icon: <Package size={15} /> }] : []),
     { id: "product-scheduling", label: "Publishing", hint: "Visibility and schedule", icon: <Calendar size={15} /> },
@@ -2026,149 +2027,13 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
           {/* Customization Options */}
           {form.can_be_customized && (
-            <Card className="admin-soft-panel" variant="borderless"
-              title={<Flex align="center" gap={8}><FileText size={14} /> Customization Options</Flex>}
+            <Card id="product-customization" className="admin-soft-panel admin-customization-panel" variant="borderless"
+              title={<div className="customization-panel-title"><span className="customization-panel-title-icon"><FileText size={16} /></span><span><strong>Personalization</strong><small>Let customers add details to make this item their own.</small></span></div>}
+              extra={<Tag bordered={false}>{form.customization_options.length} {form.customization_options.length === 1 ? "field" : "fields"}</Tag>}
               style={{ flex: "1 1 300px", minWidth: 0 }}>
-              {form.customization_options.length > 0 && (
-                <Flex vertical gap={8}>
-                  {form.customization_options.map((opt, oi) => (
-                    <div key={opt._id}
-                      style={{ borderRadius: 12, border: "1px solid var(--admin-input-border)", padding: 12, background: opt.is_active ? "none" : "var(--admin-muted-alpha-05)" }}>
-                      <Flex gap={12} vertical>
-                        <Flex gap={8} align="center" wrap>
-                          <input value={opt.name} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], name: e.target.value };
-                              return { ...p, customization_options: next };
-                            });
-                          }}
-                            placeholder="Option name (e.g. Engraving Text)"
-                            className="admin-input"
-                            style={{ flex: "1 1 180px", fontSize: 11, padding: "6px 10px" }} />
-                          <select value={opt.option_type} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], option_type: e.target.value as CustomizationOptionForm["option_type"] };
-                              return { ...p, customization_options: next };
-                            });
-                          }}
-                            className="admin-input"
-                            style={{ flex: "0 1 130px", fontSize: 11, padding: "6px 10px" }}>
-                            <option value="text">Text</option>
-                            <option value="textarea">Text Area</option>
-                            <option value="color_picker">Color Picker</option>
-                            <option value="image_upload">Image Upload</option>
-                            <option value="select">Select</option>
-                            <option value="checkbox">Checkbox</option>
-                            <option value="file">File Upload</option>
-                          </select>
-                          <input type="number" value={opt.ordering ?? oi} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], ordering: Number(e.target.value) };
-                              return { ...p, customization_options: next };
-                            });
-                          }}
-                            className="admin-input"
-                            style={{ width: 60, fontSize: 11, padding: "6px 10px" }}
-                            title="Order" />
-                        </Flex>
-                        <Flex gap={8} align="center" wrap>
-                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                            <input type="checkbox" checked={opt.is_required}
-                              onChange={() => {
-                                setForm((p) => {
-                                  const next = [...p.customization_options];
-                                  next[oi] = { ...next[oi], is_required: !next[oi].is_required };
-                                  return { ...p, customization_options: next };
-                                });
-                              }}
-                              style={{ accentColor: "var(--admin-brand)" }} />
-                            Required
-                          </label>
-                          <label style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                            <input type="checkbox" checked={opt.is_active}
-                              onChange={() => {
-                                setForm((p) => {
-                                  const next = [...p.customization_options];
-                                  next[oi] = { ...next[oi], is_active: !next[oi].is_active };
-                                  return { ...p, customization_options: next };
-                                });
-                              }}
-                              style={{ accentColor: "var(--admin-brand)" }} />
-                            Active
-                          </label>
-                          <Flex align="center" gap={4} style={{ marginLeft: "auto" }}>
-                            <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted-alpha-55)", whiteSpace: "nowrap" }}>
-                              Price modifier
-                            </Typography.Text>
-                            <input type="number" step="any" value={opt.price_modifier ?? ""} onChange={(e) => {
-                              setForm((p) => {
-                                const next = [...p.customization_options];
-                                next[oi] = { ...next[oi], price_modifier: e.target.value ? Number(e.target.value) : null };
-                                return { ...p, customization_options: next };
-                              });
-                            }}
-                              className="admin-input"
-                              style={{ width: 90, fontSize: 11, padding: "6px 10px" }}
-                              placeholder="0.00" />
-                          </Flex>
-                          <button onClick={() => {
-                            setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }));
-                          }}
-                            style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)", fontSize: 11 }}>
-                            Remove
-                          </button>
-                        </Flex>
-                        {(opt.option_type === "select" || opt.option_type === "checkbox") && (
-                          <Flex vertical gap={4} style={{ marginLeft: 16 }}>
-                            <Typography.Text style={{ fontSize: 10, color: "var(--admin-muted-alpha-55)" }}>Choices</Typography.Text>
-                            {opt.choices.map((choice, ci) => (
-                              <Flex key={ci} gap={6} align="center">
-                                <input value={choice} onChange={(e) => {
-                                  setForm((p) => {
-                                    const next = [...p.customization_options];
-                                    const nextChoices = [...next[oi].choices];
-                                    nextChoices[ci] = e.target.value;
-                                    next[oi] = { ...next[oi], choices: nextChoices };
-                                    return { ...p, customization_options: next };
-                                  });
-                                }}
-                                  className="admin-input"
-                                  style={{ flex: 1, fontSize: 11, padding: "4px 8px" }}
-                                  placeholder={`Choice ${ci + 1}`} />
-                                <button onClick={() => {
-                                  setForm((p) => {
-                                    const next = [...p.customization_options];
-                                    next[oi] = { ...next[oi], choices: next[oi].choices.filter((_, j) => j !== ci) };
-                                    return { ...p, customization_options: next };
-                                  });
-                                }}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)", fontSize: 10 }}>
-                                  <X size={12} />
-                                </button>
-                              </Flex>
-                            ))}
-                            <button onClick={() => {
-                              setForm((p) => {
-                                const next = [...p.customization_options];
-                                next[oi] = { ...next[oi], choices: [...next[oi].choices, ""] };
-                                return { ...p, customization_options: next };
-                              });
-                            }}
-                              style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 8, border: "1px dashed var(--admin-border-strong)", fontSize: 10, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
-                              + Add Choice
-                            </button>
-                          </Flex>
-                        )}
-                      </Flex>
-                    </div>
-                  ))}
-                </Flex>
-              )}
-              <div style={{ marginTop: 12 }}>
-                <button onClick={() => {
+              <div className="customization-panel-intro">
+                <p>Build the questions customers see on the product page. Keep each label short and explain what they should enter.</p>
+                <Button type="primary" size="small" icon={<Plus size={14} />} onClick={() => {
                   setForm((p) => ({
                     ...p,
                     customization_options: [...p.customization_options, {
@@ -2176,11 +2041,141 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                       is_required: false, price_modifier: null, choices: [], ordering: p.customization_options.length, is_active: true,
                     }],
                   }));
-                }}
-                  style={{ padding: "8px 16px", borderRadius: 12, border: "1px dashed var(--admin-border-strong)", fontSize: 11, color: "var(--admin-muted)", cursor: "pointer", background: "none" }}>
-                  + Add Customization Option
-                </button>
+                }}>Add field</Button>
               </div>
+              {form.customization_options.length > 0 ? (
+                <div className="customization-option-list">
+                  {form.customization_options.map((opt, oi) => (
+                    <article key={opt._id} className={`admin-customization-card${opt.is_active ? "" : " is-disabled"}`}>
+                      <div className="customization-option-header">
+                        <span className="customization-option-index">{String(oi + 1).padStart(2, "0")}</span>
+                        <input value={opt.name} onChange={(e) => {
+                          setForm((p) => {
+                            const next = [...p.customization_options];
+                            next[oi] = { ...next[oi], name: e.target.value };
+                            return { ...p, customization_options: next };
+                          });
+                        }}
+                          placeholder="Field label, e.g. Engraving text"
+                          aria-label={`Customization field ${oi + 1} label`}
+                          className="admin-input customization-option-name" />
+                        <Tag color={opt.is_active ? "green" : "default"} bordered={false}>{opt.is_active ? "Enabled" : "Hidden"}</Tag>
+                        <Button
+                          danger
+                          type="text"
+                          aria-label={`Remove customization field ${oi + 1}`}
+                          icon={<Trash2 size={15} />}
+                          onClick={() => setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }))}
+                        />
+                      </div>
+
+                      <div className="customization-option-fields">
+                        <label>
+                          <span>Input type</span>
+                          <select value={opt.option_type} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], option_type: e.target.value as CustomizationOptionForm["option_type"] };
+                              return { ...p, customization_options: next };
+                            });
+                          }} className="admin-select">
+                            <option value="text">Short text</option>
+                            <option value="textarea">Long text</option>
+                            <option value="color_picker">Color picker</option>
+                            <option value="image_upload">Image upload</option>
+                            <option value="select">Choice list</option>
+                            <option value="checkbox">Checkboxes</option>
+                            <option value="file">File upload</option>
+                          </select>
+                        </label>
+                        <label className="customization-order-field">
+                          <span>Display order</span>
+                          <input type="number" min="0" value={opt.ordering ?? oi} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], ordering: Number(e.target.value) };
+                              return { ...p, customization_options: next };
+                            });
+                          }} className="admin-input" />
+                        </label>
+                        <label className="customization-price-field">
+                          <span>Price adjustment</span>
+                          <div className="customization-price-input"><span>{form.currency}</span><input type="number" step="any" value={opt.price_modifier ?? ""} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], price_modifier: e.target.value ? Number(e.target.value) : null };
+                              return { ...p, customization_options: next };
+                            });
+                          }} placeholder="0" /></div>
+                        </label>
+                      </div>
+
+                      <div className="customization-option-settings">
+                        <label className="customization-switch-label">
+                          <Switch size="small" checked={opt.is_required} onChange={(checked) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], is_required: checked };
+                              return { ...p, customization_options: next };
+                            });
+                          }} />
+                          <span><strong>Required</strong><small>Customer must complete this field</small></span>
+                        </label>
+                        <label className="customization-switch-label">
+                          <Switch size="small" checked={opt.is_active} onChange={(checked) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], is_active: checked };
+                              return { ...p, customization_options: next };
+                            });
+                          }} />
+                          <span><strong>Visible to customers</strong><small>Turn off to hide without deleting</small></span>
+                        </label>
+                      </div>
+
+                      {(opt.option_type === "select" || opt.option_type === "checkbox") && (
+                        <div className="customization-choices">
+                          <div className="customization-choices-heading"><strong>Customer choices</strong><span>{opt.choices.length} options</span></div>
+                          {opt.choices.map((choice, ci) => (
+                            <div key={ci} className="customization-choice-row">
+                              <span className="customization-choice-index">{ci + 1}</span>
+                              <input value={choice} onChange={(e) => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  const nextChoices = [...next[oi].choices];
+                                  nextChoices[ci] = e.target.value;
+                                  next[oi] = { ...next[oi], choices: nextChoices };
+                                  return { ...p, customization_options: next };
+                                });
+                              }} className="admin-input" placeholder={`Choice ${ci + 1}`} aria-label={`Choice ${ci + 1}`} />
+                              <Button danger type="text" aria-label={`Remove choice ${ci + 1}`} icon={<X size={14} />} onClick={() => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  next[oi] = { ...next[oi], choices: next[oi].choices.filter((_, j) => j !== ci) };
+                                  return { ...p, customization_options: next };
+                                });
+                              }} />
+                            </div>
+                          ))}
+                          <Button type="dashed" size="small" icon={<Plus size={13} />} onClick={() => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], choices: [...next[oi].choices, ""] };
+                              return { ...p, customization_options: next };
+                            });
+                          }}>Add choice</Button>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="customization-empty-state">
+                  <span className="customization-empty-icon"><FileText size={20} /></span>
+                  <strong>No personalization fields yet</strong>
+                  <span>Add a text field, upload, or choice list to collect customer preferences.</span>
+                </div>
+              )}
             </Card>
           )}
 
