@@ -2301,7 +2301,7 @@ code,
 }
 @media (min-width: 1121px) {
   .product-editor-form-grid.has-variants {
-    height: clamp(400px, calc(100dvh - 460px), 760px);
+    height: clamp(400px, calc(100dvh - 220px), 820px);
     min-height: 0;
     grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
