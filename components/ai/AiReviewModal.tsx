@@ -6,7 +6,7 @@ import { Check, ExternalLink, RefreshCw, X } from "lucide-react";
 import { humanizeLabel } from "@/lib/admin/utils";
 import type { AiReviewDecision, ProductAiSuggestion } from "@/lib/productAi";
 
-const LONG_FIELDS = new Set(["description", "short_description", "meta_description", "meta_keywords"]);
+const LONG_FIELDS = new Set(["description", "short_description", "meta_description", "meta_keywords", "image_alt_texts"]);
 const AUTOFILL_FIELDS = new Set([
   "name",
   "short_description",
@@ -15,6 +15,7 @@ const AUTOFILL_FIELDS = new Set([
   "meta_title",
   "meta_description",
   "meta_keywords",
+  "image_alt_texts",
 ]);
 const REVIEW_FIELD_ORDER = [
   "name",
@@ -24,6 +25,7 @@ const REVIEW_FIELD_ORDER = [
   "meta_title",
   "meta_description",
   "meta_keywords",
+  "image_alt_texts",
 ];
 const REVIEW_FIELD_RANK = new Map(REVIEW_FIELD_ORDER.map((field, index) => [field, index]));
 
@@ -49,6 +51,9 @@ function displayValue(value: unknown): string {
 }
 
 function suggestedText(suggestion: ProductAiSuggestion): string {
+  if (suggestion.field_name === "image_alt_texts" && Array.isArray(suggestion.value)) {
+    return suggestion.value.map(String).join("\n");
+  }
   if (suggestion.field_name === "tags") {
     const names = suggestion.metadata?.names;
     if (Array.isArray(names) && names.length > 0) {
@@ -253,7 +258,9 @@ export default function AiReviewModal({
           const current = currentValues[suggestion.field_name];
           const currentText = current === undefined || current === null || current === ""
             ? null
-            : displayValue(current);
+            : suggestion.field_name === "image_alt_texts" && Array.isArray(current)
+              ? current.map(String).join("\n")
+              : displayValue(current);
           const differs = currentText !== null && currentText !== suggestedText(suggestion);
           return (
             <Flex

@@ -37,6 +37,13 @@ interface GalleryImage {
   _storageKey?: string;
 }
 
+function orderImagesForAi(images: GalleryImage[], primaryImage: string): GalleryImage[] {
+  if (!primaryImage) return images;
+  return [...images].sort((left, right) => (
+    Number(right.url === primaryImage) - Number(left.url === primaryImage)
+  ));
+}
+
 interface ProductVideoForm {
   _id: string;
   url: string;
@@ -120,6 +127,7 @@ const AI_AUTOFILL_FIELDS = new Set([
   "meta_title",
   "meta_description",
   "meta_keywords",
+  "image_alt_texts",
 ]);
 
 type AiDraftGeneration = {
@@ -1124,6 +1132,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         case "meta_title": next.meta_title = String(value); break;
         case "meta_description": next.meta_description = String(value); break;
         case "meta_keywords": next.meta_keywords = String(value); break;
+        case "image_alt_texts": {
+          const altTexts = Array.isArray(value)
+            ? value.map(String).map((alt) => alt.trim())
+            : String(value).split(/\r?\n/).map((alt) => alt.trim());
+          const aiImageOrder = orderImagesForAi(next.gallery, next.primaryImage);
+          const altByImageId = new Map(
+            aiImageOrder
+              .slice(0, altTexts.length)
+              .map((image, index) => [image._id, altTexts[index]]),
+          );
+          next.gallery = next.gallery.map((image) => {
+            const alt = altByImageId.get(image._id);
+            return alt ? { ...image, alt } : image;
+          });
+          if (altTexts[0]) next.primaryImageAlt = altTexts[0];
+          break;
+        }
         case "tags": {
           const names = suggestion.metadata?.names;
           const tagValues = overrideValue !== undefined
@@ -1144,7 +1169,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   );
 
   const runAiAutofill = useCallback(async (): Promise<Omit<AiDraftGeneration, "createdAt">> => {
-    const imageKeys = form.gallery.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
+    const aiImages = orderImagesForAi(form.gallery, form.primaryImage);
+    const imageKeys = aiImages.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
     // A new draft can be autosaved before the button is pressed. Use its new
     // server ID so the backend can analyze promoted primary/gallery images.
     const productId = currentId ?? id;
@@ -1172,7 +1198,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         category_names: categoryNames,
         tag_names: form.tags,
         has_variants: form.product_type === "variable",
-        image_names: form.gallery.map((image) => image.url.split("/").pop() || "").filter(Boolean),
+        image_names: aiImages.map((image) => image.url.split("/").pop() || "").filter(Boolean),
       },
     });
     const result = await waitForProductAutofill(started.job_id);
@@ -1186,7 +1212,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       ),
       summary: result.summary,
     };
-  }, [id, currentId, form.gallery, form.currency, form.name, form.description, form.short_description, form.tags, form.categoryIds, form.primaryCategoryId, categories, form.product_type]);
+  }, [id, currentId, form.gallery, form.primaryImage, form.currency, form.name, form.description, form.short_description, form.tags, form.categoryIds, form.primaryCategoryId, categories, form.product_type]);
 
   const storeAiDraft = useCallback((result: Omit<AiDraftGeneration, "createdAt">) => {
     const draft: AiDraftGeneration = { ...result, createdAt: new Date().toISOString() };
@@ -1268,6 +1294,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     meta_title: form.meta_title,
     meta_description: form.meta_description,
     meta_keywords: form.meta_keywords,
+    image_alt_texts: orderImagesForAi(form.gallery, form.primaryImage).slice(0, 4).map((image, index) => (
+      index === 0 && form.primaryImageAlt ? form.primaryImageAlt : image.alt
+    )),
   }), [form]);
 
   const handleSave = async () => {
