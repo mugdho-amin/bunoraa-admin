@@ -2297,7 +2297,7 @@ code,
     grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
   }
-  .product-editor-form-grid.has-variants > .product-editor-primary-column,
+  .product-editor-form-grid.has-variants > .ant-flex:first-child,
   .product-editor-form-grid.has-variants > .ant-flex:last-child {
     height: 100%;
     min-height: 0;
@@ -2308,9 +2308,9 @@ code,
     scrollbar-color: var(--admin-scrollbar-thumb) transparent;
     scrollbar-width: thin;
   }
-  .product-editor-form-grid.has-variants > .product-editor-primary-column::-webkit-scrollbar,
+  .product-editor-form-grid.has-variants > .ant-flex:first-child::-webkit-scrollbar,
   .product-editor-form-grid.has-variants > .ant-flex:last-child::-webkit-scrollbar { width: 7px; }
-  .product-editor-form-grid.has-variants > .product-editor-primary-column::-webkit-scrollbar-thumb,
+  .product-editor-form-grid.has-variants > .ant-flex:first-child::-webkit-scrollbar-thumb,
   .product-editor-form-grid.has-variants > .ant-flex:last-child::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
     border-radius: 8px;
