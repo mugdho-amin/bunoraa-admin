@@ -336,7 +336,10 @@ export function AdminShell({ route, children }: AdminShellProps) {
       >
         {sidebarIsCollapsed ? (
           <div className="admin-account-menu-anchor is-above">
-            <Button type="text" aria-label={`Open account menu for ${userName}`} aria-haspopup="menu" aria-expanded={sidebarAccountMenuOpen} onClick={() => onSidebarAccountMenuChange(!sidebarAccountMenuOpen)} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
+            <Button type="text" aria-label={`Open account menu for ${userName}`} aria-haspopup="menu" aria-expanded={sidebarAccountMenuOpen} onClick={() => {
+              setSidebarCollapsed(false);
+              onSidebarAccountMenuChange(!sidebarAccountMenuOpen);
+            }} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
                 size={32}
                 shape="circle"

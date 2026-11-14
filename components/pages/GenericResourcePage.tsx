@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Alert, App, Button, Card, Descriptions, Empty, Flex, Grid, Input, List, Modal, Pagination,
-  Skeleton, Space, Table, Tag, Typography, Tooltip, Dropdown, Select, DatePicker,
+  Skeleton, Space, Table, Tag, Typography, Tooltip, Select, DatePicker,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useDelete, useList, useOne, useCreate, useUpdate } from "@refinedev/core";
@@ -11,7 +11,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { BaseKey, BaseRecord, CrudSort } from "@refinedev/core";
 import {
   Download, Filter, Plus, Search, Eye, Pencil, Trash2,
-  ArrowUpDown, FileSpreadsheet, RefreshCcw, SlidersHorizontal,
+  ArrowUpDown, RefreshCcw, SlidersHorizontal,
 } from "lucide-react";
 import { fetchOptionsForResource } from "@/lib/admin/bootstrap";
 import { pickWritableAction } from "@/lib/admin/write-schema";
@@ -214,21 +214,9 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
           </Tooltip>
         </Flex>
         <Space wrap className="admin-resource-toolbar-actions">
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: "csv",
-                  icon: <FileSpreadsheet size={14} />,
-                  label: "Export CSV",
-                  onClick: () => exportToCsv(result.data || [], resource.label),
-                },
-              ],
-            }}
-            trigger={["click"]}
-          >
-            <Button icon={<Download size={14} />}>Export</Button>
-          </Dropdown>
+          <Button icon={<Download size={14} />} onClick={() => exportToCsv(result.data || [], resource.label)}>
+            Export CSV
+          </Button>
           <Button icon={<RefreshCcw size={14} />} onClick={() => query.refetch()}>
             Refresh
           </Button>

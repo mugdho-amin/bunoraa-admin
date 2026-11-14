@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Badge, Button, Dropdown, Flex, List, Space, Tag, Typography, Spin,
+  Badge, Button, Flex, List, Space, Tag, Typography, Spin,
 } from "antd";
 import {
   Bell, CheckCheck, ExternalLink, Circle,
@@ -12,6 +12,7 @@ import { requestAdminEnvelope } from "@/lib/admin/http";
 import { logger } from "@/lib/admin/logger";
 import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 import { getAccessToken } from "@/lib/admin/auth-storage";
+import { ClickPopover } from "@/components/shared/ClickPopover";
 
 type NotificationItem = {
   id: string;
@@ -122,7 +123,6 @@ export function NotificationBell() {
   const unreadCount = useUnreadCount(wsUrl);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const fetchRecent = useCallback(async () => {
     setLoading(true);
@@ -136,7 +136,6 @@ export function NotificationBell() {
   }, []);
 
   const handleOpenChange = useCallback((visible: boolean) => {
-    setOpen(visible);
     if (visible) fetchRecent();
   }, [fetchRecent]);
 
@@ -196,7 +195,7 @@ export function NotificationBell() {
                 Mark all read
               </Button>
             )}
-            <Button type="text" size="small" icon={<ExternalLink size={14} />} onClick={(e) => { e.stopPropagation(); router.push("/notifications"); setOpen(false); }}>
+            <Button type="text" size="small" icon={<ExternalLink size={14} />} onClick={(e) => { e.stopPropagation(); router.push("/notifications"); }}>
               View all
             </Button>
           </Space>
@@ -262,25 +261,33 @@ export function NotificationBell() {
   ];
 
   return (
-    <Dropdown
-      menu={{ items }}
-      trigger={["click"]}
-      open={open}
+    <ClickPopover
+      placement="below-right"
+      panelClassName="admin-notif-dropdown"
+      closeOnContentClick
       onOpenChange={handleOpenChange}
-      placement="bottomRight"
-      getPopupContainer={() => document.body}
+      trigger={(isOpen, toggle) => (
+        <Button
+          type="text"
+          className="admin-header-btn"
+          onClick={toggle}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+          icon={
+            <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+              <Bell size={18} />
+            </Badge>
+          }
+          aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        />
+      )}
     >
-      <Button
-        type="text"
-        className="admin-header-btn"
-        icon={
-          <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-            <Bell size={18} />
-          </Badge>
-        }
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
-      />
-    </Dropdown>
+      <div className="admin-notification-panel" role="dialog" aria-label="Notifications">
+        {items[0].label}
+        <div className="admin-notification-divider" />
+        {items[2].label}
+      </div>
+    </ClickPopover>
   );
 }
 

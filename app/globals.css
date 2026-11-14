@@ -863,9 +863,6 @@ button, input, select, textarea { font: inherit; }
   /* Mobile: page title smaller */
   .admin-display { font-size: 18px !important; }
 
-  /* Mobile: notification dropdown fullscreen */
-  .admin-notif-dropdown { width: 100vw !important; max-width: 100vw !important; left: 0 !important; right: 0 !important; border-radius: 0 !important; }
-
   /* Mobile: command palette fullscreen */
   .command-palette-dialog { width: 100vw !important; max-height: 100vh !important; border-radius: 0 !important; margin: 0 !important; }
   .command-palette-overlay { padding-top: 0 !important; }
@@ -1406,11 +1403,41 @@ html, body { color: var(--admin-ink); }
 .admin-sidebar-glass .ant-menu-item:hover { color: var(--admin-ink) !important; }
 .admin-app-header { min-width: 0; }
 .admin-header-btn { border-radius: 11px; }
+.admin-click-popover { position: relative; display: inline-flex; flex: 0 0 auto; }
+.admin-click-popover-panel {
+  position: absolute;
+  z-index: 1700;
+  top: calc(100% + 8px);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  max-height: min(70dvh, 560px);
+  overflow: auto;
+  color: var(--admin-ink);
+  background: var(--admin-panel);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 48px hsl(220 35% 10% / .2);
+}
+.admin-click-popover-panel.is-below-right { right: 0; }
+.admin-click-popover-panel.is-below-left { left: 0; }
+.admin-click-popover-panel.is-above-left { top: auto; bottom: calc(100% + 8px); left: 0; }
+.admin-click-menu-item {
+  display: flex; width: 100%; min-height: 42px; align-items: center; gap: 10px;
+  padding: 0 12px; border: 0; border-radius: 8px; color: var(--admin-ink-secondary);
+  background: transparent; text-align: left; cursor: pointer; font: inherit; white-space: nowrap;
+}
+.admin-click-menu-item:hover, .admin-click-menu-item:focus-visible { color: var(--admin-ink); background: var(--admin-hover-bg); outline: none; }
+.admin-click-menu-divider { height: 1px; margin: 4px 8px; background: var(--admin-border); }
+.admin-notif-dropdown { width: min(420px, calc(100vw - 24px)); max-height: min(72dvh, 560px); padding: 0; }
+.admin-notification-panel { max-height: inherit; overflow: auto; }
+.admin-notification-divider { height: 1px; margin: 4px 0; background: var(--admin-border); }
+.admin-save-menu { padding: 6px; }
 .admin-account-menu-anchor { position: relative; display: inline-flex; flex: 0 0 auto; }
 .admin-account-menu-anchor.is-above { display: block; width: 100%; }
 .admin-account-menu-popover { position: absolute; z-index: 1700; width: min(284px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
 .admin-account-menu-popover.is-below { top: calc(100% + 8px); right: 0; }
-.admin-account-menu-popover.is-above { bottom: calc(100% + 8px); left: 0; }
+.admin-account-menu-popover.is-above { bottom: calc(100% + 8px); left: 0; width: 100%; }
+.admin-account-menu-popover.is-above .admin-account-menu { width: 100%; }
 .ant-dropdown,
 .ant-select-dropdown,
 .ant-picker-dropdown { z-index: 1600 !important; }

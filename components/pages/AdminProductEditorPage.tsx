@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Dropdown, Modal, Space, Select } from "antd";
-import type { MenuProps } from "antd";
+import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Modal, Space, Select } from "antd";
 import Image from "next/image";
 import { uploadImage } from "@/lib/upload";
 import { uploadVideo } from "@/lib/uploadVideo";
@@ -21,6 +20,7 @@ import { useAdminBootstrap } from "@/lib/admin/bootstrap-context";
 import { AdminApiError } from "@/lib/admin/http";
 import { startProductAutofill, waitForProductAutofill, reviewProductAutofill, type ProductAiSuggestion, type AiReviewDecision } from "@/lib/productAi";
 import AiReviewModal from "@/components/ai/AiReviewModal";
+import { ClickPopover } from "@/components/shared/ClickPopover";
 
 interface VariantForm {
   id?: string; sku: string; size: string; color: string; stock: number | null; price: number | null;
@@ -749,14 +749,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     });
   };
 
-  const saveMenuItems: MenuProps['items'] = [
-    { key: 'publish', label: 'Publish now', icon: <Check size={14} /> },
-    { key: 'draft', label: 'Save as Draft', icon: <FileText size={14} /> },
-    { type: 'divider' },
-    { key: 'schedule', label: 'Schedule for later...', icon: <Calendar size={14} /> },
-  ];
-
-  const handleSaveMenuClick: MenuProps['onClick'] = ({ key }) => {
+  const handleSaveMenuClick = (key: "publish" | "draft" | "schedule") => {
     if (key === 'schedule') {
       const next = new Date();
       next.setDate(next.getDate() + 1);
@@ -1422,9 +1415,21 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             }} loading={saving} style={{ paddingInline: 20 }}>
               {saveLabel}
             </Button>
-            <Dropdown menu={{ items: saveMenuItems, onClick: handleSaveMenuClick }} trigger={['click']}>
-              <Button type="primary" icon={<ChevronDown size={14} />} />
-            </Dropdown>
+            <ClickPopover
+              placement="below-right"
+              panelClassName="admin-save-menu"
+              closeOnContentClick
+              trigger={(open, toggle) => (
+                <Button type="primary" aria-label="Choose save action" aria-haspopup="menu" aria-expanded={open} onClick={toggle} icon={<ChevronDown size={14} />} />
+              )}
+            >
+              <div role="menu" aria-label="Save options">
+                <button type="button" role="menuitem" className="admin-click-menu-item" onClick={() => handleSaveMenuClick("publish")}><Check size={14} />Publish now</button>
+                <button type="button" role="menuitem" className="admin-click-menu-item" onClick={() => handleSaveMenuClick("draft")}><FileText size={14} />Save as Draft</button>
+                <div className="admin-click-menu-divider" />
+                <button type="button" role="menuitem" className="admin-click-menu-item" onClick={() => handleSaveMenuClick("schedule")}><Calendar size={14} />Schedule for later...</button>
+              </div>
+            </ClickPopover>
           </Space.Compact>
         </Flex>
       </Flex>
