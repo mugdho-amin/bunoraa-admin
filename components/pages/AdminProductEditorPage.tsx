@@ -1367,15 +1367,21 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }
 
   return (
-    <Flex vertical gap={20}>
-      <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
-        <Flex align="center" gap={12}>
+    <Flex vertical gap={20} className="admin-product-editor">
+      <Flex justify="space-between" align="center" wrap="wrap" gap={12} className="product-editor-header">
+        <Flex align="center" gap={12} className="product-editor-heading">
           <Button icon={<ArrowLeft size={16} />} onClick={() => router.push("/catalog/products")} />
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {id ? "Edit Product" : "Create Product"}
-          </Typography.Title>
+          <div className="product-editor-title-group">
+            <span className="product-editor-eyebrow">Catalog workspace</span>
+            <Typography.Title level={3} className="product-editor-title">
+              {id ? "Edit product" : "Create product"}
+            </Typography.Title>
+            <span className="product-editor-subtitle">
+              {id ? "Update product details, media, pricing, and availability." : "Build a complete product listing for your store."}
+            </span>
+          </div>
         </Flex>
-        <Flex align="center" gap={8}>
+        <Flex align="center" gap={8} className="product-editor-actions">
           <Button
             icon={<WandSparkles size={15} />}
             onClick={handleAiAutofill}
@@ -1447,7 +1453,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       </Flex>
 
       {/* Product Type Toggle */}
-      <Card className="admin-soft-panel" variant="borderless" style={{ padding: "12px 0" }}>
+      <Card className="admin-soft-panel product-editor-type-card" variant="borderless" style={{ padding: "12px 0" }}>
         <Flex align="center" gap={16} wrap="wrap">
           <div style={{ display: "flex", borderRadius: 12, border: "1px solid var(--admin-input-border)", overflow: "hidden" }}>
             <button onClick={() => { if (hasVariants) toggleVariants(); }}
