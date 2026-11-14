@@ -145,6 +145,9 @@ function useThemeAwareConfig() {
     ...adminTheme,
     token: {
       ...adminTheme.token,
+      // Keep menus and field popups above the app shell, sticky controls, and
+      // mobile navigation. Ant Design applies this value inline to popup roots.
+      zIndexPopupBase: 1600,
       colorBgLayout: isDark ? "#0b1120" : "#eef2f7",
       colorBgContainer: isDark ? "#161c30" : "#ffffff",
       colorBgElevated: isDark ? "#1c2440" : "#ffffff",
@@ -296,7 +299,7 @@ export function AdminProviders({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={configTheme}>
+      <ConfigProvider theme={configTheme} getPopupContainer={() => document.body}>
         <AntApp>
           <AdminBootstrapContext.Provider
             value={{

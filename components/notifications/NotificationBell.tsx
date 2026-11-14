@@ -262,7 +262,14 @@ export function NotificationBell() {
   ];
 
   return (
-    <Dropdown menu={{ items }} trigger={["click"]} open={open} onOpenChange={handleOpenChange} placement="bottomRight">
+    <Dropdown
+      menu={{ items }}
+      trigger={["click"]}
+      open={open}
+      onOpenChange={handleOpenChange}
+      placement="bottomRight"
+      getPopupContainer={() => document.body}
+    >
       <Button
         type="text"
         className="admin-header-btn"

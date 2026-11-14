@@ -1406,7 +1406,10 @@ html, body { color: var(--admin-ink); }
 .admin-sidebar-glass .ant-menu-item:hover { color: var(--admin-ink) !important; }
 .admin-app-header { min-width: 0; }
 .admin-header-btn { border-radius: 11px; }
-.ant-dropdown { z-index: 1400; max-width: calc(100vw - 20px); }
+.ant-dropdown,
+.ant-select-dropdown,
+.ant-picker-dropdown { z-index: 1600 !important; }
+.ant-dropdown { max-width: calc(100vw - 20px); pointer-events: auto; }
 .admin-account-menu {
   width: min(284px, calc(100vw - 24px));
   max-height: min(460px, calc(100dvh - 24px));
