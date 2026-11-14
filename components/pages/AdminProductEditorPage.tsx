@@ -326,6 +326,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [matrixSizes, setMatrixSizes] = useState("");
   const [matrixColors, setMatrixColors] = useState("");
   const [hasVariants, setHasVariants] = useState(false);
+  const [activeProductSection, setActiveProductSection] = useState("product-details");
   const [seoCollapsed, setSeoCollapsed] = useState(true);
   const [shippingCollapsed, setShippingCollapsed] = useState(true);
   const [scheduleCollapsed, setScheduleCollapsed] = useState(true);
@@ -1393,6 +1394,42 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const enabledCount = form.variants.filter((v) => v.enabled).length;
   const totalStock = form.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0);
   const outOfStockCount = form.variants.filter((v) => v.stock !== null && v.stock <= 0).length;
+  const listingChecks = [
+    Boolean(form.name.trim()),
+    Boolean(form.primaryImage),
+    Boolean(form.primaryCategoryId),
+    form.price !== null && form.price > 0,
+  ];
+  const listingReadiness = Math.round((listingChecks.filter(Boolean).length / listingChecks.length) * 100);
+  const productSections = useMemo(() => [
+    { id: "product-details", label: "Details", hint: "Name, descriptions, identifiers", icon: <FileText size={15} /> },
+    { id: "product-media", label: "Media", hint: "Images and video", icon: <Upload size={15} /> },
+    { id: "product-categories", label: "Organization", hint: "Categories, tags, ratio", icon: <Grid3X3 size={15} /> },
+    { id: "product-pricing", label: "Pricing & stock", hint: "Price, inventory, status", icon: <Package size={15} /> },
+    ...(hasVariants ? [{ id: "product-variants", label: "Variants", hint: `${form.variants.length} options`, icon: <Grid3X3 size={15} /> }] : []),
+    { id: "product-seo", label: "Search preview", hint: "Search metadata", icon: <Search size={15} /> },
+    ...(!hasVariants ? [{ id: "product-shipping", label: "Shipping", hint: "Weight and dimensions", icon: <Package size={15} /> }] : []),
+    { id: "product-scheduling", label: "Publishing", hint: "Visibility and schedule", icon: <Calendar size={15} /> },
+  ], [hasVariants, form.variants.length]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      const current = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (current) setActiveProductSection(current.target.id);
+    }, {
+      root: document.querySelector(".admin-page-scroll"),
+      rootMargin: "-18% 0px -68% 0px",
+      threshold: 0,
+    });
+    productSections.forEach(({ id: sectionId }) => {
+      const section = document.getElementById(sectionId);
+      if (section) observer.observe(section);
+    });
+    return () => observer.disconnect();
+  }, [productSections]);
 
   if (id && loadingProduct) {
     return <Flex justify="center" align="center" style={{ minHeight: 300 }}><Spin size="large" /></Flex>;
@@ -1516,10 +1553,60 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         </Flex>
       </Card>
 
-      <div style={{ display: "grid", gap: isMobile ? 16 : 24, gridTemplateColumns: hasVariants && !isMobile ? "1fr 2fr" : "1fr" }}>
+      <div className="product-editor-workbench">
+        <aside className="product-editor-sidebar" aria-label="Product editor navigation">
+          <section className="product-editor-overview">
+            <div className="product-editor-overview-heading">
+              {form.primaryImage ? (
+                <Image src={form.primaryImage} alt="" width={54} height={62} unoptimized className="product-editor-preview-image" />
+              ) : (
+                <div className="product-editor-preview-placeholder"><Package size={20} /></div>
+              )}
+              <div className="product-editor-preview-copy">
+                <span className="product-editor-overline">Store listing</span>
+                <strong>{form.name.trim() || "Untitled product"}</strong>
+                <span>{form.price ? `${form.currency} ${Number(form.price).toLocaleString()}` : "Price not set"}</span>
+              </div>
+            </div>
+            <div className="product-editor-overview-status">
+              <Tag color={form.is_active ? "green" : "default"} bordered={false}>{form.is_active ? "Active" : "Draft"}</Tag>
+              {hasVariants ? <span>{enabledCount} of {form.variants.length} variants enabled</span> : <span>{totalStock} in stock</span>}
+            </div>
+            <div className="product-editor-readiness">
+              <div className="product-editor-readiness-copy"><span>Listing readiness</span><strong>{listingReadiness}%</strong></div>
+              <div className="product-editor-progress-track" role="progressbar" aria-label="Listing readiness" aria-valuenow={listingReadiness} aria-valuemin={0} aria-valuemax={100}>
+                <span style={{ width: `${listingReadiness}%` }} />
+              </div>
+              <span className="product-editor-readiness-hint">Name, image, category, and price</span>
+            </div>
+          </section>
+
+          <nav className="product-editor-section-nav" aria-label="Product sections">
+            <span className="product-editor-nav-heading">Edit listing</span>
+            {productSections.map((section, index) => (
+              <button
+                key={section.id}
+                type="button"
+                className={`product-editor-nav-item${activeProductSection === section.id ? " is-active" : ""}`}
+                onClick={() => {
+                  setActiveProductSection(section.id);
+                  document.getElementById(section.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                aria-current={activeProductSection === section.id ? "location" : undefined}
+                aria-label={`${section.label}: ${section.hint}`}
+              >
+                <span className="product-editor-nav-icon">{section.icon}</span>
+                <span className="product-editor-nav-label"><strong>{section.label}</strong><small>{section.hint}</small></span>
+                <span className="product-editor-nav-index">{String(index + 1).padStart(2, "0")}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <div className={`product-editor-form-grid${hasVariants ? " has-variants" : ""}`}>
         {/* ── Left Column: Product Info ── */}
         <Flex vertical gap={isMobile ? 16 : 20} style={{ minWidth: 0 }}>
-          <Card className="admin-soft-panel" variant="borderless" title="Basic Information">
+          <Card id="product-details" className="admin-soft-panel" variant="borderless" title="Product details">
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <Flex vertical gap={4}>
                 <label className="admin-field-label">Name *</label>
@@ -1582,7 +1669,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
           {/* Images — Primary + Gallery side by side */}
           <Flex gap={16} wrap="wrap">
-            <Card className="admin-soft-panel" variant="borderless" title="Primary Image" style={{ flex: "1 1 300px", minWidth: 0 }}>
+            <Card id="product-media" className="admin-soft-panel" variant="borderless" title="Product media" style={{ flex: "1 1 300px", minWidth: 0 }}>
               <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8 }}>
                 <label style={{
                   display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 8,
@@ -2007,7 +2094,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           {hasVariants ? (
             <>
               {/* Categories */}
-              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ position: "relative", zIndex: 1 }}>
+              <Card id="product-categories" className="admin-soft-panel" variant="borderless" title="Organization" style={{ position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
                     <label className="admin-field-label">Primary Category *</label>
@@ -2081,7 +2168,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               </Card>
 
               {/* Base Price + Stock */}
-              <Card className="admin-soft-panel" variant="borderless" title="Listing Price (shown on collections)">
+              <Card id="product-pricing" className="admin-soft-panel" variant="borderless" title="Pricing and inventory">
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: hasVariants ? (isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr") : (isMobile ? "1fr 1fr" : "1fr 1fr 1fr") }}>
               <Flex vertical gap={4}>
                 <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Price *</label>
@@ -2198,7 +2285,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </>
           ) : (
             <Flex gap={16} wrap="wrap">
-              <Card className="admin-soft-panel" variant="borderless" title="Categories" style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1 }}>
+              <Card id="product-categories" className="admin-soft-panel" variant="borderless" title="Organization" style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1 }}>
                 <Flex vertical gap={16}>
                   <Flex vertical gap={6}>
                     <label className="admin-field-label">Primary Category *</label>
@@ -2270,7 +2357,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                   </Flex>
                 </Flex>
               </Card>
-              <Card className="admin-soft-panel" variant="borderless" title="Price" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <Card id="product-pricing" className="admin-soft-panel" variant="borderless" title="Pricing and inventory" style={{ flex: "1 1 300px", minWidth: 0 }}>
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr" }}>
               <Flex vertical gap={4}>
                 <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Price *</label>
@@ -2378,7 +2465,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
           {/* SEO + Shipping — side by side */}
           <Flex gap={16} wrap="wrap">
-            <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
+            <Card id="product-seo" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
               <div onClick={() => setSeoCollapsed((p) => !p)} className="admin-section-header">
                 <Typography.Text strong style={{ fontSize: 13 }}>Search Engine Optimization</Typography.Text>
                 {seoCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -2432,7 +2519,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               )}
             </Card>
             {!hasVariants && (
-              <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <Card id="product-shipping" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
                 <div onClick={() => setShippingCollapsed((p) => !p)} className="admin-section-header">
                   <Typography.Text strong style={{ fontSize: 13 }}>Shipping</Typography.Text>
                   {shippingCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -2471,7 +2558,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             )}
 
             {/* ── Scheduling (always visible) ── */}
-            <Card className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
+            <Card id="product-scheduling" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
               <div onClick={() => setScheduleCollapsed((p) => !p)} className="admin-section-header">
                 <Flex align="center" gap={8}>
                   <Calendar size={16} color="var(--admin-muted)" />
@@ -2520,7 +2607,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         {/* ── Right Column: Variants (only when toggle is ON) ── */}
         {hasVariants && (
           <Flex vertical gap={16} style={{ minWidth: 0 }}>
-            <Card className="admin-soft-panel" variant="borderless" style={{ padding: 0, overflow: "hidden" }}>
+            <Card id="product-variants" className="admin-soft-panel" variant="borderless" style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "16px 24px" }}>
                 <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
                   <Flex align="center" gap={8}>
@@ -2843,6 +2930,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Card>
           </Flex>
         )}
+      </div>
       </div>
 
       <Modal
