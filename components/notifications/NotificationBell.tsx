@@ -182,7 +182,7 @@ export function NotificationBell() {
     {
       key: "header",
       label: (
-        <Flex align="center" justify="space-between" style={{ minWidth: 320, padding: "12px 16px 4px" }}>
+        <Flex align="center" justify="space-between" style={{ minWidth: "min(320px, calc(100vw - 48px))", padding: "12px 16px 4px" }}>
           <Flex align="center" gap={8}>
             <Typography.Text strong style={{ fontSize: 15 }}>Notifications</Typography.Text>
             {unreadCount > 0 && (
@@ -206,7 +206,7 @@ export function NotificationBell() {
     {
       key: "list",
       label: (
-        <div style={{ maxWidth: "calc(100vw - 32px)", width: 400, maxHeight: "min(420px, calc(100vh - 160px))", overflow: "auto" }}>
+        <div style={{ maxWidth: "calc(100vw - 48px)", width: "min(400px, calc(100vw - 48px))", maxHeight: "min(420px, calc(100vh - 160px))", overflow: "auto" }}>
           {loading ? (
             <Flex justify="center" style={{ padding: 32 }}><Spin /></Flex>
           ) : notifications.length === 0 ? (

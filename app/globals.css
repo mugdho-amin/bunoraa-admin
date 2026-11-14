@@ -1859,6 +1859,15 @@ code,
   .admin-mobile-record-list { gap: 8px; }
 }
 @media (max-width: 767px) {
+  .admin-notif-dropdown {
+    position: fixed;
+    top: calc(60px + env(safe-area-inset-top));
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 60px - 100px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
   .admin-page-scroll {
     padding: 14px 12px calc(94px + env(safe-area-inset-bottom)) !important;
     overflow-x: hidden !important;
