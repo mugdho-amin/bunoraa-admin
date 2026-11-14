@@ -31,13 +31,22 @@ export type GenericResourcePageProps = {
 
 const ANALYTICS_LIST_FIELDS: Record<string, string[]> = {
   "analytics/dashboard": ["total_revenue", "total_orders", "total_visitors", "avg_order_value", "avg_conversion_rate", "period_days"],
-  "analytics/daily": ["date", "page_views", "unique_visitors", "orders_count", "orders_revenue"],
+  "analytics/daily": ["date", "page_views", "checkout_starts", "products_added_to_cart", "cart_events_total", "average_time_on_page", "checkout_completions", "cart_remove_events", "cart_update_events", "cart_abandonments", "sessions_count", "total_time_on_page", "unique_visitors", "product_views", "orders_count", "orders_revenue"],
   "analytics/product-stats": ["product_name", "date", "views", "add_to_cart_count", "orders_count", "revenue"],
   "analytics/category-stats": ["category_name", "date", "views", "product_views", "orders_count", "revenue"],
   "analytics/search-queries": ["query", "results_count", "clicked_product_name", "visitor", "created_at"],
   "analytics/cart-events": ["event_label", "product_name", "visitor", "quantity", "cart_value", "created_at"],
   "analytics/page-views": ["path", "visitor", "device_type", "country", "city", "time_on_page", "created_at"],
 };
+
+function formatAnalyticsValue(field: string, value: unknown) {
+  if ((field === "total_time_on_page" || field === "average_time_on_page") && typeof value === "number") {
+    const minutes = Math.floor(value / 60);
+    const seconds = value % 60;
+    return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  }
+  return formatValue(value);
+}
 
 function getRecordKey(record: BaseRecord): BaseKey | undefined {
   const key = record.id ?? record.date;
@@ -63,7 +72,7 @@ function buildColumns(
     dataIndex: key,
     key,
     ellipsis: true,
-    render: (value) => formatValue(value),
+    render: (value) => formatAnalyticsValue(key, value),
   }));
 
   columns.push({
@@ -304,7 +313,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
                         {fields.map((field) => (
                           <div key={field} className="admin-mobile-record-field">
                             <span>{humanizeLabel(field)}</span>
-                            <strong>{formatValue(record[field])}</strong>
+                            <strong>{formatAnalyticsValue(field, record[field])}</strong>
                           </div>
                         ))}
                       </div>
