@@ -1432,6 +1432,10 @@ html, body { color: var(--admin-ink); }
 .admin-notification-panel { max-height: inherit; overflow: auto; }
 .admin-notification-divider { height: 1px; margin: 4px 0; background: var(--admin-border); }
 .admin-save-menu { padding: 6px; }
+.admin-product-table .ant-table-cell { overflow: hidden; }
+.admin-product-table .ant-table-thead > tr > th { white-space: nowrap; }
+.admin-product-table .ant-table-tbody > tr > td { vertical-align: middle; }
+.admin-product-table .ant-table-cell:first-child { padding-inline: 12px; }
 .admin-account-menu-anchor { position: relative; display: inline-flex; flex: 0 0 auto; }
 .admin-account-menu-anchor.is-above { display: block; width: 100%; }
 .admin-account-menu-popover { position: absolute; z-index: 1700; width: min(284px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
@@ -1441,6 +1445,8 @@ html, body { color: var(--admin-ink); }
 .ant-dropdown,
 .ant-select-dropdown,
 .ant-picker-dropdown { z-index: 1600 !important; }
+.admin-page-scroll .ant-select,
+.admin-page-scroll .ant-picker { position: relative; }
 .ant-dropdown { max-width: calc(100vw - 20px); pointer-events: auto; }
 .admin-account-menu {
   width: min(284px, calc(100vw - 24px));

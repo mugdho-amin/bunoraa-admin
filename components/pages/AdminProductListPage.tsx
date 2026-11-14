@@ -259,9 +259,9 @@ export function AdminProductListPage() {
       dataIndex: "name",
       key: "product",
       sorter: true,
-      width: isMobile ? "50%" : "30%",
+      width: 340,
       render: (_, record) => (
-        <Flex align="center" gap={isMobile ? 8 : 12}>
+        <Flex align="center" gap={isMobile ? 8 : 12} style={{ width: "100%", minWidth: 0 }}>
           <Image
             src={record.primary_image ?? undefined}
             alt={record.name}
@@ -270,11 +270,11 @@ export function AdminProductListPage() {
             style={{ width: PRODUCT_THUMBNAIL_SIZE, height: PRODUCT_THUMBNAIL_SIZE, flex: `0 0 ${PRODUCT_THUMBNAIL_SIZE}px`, borderRadius: 8, objectFit: "cover" }}
             fallback={PRODUCT_THUMBNAIL_FALLBACK}
           />
-          <Flex vertical gap={1}>
-            <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }} ellipsis={{ tooltip: record.name }}>
+          <Flex vertical gap={1} style={{ flex: 1, minWidth: 0 }}>
+            <Typography.Text strong style={{ display: "block", minWidth: 0, maxWidth: "100%", fontSize: isMobile ? 12 : 14 }} ellipsis={{ tooltip: record.name }}>
               {record.name}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+            <Typography.Text type="secondary" style={{ display: "block", minWidth: 0, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11 }}>
               {record.sku || "—"} · {record.primary_category_name || "Uncategorized"}
             </Typography.Text>
           </Flex>
@@ -286,10 +286,10 @@ export function AdminProductListPage() {
       dataIndex: "price",
       key: "price",
       sorter: true,
-      width: isMobile ? "18%" : "12%",
+      width: 110,
       render: (_, record) => (
-        <Flex vertical gap={0}>
-          <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14 }}>
+        <Flex vertical gap={0} style={{ minWidth: 0 }}>
+          <Typography.Text strong style={{ fontSize: isMobile ? 12 : 14, whiteSpace: "nowrap" }}>
             {inlineInput(record, "price", record.price)}
           </Typography.Text>
           {record.is_on_sale && record.sale_price && (
@@ -304,7 +304,7 @@ export function AdminProductListPage() {
       title: "Sale",
       dataIndex: "sale_price",
       key: "sale_price",
-      width: isMobile ? "auto" : "10%",
+      width: 100,
       responsive: ["md" as const],
       render: (_, record) => inlineInput(record, "sale_price", record.sale_price ?? ""),
     },
@@ -312,7 +312,7 @@ export function AdminProductListPage() {
       title: "Compare At",
       dataIndex: "compare_at_price",
       key: "compare_at_price",
-      width: isMobile ? "auto" : "10%",
+      width: 120,
       responsive: ["md" as const],
       render: (_, record) => record.compare_at_price ? inlineInput(record, "compare_at_price", record.compare_at_price) : "—",
     },
@@ -321,7 +321,7 @@ export function AdminProductListPage() {
       dataIndex: "stock_quantity",
       key: "stock_quantity",
       sorter: true,
-      width: isMobile ? "auto" : "10%",
+      width: 95,
       render: (_, record) => (
         <Flex align="center" gap={4}>
           {inlineInput(record, "stock_quantity", record.stock_quantity ?? 0)}
@@ -336,7 +336,7 @@ export function AdminProductListPage() {
       dataIndex: "views_count",
       key: "views_count",
       sorter: true,
-      width: "8%",
+      width: 80,
       responsive: ["lg" as const],
       render: (_, record) => record.views_count ?? 0,
     },
@@ -345,7 +345,7 @@ export function AdminProductListPage() {
       dataIndex: "sales_count",
       key: "sales_count",
       sorter: true,
-      width: "8%",
+      width: 80,
       responsive: ["lg" as const],
       render: (_, record) => record.sales_count ?? 0,
     },
@@ -354,7 +354,7 @@ export function AdminProductListPage() {
       dataIndex: "cart_count",
       key: "cart_count",
       sorter: true,
-      width: "8%",
+      width: 75,
       responsive: ["lg" as const],
       render: (_, record) => record.cart_count ?? 0,
     },
@@ -363,7 +363,7 @@ export function AdminProductListPage() {
       dataIndex: "publish_from",
       key: "publish_from",
       sorter: true,
-      width: "14%",
+      width: 125,
       responsive: ["md" as const],
       render: (_, record) => {
         if (record.publish_from) {
@@ -381,7 +381,7 @@ export function AdminProductListPage() {
       title: "Active",
       dataIndex: "is_active",
       key: "is_active",
-      width: "8%",
+      width: 75,
       responsive: ["md" as const],
       render: (_, record) => (
         <Switch
@@ -397,7 +397,7 @@ export function AdminProductListPage() {
     {
       title: "Status",
       key: "status",
-      width: "18%",
+      width: 150,
       responsive: ["md" as const],
       render: (_, record) => {
         const badges: React.ReactNode[] = [];
@@ -411,7 +411,7 @@ export function AdminProductListPage() {
     {
       title: "Actions",
       key: "actions",
-      width: isMobile ? "auto" : "15%",
+      width: 105,
       render: (_, record) => (
         <Space size={isMobile ? 0 : "small"}>
           <Button
@@ -583,10 +583,12 @@ export function AdminProductListPage() {
             </div>
           ) : (
             <Table<ProductRecord>
+              className="admin-product-table"
               dataSource={products}
               columns={columns}
               rowKey="id"
-              scroll={{ x: "max-content" }}
+              tableLayout="fixed"
+              scroll={{ x: 1455 }}
               pagination={{
                 current: page,
                 pageSize,

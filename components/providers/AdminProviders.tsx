@@ -299,7 +299,10 @@ export function AdminProviders({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={configTheme} getPopupContainer={() => document.body}>
+      <ConfigProvider
+        theme={configTheme}
+        getPopupContainer={(triggerNode) => triggerNode?.parentElement ?? document.body}
+      >
         <AntApp>
           <AdminBootstrapContext.Provider
             value={{
