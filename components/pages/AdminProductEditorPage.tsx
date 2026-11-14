@@ -1441,12 +1441,12 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         <Flex align="center" gap={12} className="product-editor-heading">
           <Button icon={<ArrowLeft size={16} />} onClick={() => router.push("/catalog/products")} />
           <div className="product-editor-title-group">
-            <span className="product-editor-eyebrow">Catalog workspace</span>
+            <span className="product-editor-eyebrow">Catalog / Products</span>
             <Typography.Title level={3} className="product-editor-title">
-              {id ? "Edit product" : "Create product"}
+              {form.name.trim() || (id ? "Untitled product" : "New product")}
             </Typography.Title>
             <span className="product-editor-subtitle">
-              {id ? "Update product details, media, pricing, and availability." : "Build a complete product listing for your store."}
+              {id ? "Product listing · Edit details, media, pricing, and availability" : "New listing · Add the details customers need to choose and buy"}
             </span>
           </div>
         </Flex>
@@ -1532,26 +1532,44 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         </Flex>
       </Flex>
 
-      {/* Product Type Toggle */}
-      <Card className="admin-soft-panel product-editor-type-card" variant="borderless" style={{ padding: "12px 0" }}>
-        <Flex align="center" gap={16} wrap="wrap">
-          <div style={{ display: "flex", borderRadius: 12, border: "1px solid var(--admin-input-border)", overflow: "hidden" }}>
-            <button onClick={() => { if (hasVariants) toggleVariants(); }}
-              className={`admin-type-pill${!hasVariants ? " active" : ""}`}>
-              Simple Product
-            </button>
-            <button onClick={() => { if (!hasVariants) toggleVariants(); }}
-              className={`admin-type-pill${hasVariants ? " active" : ""}`}>
-              Has Variants
-            </button>
+      <section className="product-type-picker" aria-labelledby="product-type-title">
+        <div className="product-type-picker-heading">
+          <div>
+            <span className="product-editor-eyebrow">Start with the right setup</span>
+            <h2 id="product-type-title">What are you selling?</h2>
+            <p>Choose how shoppers will select this product. You can edit the details below at any time.</p>
           </div>
-          <Typography.Text type="secondary" style={{ fontSize: 12, maxWidth: 300 }}>
-            {hasVariants
-              ? "Each option combination (size/color) is a variant with its own price, SKU, and stock."
-              : "A single item with one price, SKU, and stock."}
-          </Typography.Text>
-        </Flex>
-      </Card>
+          <span className="product-type-selection-note">{hasVariants ? "Variant listing" : "Single listing"}</span>
+        </div>
+        <div className="product-type-options" role="group" aria-label="Product type">
+          <button
+            type="button"
+            className={`product-type-option${!hasVariants ? " is-selected" : ""}`}
+            aria-pressed={!hasVariants}
+            onClick={() => { if (hasVariants) toggleVariants(); }}
+          >
+            <span className="product-type-option-icon"><Package size={19} /></span>
+            <span className="product-type-option-copy">
+              <strong>Simple product</strong>
+              <small>One item with a single price, SKU, and stock level.</small>
+            </span>
+            <span className="product-type-option-check"><Check size={14} /></span>
+          </button>
+          <button
+            type="button"
+            className={`product-type-option${hasVariants ? " is-selected" : ""}`}
+            aria-pressed={hasVariants}
+            onClick={() => { if (!hasVariants) toggleVariants(); }}
+          >
+            <span className="product-type-option-icon"><Grid3X3 size={19} /></span>
+            <span className="product-type-option-copy">
+              <strong>Product with variants</strong>
+              <small>Offer sizes or colors with their own prices and inventory.</small>
+            </span>
+            <span className="product-type-option-check"><Check size={14} /></span>
+          </button>
+        </div>
+      </section>
 
       <div className="product-editor-workbench">
         <aside className="product-editor-sidebar" aria-label="Product editor navigation">
@@ -1565,7 +1583,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               <div className="product-editor-preview-copy">
                 <span className="product-editor-overline">Store listing</span>
                 <strong>{form.name.trim() || "Untitled product"}</strong>
-                <span>{form.price ? `${form.currency} ${Number(form.price).toLocaleString()}` : "Price not set"}</span>
+                <span>{form.price !== null ? `${form.currency} ${Number(form.price).toLocaleString()}` : "Price not set"}</span>
               </div>
             </div>
             <div className="product-editor-overview-status">
