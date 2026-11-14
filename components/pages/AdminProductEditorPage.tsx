@@ -1608,15 +1608,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         </Flex>
       </Flex>
 
-      <section className="product-type-picker" aria-labelledby="product-type-title">
-        <div className="product-type-picker-heading">
-          <div>
-            <span className="product-editor-eyebrow">Start with the right setup</span>
-            <h2 id="product-type-title">What are you selling?</h2>
-            <p>Choose how shoppers will select this product. You can edit the details below at any time.</p>
-          </div>
-          <span className="product-type-selection-note">{hasVariants ? "Variant listing" : "Single listing"}</span>
-        </div>
+      <section className="product-type-picker" aria-label="Product type">
         <div className="product-type-options" role="group" aria-label="Product type">
           <button
             type="button"

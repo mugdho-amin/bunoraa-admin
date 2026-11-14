@@ -2021,8 +2021,7 @@ code,
 }
 .product-type-picker {
   display: grid;
-  gap: 19px;
-  padding: 22px 24px 24px;
+  padding: 16px 18px;
   border: 1px solid var(--admin-border);
   border-radius: 20px;
   background:
@@ -2030,11 +2029,6 @@ code,
     var(--admin-panel);
   box-shadow: var(--admin-shadow-sm);
 }
-.product-type-picker-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.product-type-picker-heading > div { display: grid; gap: 5px; }
-.product-type-picker-heading h2 { margin: 0; color: var(--admin-ink); font-size: 19px; font-weight: 720; letter-spacing: -.03em; line-height: 1.2; }
-.product-type-picker-heading p { margin: 0; color: var(--admin-muted); font-size: 12px; line-height: 1.5; }
-.product-type-selection-note { flex: 0 0 auto; padding: 7px 10px; border: 1px solid var(--admin-border); border-radius: 999px; color: var(--admin-muted); background: var(--admin-bg); font-size: 10px; font-weight: 650; }
 .product-type-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .product-type-option {
   display: flex;
@@ -2252,11 +2246,7 @@ code,
   .product-editor-type-card .ant-flex { align-items: stretch; flex-direction: column; gap: 9px; }
   .product-editor-type-card .ant-flex > div:first-child { display: grid !important; grid-template-columns: 1fr 1fr; }
   .admin-product-editor .admin-type-pill { min-height: 40px; padding-inline: 8px; font-size: 9px; }
-  .product-type-picker { gap: 13px; padding: 16px 14px; border-radius: 16px; }
-  .product-type-picker-heading { align-items: flex-start; }
-  .product-type-picker-heading h2 { font-size: 17px; }
-  .product-type-picker-heading p { max-width: 38ch; font-size: 11px; }
-  .product-type-selection-note { display: none; }
+  .product-type-picker { padding: 10px; border-radius: 16px; }
   .product-type-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .product-type-option { position: relative; min-height: 124px; align-items: flex-start; flex-direction: column; gap: 8px; padding: 10px; border-radius: 13px; }
   .product-type-option-icon { width: 32px; height: 32px; border-radius: 10px; }
