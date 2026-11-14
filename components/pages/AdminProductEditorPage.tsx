@@ -2013,160 +2013,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           </Card>
           )}
 
-          {/* Customization Options */}
-          {form.can_be_customized && (
-            <Card id="product-customization" className="admin-soft-panel admin-customization-panel" variant="borderless"
-              title={<div className="customization-panel-title"><span className="customization-panel-title-icon"><FileText size={16} /></span><span><strong>Personalization</strong><small>Let customers add details to make this item their own.</small></span></div>}
-              extra={<Tag bordered={false}>{form.customization_options.length} {form.customization_options.length === 1 ? "field" : "fields"}</Tag>}
-              style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <div className="customization-panel-intro">
-                <p>Build the questions customers see on the product page. Keep each label short and explain what they should enter.</p>
-                <Button type="primary" size="small" icon={<Plus size={14} />} onClick={() => {
-                  setForm((p) => ({
-                    ...p,
-                    customization_options: [...p.customization_options, {
-                      _id: customizationId(), name: "", option_type: "text" as const,
-                      is_required: false, price_modifier: null, choices: [], ordering: p.customization_options.length, is_active: true,
-                    }],
-                  }));
-                }}>Add field</Button>
-              </div>
-              {form.customization_options.length > 0 ? (
-                <div className="customization-option-list">
-                  {form.customization_options.map((opt, oi) => (
-                    <article key={opt._id} className={`admin-customization-card${opt.is_active ? "" : " is-disabled"}`}>
-                      <div className="customization-option-header">
-                        <span className="customization-option-index">{String(oi + 1).padStart(2, "0")}</span>
-                        <input value={opt.name} onChange={(e) => {
-                          setForm((p) => {
-                            const next = [...p.customization_options];
-                            next[oi] = { ...next[oi], name: e.target.value };
-                            return { ...p, customization_options: next };
-                          });
-                        }}
-                          placeholder="Field label, e.g. Engraving text"
-                          aria-label={`Customization field ${oi + 1} label`}
-                          className="admin-input customization-option-name" />
-                        <Tag color={opt.is_active ? "green" : "default"} bordered={false}>{opt.is_active ? "Enabled" : "Hidden"}</Tag>
-                        <Button
-                          danger
-                          type="text"
-                          aria-label={`Remove customization field ${oi + 1}`}
-                          icon={<Trash2 size={15} />}
-                          onClick={() => setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }))}
-                        />
-                      </div>
-
-                      <div className="customization-option-fields">
-                        <label>
-                          <span>Input type</span>
-                          <select value={opt.option_type} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], option_type: e.target.value as CustomizationOptionForm["option_type"] };
-                              return { ...p, customization_options: next };
-                            });
-                          }} className="admin-select">
-                            <option value="text">Short text</option>
-                            <option value="textarea">Long text</option>
-                            <option value="color_picker">Color picker</option>
-                            <option value="image_upload">Image upload</option>
-                            <option value="select">Choice list</option>
-                            <option value="checkbox">Checkboxes</option>
-                            <option value="file">File upload</option>
-                          </select>
-                        </label>
-                        <label className="customization-order-field">
-                          <span>Display order</span>
-                          <input type="number" min="0" value={opt.ordering ?? oi} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], ordering: Number(e.target.value) };
-                              return { ...p, customization_options: next };
-                            });
-                          }} className="admin-input" />
-                        </label>
-                        <label className="customization-price-field">
-                          <span>Price adjustment</span>
-                          <div className="customization-price-input"><span>{form.currency}</span><input type="number" step="any" value={opt.price_modifier ?? ""} onChange={(e) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], price_modifier: e.target.value ? Number(e.target.value) : null };
-                              return { ...p, customization_options: next };
-                            });
-                          }} placeholder="0" /></div>
-                        </label>
-                      </div>
-
-                      <div className="customization-option-settings">
-                        <label className="customization-switch-label">
-                          <Switch size="small" checked={opt.is_required} onChange={(checked) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], is_required: checked };
-                              return { ...p, customization_options: next };
-                            });
-                          }} />
-                          <span><strong>Required</strong><small>Customer must complete this field</small></span>
-                        </label>
-                        <label className="customization-switch-label">
-                          <Switch size="small" checked={opt.is_active} onChange={(checked) => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], is_active: checked };
-                              return { ...p, customization_options: next };
-                            });
-                          }} />
-                          <span><strong>Visible to customers</strong><small>Turn off to hide without deleting</small></span>
-                        </label>
-                      </div>
-
-                      {(opt.option_type === "select" || opt.option_type === "checkbox") && (
-                        <div className="customization-choices">
-                          <div className="customization-choices-heading"><strong>Customer choices</strong><span>{opt.choices.length} options</span></div>
-                          {opt.choices.map((choice, ci) => (
-                            <div key={ci} className="customization-choice-row">
-                              <span className="customization-choice-index">{ci + 1}</span>
-                              <input value={choice} onChange={(e) => {
-                                setForm((p) => {
-                                  const next = [...p.customization_options];
-                                  const nextChoices = [...next[oi].choices];
-                                  nextChoices[ci] = e.target.value;
-                                  next[oi] = { ...next[oi], choices: nextChoices };
-                                  return { ...p, customization_options: next };
-                                });
-                              }} className="admin-input" placeholder={`Choice ${ci + 1}`} aria-label={`Choice ${ci + 1}`} />
-                              <Button danger type="text" aria-label={`Remove choice ${ci + 1}`} icon={<X size={14} />} onClick={() => {
-                                setForm((p) => {
-                                  const next = [...p.customization_options];
-                                  next[oi] = { ...next[oi], choices: next[oi].choices.filter((_, j) => j !== ci) };
-                                  return { ...p, customization_options: next };
-                                });
-                              }} />
-                            </div>
-                          ))}
-                          <Button type="dashed" size="small" icon={<Plus size={13} />} onClick={() => {
-                            setForm((p) => {
-                              const next = [...p.customization_options];
-                              next[oi] = { ...next[oi], choices: [...next[oi].choices, ""] };
-                              return { ...p, customization_options: next };
-                            });
-                          }}>Add choice</Button>
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="customization-empty-state">
-                  <span className="customization-empty-icon"><FileText size={20} /></span>
-                  <strong>No personalization fields yet</strong>
-                  <span>Add a text field, upload, or choice list to collect customer preferences.</span>
-                </div>
-              )}
-            </Card>
-          )}
-
           {hasVariants ? (
             <>
               {/* Categories */}
@@ -2537,6 +2383,160 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             </Flex>
               </Card>
             </Flex>
+          )}
+
+          {/* Customization Options */}
+          {form.can_be_customized && (
+            <Card id="product-customization" className="admin-soft-panel admin-customization-panel" variant="borderless"
+              title={<div className="customization-panel-title"><span className="customization-panel-title-icon"><FileText size={16} /></span><span><strong>Personalization</strong><small>Let customers add details to make this item their own.</small></span></div>}
+              extra={<Tag bordered={false}>{form.customization_options.length} {form.customization_options.length === 1 ? "field" : "fields"}</Tag>}
+              style={{ flex: "1 1 300px", minWidth: 0 }}>
+              <div className="customization-panel-intro">
+                <p>Build the questions customers see on the product page. Keep each label short and explain what they should enter.</p>
+                <Button type="primary" size="small" icon={<Plus size={14} />} onClick={() => {
+                  setForm((p) => ({
+                    ...p,
+                    customization_options: [...p.customization_options, {
+                      _id: customizationId(), name: "", option_type: "text" as const,
+                      is_required: false, price_modifier: null, choices: [], ordering: p.customization_options.length, is_active: true,
+                    }],
+                  }));
+                }}>Add field</Button>
+              </div>
+              {form.customization_options.length > 0 ? (
+                <div className="customization-option-list">
+                  {form.customization_options.map((opt, oi) => (
+                    <article key={opt._id} className={`admin-customization-card${opt.is_active ? "" : " is-disabled"}`}>
+                      <div className="customization-option-header">
+                        <span className="customization-option-index">{String(oi + 1).padStart(2, "0")}</span>
+                        <input value={opt.name} onChange={(e) => {
+                          setForm((p) => {
+                            const next = [...p.customization_options];
+                            next[oi] = { ...next[oi], name: e.target.value };
+                            return { ...p, customization_options: next };
+                          });
+                        }}
+                          placeholder="Field label, e.g. Engraving text"
+                          aria-label={`Customization field ${oi + 1} label`}
+                          className="admin-input customization-option-name" />
+                        <Tag color={opt.is_active ? "green" : "default"} bordered={false}>{opt.is_active ? "Enabled" : "Hidden"}</Tag>
+                        <Button
+                          danger
+                          type="text"
+                          aria-label={`Remove customization field ${oi + 1}`}
+                          icon={<Trash2 size={15} />}
+                          onClick={() => setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }))}
+                        />
+                      </div>
+
+                      <div className="customization-option-fields">
+                        <label>
+                          <span>Input type</span>
+                          <select value={opt.option_type} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], option_type: e.target.value as CustomizationOptionForm["option_type"] };
+                              return { ...p, customization_options: next };
+                            });
+                          }} className="admin-select">
+                            <option value="text">Short text</option>
+                            <option value="textarea">Long text</option>
+                            <option value="color_picker">Color picker</option>
+                            <option value="image_upload">Image upload</option>
+                            <option value="select">Choice list</option>
+                            <option value="checkbox">Checkboxes</option>
+                            <option value="file">File upload</option>
+                          </select>
+                        </label>
+                        <label className="customization-order-field">
+                          <span>Display order</span>
+                          <input type="number" min="0" value={opt.ordering ?? oi} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], ordering: Number(e.target.value) };
+                              return { ...p, customization_options: next };
+                            });
+                          }} className="admin-input" />
+                        </label>
+                        <label className="customization-price-field">
+                          <span>Price adjustment</span>
+                          <div className="customization-price-input"><span>{form.currency}</span><input type="number" step="any" value={opt.price_modifier ?? ""} onChange={(e) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], price_modifier: e.target.value ? Number(e.target.value) : null };
+                              return { ...p, customization_options: next };
+                            });
+                          }} placeholder="0" /></div>
+                        </label>
+                      </div>
+
+                      <div className="customization-option-settings">
+                        <label className="customization-switch-label">
+                          <Switch size="small" checked={opt.is_required} onChange={(checked) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], is_required: checked };
+                              return { ...p, customization_options: next };
+                            });
+                          }} />
+                          <span><strong>Required</strong><small>Customer must complete this field</small></span>
+                        </label>
+                        <label className="customization-switch-label">
+                          <Switch size="small" checked={opt.is_active} onChange={(checked) => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], is_active: checked };
+                              return { ...p, customization_options: next };
+                            });
+                          }} />
+                          <span><strong>Visible to customers</strong><small>Turn off to hide without deleting</small></span>
+                        </label>
+                      </div>
+
+                      {(opt.option_type === "select" || opt.option_type === "checkbox") && (
+                        <div className="customization-choices">
+                          <div className="customization-choices-heading"><strong>Customer choices</strong><span>{opt.choices.length} options</span></div>
+                          {opt.choices.map((choice, ci) => (
+                            <div key={ci} className="customization-choice-row">
+                              <span className="customization-choice-index">{ci + 1}</span>
+                              <input value={choice} onChange={(e) => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  const nextChoices = [...next[oi].choices];
+                                  nextChoices[ci] = e.target.value;
+                                  next[oi] = { ...next[oi], choices: nextChoices };
+                                  return { ...p, customization_options: next };
+                                });
+                              }} className="admin-input" placeholder={`Choice ${ci + 1}`} aria-label={`Choice ${ci + 1}`} />
+                              <Button danger type="text" aria-label={`Remove choice ${ci + 1}`} icon={<X size={14} />} onClick={() => {
+                                setForm((p) => {
+                                  const next = [...p.customization_options];
+                                  next[oi] = { ...next[oi], choices: next[oi].choices.filter((_, j) => j !== ci) };
+                                  return { ...p, customization_options: next };
+                                });
+                              }} />
+                            </div>
+                          ))}
+                          <Button type="dashed" size="small" icon={<Plus size={13} />} onClick={() => {
+                            setForm((p) => {
+                              const next = [...p.customization_options];
+                              next[oi] = { ...next[oi], choices: [...next[oi].choices, ""] };
+                              return { ...p, customization_options: next };
+                            });
+                          }}>Add choice</Button>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="customization-empty-state">
+                  <span className="customization-empty-icon"><FileText size={20} /></span>
+                  <strong>No personalization fields yet</strong>
+                  <span>Add a text field, upload, or choice list to collect customer preferences.</span>
+                </div>
+              )}
+            </Card>
           )}
 
           {/* SEO + Shipping — side by side */}
