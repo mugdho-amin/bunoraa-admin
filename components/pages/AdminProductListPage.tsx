@@ -561,7 +561,7 @@ export function AdminProductListPage() {
             )}
           </Flex>
 
-          {products.length > 0 && (
+          {products.length > 0 && selectedIds.length > 0 && (
             <Flex align="center" justify="space-between" wrap="wrap" gap={10} className="admin-product-selection-toolbar">
               <Flex align="center" gap={10} wrap="wrap">
                 <Checkbox
@@ -576,17 +576,15 @@ export function AdminProductListPage() {
                 >
                   Select this page
                 </Checkbox>
-                {selectedIds.length > 0 && <Typography.Text type="secondary">{selectedIds.length} selected</Typography.Text>}
+                <Typography.Text type="secondary">{selectedIds.length} selected</Typography.Text>
               </Flex>
-              {selectedIds.length > 0 && (
-                <Space wrap size={6}>
-                  <Button size="small" onClick={() => void bulkUpdate({ is_active: true })}>Publish</Button>
-                  <Button size="small" onClick={() => void bulkUpdate({ is_active: false })}>Unpublish</Button>
-                  <Button size="small" icon={<Download size={13} />} onClick={exportSelected}>Export selected</Button>
-                  <Button size="small" danger icon={<Trash2 size={13} />} onClick={bulkDelete}>Delete selected</Button>
-                  <Button size="small" type="text" onClick={() => setSelectedIds([])}>Clear</Button>
-                </Space>
-              )}
+              <Space wrap size={6}>
+                <Button size="small" onClick={() => void bulkUpdate({ is_active: true })}>Publish</Button>
+                <Button size="small" onClick={() => void bulkUpdate({ is_active: false })}>Unpublish</Button>
+                <Button size="small" icon={<Download size={13} />} onClick={exportSelected}>Export selected</Button>
+                <Button size="small" danger icon={<Trash2 size={13} />} onClick={bulkDelete}>Delete selected</Button>
+                <Button size="small" type="text" onClick={() => setSelectedIds([])}>Clear</Button>
+              </Space>
             </Flex>
           )}
 
