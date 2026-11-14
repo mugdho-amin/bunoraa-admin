@@ -351,7 +351,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   );
 
   const { bootstrap } = useAdminBootstrap();
-  const aspectChoices = useMemo(() => bootstrap?.aspect_ratio_choices ?? [], [bootstrap]);
+  const aspectChoices = useMemo(() => {
+    const configured = bootstrap?.aspect_ratio_choices ?? [];
+    const choices = new Map(configured.map((choice) => [choice.code, choice.label]));
+    categories.forEach((category) => {
+      if (category.aspect_ratio && !choices.has(category.aspect_ratio)) {
+        choices.set(category.aspect_ratio, category.aspect_ratio);
+      }
+    });
+    return Array.from(choices, ([code, label]) => ({ code, label }));
+  }, [bootstrap, categories]);
+  const aspectRatioManuallySet = useRef(false);
   const categoryAspectRatio = useMemo(() => {
     if (!form.primaryCategoryId) return "";
     const cat = categories.find((c) => c.id === form.primaryCategoryId);
@@ -526,7 +536,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const initForm = useCallback(() => {
     if (formInitialized.current) return;
-    if (id && product) {
+    if (id && product && categoriesResult?.data) {
       formInitialized.current = true;
       slugManuallyEdited.current = false;
       const rawGallery = product.images ?? [];
@@ -545,6 +555,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           ?? "",
       );
       const categoryAspectDefault = categories.find((c) => c.id === primaryCategoryId)?.aspect_ratio ?? "";
+      aspectRatioManuallySet.current = Boolean(
+        product.aspect_ratio && product.aspect_ratio !== categoryAspectDefault,
+      );
       const variantUuidToIndex: Record<string, string> = {};
       variants.forEach((_, i) => {
         const v = (product.variants ?? [])[i];
@@ -629,7 +642,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     } else if (!id) {
       formInitialized.current = true;
     }
-  }, [id, product, categories]);
+  }, [id, product, categories, categoriesResult?.data]);
 
   const resetSnapshotRef = useRef(autoSave.resetSnapshot);
 
@@ -790,7 +803,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     const primaryId = ids[0] ?? "";
     setForm((p) => {
       const nextCategories = new Set(p.categoryIds);
-      let newAspect = p.aspect_ratio;
+      let newAspect = aspectRatioManuallySet.current ? p.aspect_ratio : "";
       if (primaryId) {
         nextCategories.add(primaryId);
         const catMap = new Map(categories.map((c) => [c.id, c]));
@@ -799,10 +812,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           nextCategories.add(current.parent_id);
           current = catMap.get(current.parent_id);
         }
-        if (!p.aspect_ratio) {
-          const cat = catMap.get(primaryId);
-          if (cat?.aspect_ratio) newAspect = cat.aspect_ratio;
-        }
+        const cat = catMap.get(primaryId);
+        if (!aspectRatioManuallySet.current && cat?.aspect_ratio) newAspect = cat.aspect_ratio;
       }
       return {
         ...p,
@@ -1997,10 +2008,15 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </label>
                     <Select
                       value={form.aspect_ratio || undefined}
-                      onChange={(v) => updateField("aspect_ratio", v ?? "")}
+                      onChange={(v) => {
+                        aspectRatioManuallySet.current = Boolean(v && v !== categoryAspectRatio);
+                        updateField("aspect_ratio", v ?? categoryAspectRatio);
+                      }}
                       placeholder="Select aspect ratio"
                       allowClear
                       style={{ width: "100%" }}
+                      getPopupContainer={() => document.body}
+                      placement="bottomLeft"
                       options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
                     />
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>
@@ -2179,10 +2195,15 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     </label>
                     <Select
                       value={form.aspect_ratio || undefined}
-                      onChange={(v) => updateField("aspect_ratio", v ?? "")}
+                      onChange={(v) => {
+                        aspectRatioManuallySet.current = Boolean(v && v !== categoryAspectRatio);
+                        updateField("aspect_ratio", v ?? categoryAspectRatio);
+                      }}
                       placeholder="Select aspect ratio"
                       allowClear
                       style={{ width: "100%" }}
+                      getPopupContainer={() => document.body}
+                      placement="bottomLeft"
                       options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
                     />
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>
