@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requestAdminData } from "@/lib/admin/http";
 
 export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
+export type AutoSaveFlushResult<T> = {
+  data: Record<string, unknown>;
+  submittedData: T;
+};
 
 type UseAutoSaveOptions<T> = {
   resource: string;
@@ -13,8 +17,8 @@ type UseAutoSaveOptions<T> = {
   debounceMs?: number;
   intervalMs?: number;
   getPayload?: (data: T) => Record<string, unknown>;
-  onCreated?: (newId: string | number, data?: Record<string, unknown>) => void;
-  onSaved?: (data: Record<string, unknown>) => void;
+  onCreated?: (newId: string | number, data?: Record<string, unknown>, submittedData?: T) => void;
+  onSaved?: (data: Record<string, unknown>, submittedData?: T) => void;
 };
 
 export function useAutoSave<T>({
@@ -35,9 +39,16 @@ export function useAutoSave<T>({
   const lastSnapshot = useRef<string>(JSON.stringify(formData));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
+  const flushing = useRef(false);
+  const saveAgain = useRef(false);
   const mounted = useRef(true);
   const paused = useRef(false);
-  const flushResolve = useRef<((data?: Record<string, unknown>) => void) | null>(null);
+  const flushResolve = useRef<((result?: AutoSaveFlushResult<T>) => void) | null>(null);
+  const draftIdRef = useRef<string | number | null>(id ?? null);
+  const latestFormData = useRef(formData);
+  const saveDraftRef = useRef<() => void>(() => undefined);
+  draftIdRef.current = draftId;
+  latestFormData.current = formData;
 
   useEffect(() => {
     mounted.current = true;
@@ -53,17 +64,23 @@ export function useAutoSave<T>({
   }, [formData]);
 
   const saveDraft = useCallback(async () => {
-    if (saving.current || !mounted.current || paused.current) return;
+    if (saving.current) {
+      saveAgain.current = true;
+      return;
+    }
+    if (!mounted.current || paused.current) return;
     saving.current = true;
     setStatus("saving");
 
     const payload = getPayload ? getPayload(formData) : (formData as unknown as Record<string, unknown>);
 
     let responseData: Record<string, unknown> | undefined;
+    let succeeded = false;
     try {
-      if (draftId) {
+      const activeDraftId = draftIdRef.current;
+      if (activeDraftId) {
         responseData = await requestAdminData<Record<string, unknown>>(
-          `/admin/${resource}/${draftId}`,
+          `/admin/${resource}/${activeDraftId}`,
           { method: "PATCH", body: payload },
         );
       } else {
@@ -73,26 +90,28 @@ export function useAutoSave<T>({
         );
         const newId = responseData?.id as string | number | undefined;
         if (newId && mounted.current) {
+          draftIdRef.current = newId;
           setDraftId(newId);
         }
       }
 
       if (mounted.current) {
         lastSnapshot.current = JSON.stringify(formData);
+        succeeded = true;
         setStatus("saved");
         setLastSaved(Date.now());
         setTimeout(() => {
           if (mounted.current) setStatus("idle");
         }, 3000);
 
-        if (draftId) {
-          onSaved?.(responseData ?? {});
+        if (activeDraftId) {
+          onSaved?.(responseData ?? {}, formData);
         } else {
           const newId = responseData?.id as string | number | undefined;
-          if (newId) onCreated?.(newId, responseData);
+          if (newId) onCreated?.(newId, responseData, formData);
         }
       }
-      flushResolve.current?.(responseData);
+      flushResolve.current?.(responseData ? { data: responseData, submittedData: formData } : undefined);
       flushResolve.current = null;
     } catch (err) {
       if (mounted.current) {
@@ -106,8 +125,16 @@ export function useAutoSave<T>({
       flushResolve.current = null;
     } finally {
       if (mounted.current) saving.current = false;
+      const shouldSaveAgain = saveAgain.current
+        || JSON.stringify(latestFormData.current) !== lastSnapshot.current;
+      saveAgain.current = false;
+      if (succeeded && shouldSaveAgain && !flushing.current && mounted.current && !paused.current) {
+        queueMicrotask(() => saveDraftRef.current());
+      }
     }
   }, [draftId, resource, formData, getPayload, onCreated, onSaved]);
+
+  saveDraftRef.current = () => { void saveDraft(); };
 
   useEffect(() => {
     if (!enabled) return;
@@ -140,20 +167,44 @@ export function useAutoSave<T>({
     return () => clearInterval(interval);
   }, [enabled, intervalMs, formData, saveDraft]);
 
-  const flush = useCallback((): Promise<Record<string, unknown> | undefined> => {
-    if (paused.current) return Promise.resolve(undefined);
-    if (timer.current) clearTimeout(timer.current);
-    return new Promise<Record<string, unknown> | undefined>((resolve) => {
-      if (!saving.current) {
-        saveDraft();
+  const flush = useCallback(async (): Promise<AutoSaveFlushResult<T> | undefined> => {
+    if (paused.current) return undefined;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+
+    flushing.current = true;
+    let latestResult: AutoSaveFlushResult<T> | undefined;
+    try {
+      while (mounted.current && !paused.current) {
+        if (saving.current) {
+          latestResult = await new Promise<AutoSaveFlushResult<T> | undefined>((resolve) => {
+            flushResolve.current = resolve;
+          });
+          if (!latestResult) return undefined;
+          continue;
+        }
+
+        const needsCreate = !draftIdRef.current;
+        const needsSave = JSON.stringify(formData) !== lastSnapshot.current;
+        if (!needsCreate && !needsSave) return latestResult;
+
+        latestResult = await new Promise<AutoSaveFlushResult<T> | undefined>((resolve) => {
+          flushResolve.current = resolve;
+          saveDraftRef.current();
+          if (!saving.current) {
+            flushResolve.current = null;
+            resolve(undefined);
+          }
+        });
+        if (!latestResult) return undefined;
       }
-      if (!saving.current) {
-        resolve(undefined);
-      } else {
-        flushResolve.current = resolve;
-      }
-    });
-  }, [saveDraft]);
+      return latestResult;
+    } finally {
+      flushing.current = false;
+    }
+  }, [formData]);
 
   const cancel = useCallback(() => {
     paused.current = true;

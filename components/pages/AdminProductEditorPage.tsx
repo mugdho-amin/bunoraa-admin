@@ -31,6 +31,7 @@ interface VariantForm {
 
 interface GalleryImage {
   _id: string;
+  serverId?: string;
   url: string;
   variantIds: string[];
   alt: string;
@@ -87,6 +88,17 @@ interface ProductForm {
   aspect_ratio: string;
   publish_from: string; publish_until: string;
   meta_title: string; meta_description: string; meta_keywords: string;
+}
+
+function serializeGalleryImages(data: Pick<ProductForm, "gallery" | "primaryImage" | "primaryImageAlt">) {
+  return data.gallery.map((image) => ({
+    ...(image.serverId ? { id: image.serverId } : {}),
+    image_url: image.url,
+    alt_text: image.url === data.primaryImage ? data.primaryImageAlt : image.alt,
+    is_primary: Boolean(data.primaryImage) && image.url === data.primaryImage,
+    variant_ids: image.variantIds,
+    ...(image._storageKey && image.url.includes("/_temp/") ? { _storage_key: image._storageKey } : {}),
+  }));
 }
 
 const COLOR_PRESETS = [
@@ -341,6 +353,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [imageUploadKey, setImageUploadKey] = useState(0);
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const slugManuallyEdited = useRef(false);
+  const primaryImageAtFocusRef = useRef("");
   const variantContainerRef = useRef<HTMLDivElement>(null);
   const editorUrlRef = useRef("");
   const allowNextPopRef = useRef(false);
@@ -403,20 +416,31 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
    * references (which previously caused 400s). Pure — returns a new form or
    * the same reference when nothing changed.
    */
-  const syncFormWithServer = useCallback((data: Record<string, unknown>, current: ProductForm): ProductForm => {
-    const serverImages = data.images as { image_url?: string; alt_text?: string }[] | undefined;
+  const syncFormWithServer = useCallback((
+    data: Record<string, unknown>,
+    current: ProductForm,
+    submitted?: ProductForm,
+  ): ProductForm => {
+    const serverImages = data.images as { id?: string; image_url?: string; alt_text?: string }[] | undefined;
+    const submittedGallery = submitted?.gallery ?? [];
     const serverVariants = data.variants as Record<string, unknown>[] | undefined;
     const serverVideos = data.videos as { video_url?: string; thumbnail?: string }[] | undefined;
-    const serverPrimaryImage = data.primary_image as string | undefined;
 
     let changed = false;
 
-    const gallery = current.gallery.map((g, i) => {
+    const gallery = current.gallery.map((g) => {
       if (!g._storageKey || !g.url.includes('/_temp/')) return g;
-      const server = serverImages?.[i];
+      const submittedIndex = submittedGallery.findIndex((image) => image._id === g._id);
+      if (submittedIndex < 0) return g;
+      const server = serverImages?.[submittedIndex];
       if (!server?.image_url || server.image_url.includes('/_temp/')) return g;
       changed = true;
-      return { ...g, url: server.image_url, alt: server.alt_text ?? g.alt, _storageKey: undefined };
+      return {
+        ...g,
+        serverId: server.id ? String(server.id) : g.serverId,
+        url: server.image_url,
+        _storageKey: undefined,
+      };
     });
 
     const variants = current.variants.map((v) => {
@@ -436,7 +460,16 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       return { ...v, url: server.video_url, thumbnail: server.thumbnail ?? v.thumbnail, _storageKey: undefined };
     });
 
-    const primaryImage = current.primaryImage.includes('/_temp/') && serverPrimaryImage
+    const currentPrimary = current.gallery.find((image) => image.url === current.primaryImage);
+    const submittedPrimaryIndex = currentPrimary
+      ? submittedGallery.findIndex((image) => image._id === currentPrimary._id)
+      : -1;
+    const serverPrimaryImage = submittedPrimaryIndex >= 0
+      ? serverImages?.[submittedPrimaryIndex]?.image_url
+      : undefined;
+    const primaryImage = current.primaryImage.includes('/_temp/')
+      && serverPrimaryImage
+      && !serverPrimaryImage.includes('/_temp/')
       ? serverPrimaryImage
       : current.primaryImage;
 
@@ -472,7 +505,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       description: data.description,
       primary_image: data.primaryImage || null,
       primary_image_alt: data.primaryImageAlt || null,
-      images_data: data.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
+      images_data: serializeGalleryImages(data),
       price: Number(data.price ?? 0),
       sale_price: data.sale_price === null || data.sale_price === undefined ? null : Number(data.sale_price),
       compare_at_price: data.compare_at_price === null || data.compare_at_price === undefined ? null : Number(data.compare_at_price),
@@ -532,17 +565,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     enabled: !saving && !loadingProduct,
     intervalMs: 10000,
     getPayload: getProductPayload,
-    onCreated: (newId, data) => {
+    onCreated: (newId, data, submitted) => {
       setCurrentId(newId);
-      if (data) setForm((prev) => syncFormWithServer(data, prev));
+      if (data) setForm((prev) => syncFormWithServer(data, prev, submitted));
     },
-    onSaved: (data) => {
-      setForm((prev) => syncFormWithServer(data, prev));
+    onSaved: (data, submitted) => {
+      setForm((prev) => syncFormWithServer(data, prev, submitted));
     },
   });
 
-  const { mutate: createProduct } = useCreate();
-  const { mutate: updateProduct } = useUpdate();
+  const { mutateAsync: createProductAsync } = useCreate();
+  const { mutateAsync: updateProductAsync } = useUpdate();
   const { mutateAsync: deleteProductAsync } = useDelete();
   const product = existing;
   const canDiscardDraft = !id || product?.is_active === false;
@@ -671,10 +704,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         const v = (product.variants ?? [])[i];
         if (v?.id) variantUuidToIndex[String(v.id)] = String(i);
       });
-      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { image?: string; url?: string; variant_ids?: string[]; alt?: string }) => {
+      const mappedGallery: GalleryImage[] = rawGallery.map((item: string | { id?: string; image?: string; url?: string; variant_ids?: string[]; alt?: string }) => {
         if (typeof item === "string") return { _id: galleryId(), url: item, variantIds: [], alt: "" };
         const ids = (item.variant_ids ?? []).map((uuid: string) => variantUuidToIndex[uuid]).filter(Boolean);
-        return { _id: galleryId(), url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text ?? item.alt ?? "" };
+        return { _id: galleryId(), serverId: item.id, url: (item as Record<string, string>).image_url || item.url || "", variantIds: ids, alt: (item as Record<string, string>).alt_text ?? item.alt ?? "" };
       });
       const hasOptions = variants.some((v) => v.size || v.color);
       const loadedAsVariantProduct = variants.length > 1 || hasOptions || Boolean(product.has_variants);
@@ -1015,10 +1048,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       const { url, key } = await uploadImage(file);
       if (target === "primaryImage") {
         clearFieldError("primaryImage");
-        updateField("primaryImage", url);
         setForm((prev) => {
-          if (prev.gallery.some((g) => g.url === url)) return prev;
-          return { ...prev, gallery: [{ _id: galleryId(), url, _storageKey: key, variantIds: [], alt: prev.primaryImageAlt }, ...prev.gallery] };
+          const existing = prev.gallery.find((image) => image.url === url);
+          if (existing) {
+            return { ...prev, primaryImage: url, primaryImageAlt: existing.alt };
+          }
+          return {
+            ...prev,
+            primaryImage: url,
+            primaryImageAlt: "",
+            gallery: [{ _id: galleryId(), url, _storageKey: key, variantIds: [], alt: "" }, ...prev.gallery],
+          };
         });
       } else {
         setForm((prev) => ({ ...prev, gallery: [...prev.gallery, { _id: galleryId(), url, _storageKey: key, variantIds: [], alt: "" }] }));
@@ -1075,6 +1115,43 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         gallery,
         primaryImage: nextPrimary?.url ?? "",
         primaryImageAlt: nextPrimary?.alt ?? "",
+      };
+    });
+  };
+
+  const handlePrimaryImageUrlBlur = () => {
+    setForm((previous) => {
+      const url = previous.primaryImage.trim();
+      if (!url) {
+        const removedUrl = primaryImageAtFocusRef.current;
+        const gallery = removedUrl
+          ? previous.gallery.filter((image) => image.url !== removedUrl)
+          : previous.gallery;
+        const nextPrimary = gallery[0];
+        return {
+          ...previous,
+          gallery,
+          primaryImage: nextPrimary?.url ?? "",
+          primaryImageAlt: nextPrimary?.alt ?? "",
+        };
+      }
+
+      const existing = previous.gallery.find((image) => image.url === url);
+      if (existing) {
+        return {
+          ...previous,
+          primaryImage: url,
+          primaryImageAlt: primaryImageAtFocusRef.current === url
+            ? previous.primaryImageAlt
+            : existing.alt,
+        };
+      }
+
+      return {
+        ...previous,
+        primaryImage: url,
+        primaryImageAlt: primaryImageAtFocusRef.current === url ? previous.primaryImageAlt : "",
+        gallery: [{ _id: galleryId(), url, variantIds: [], alt: "" }, ...previous.gallery],
       };
     });
   };
@@ -1366,8 +1443,11 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     setFieldErrors({});
     setSaving(true);
-    const savedData = await autoSave.flush();
-    const workingForm = savedData ? syncFormWithServer(savedData, form) : form;
+    const flushResult = await autoSave.flush();
+    const savedData = flushResult?.data;
+    const workingForm = savedData && flushResult?.submittedData
+      ? syncFormWithServer(savedData, form, flushResult.submittedData)
+      : form;
     // The manual save must never create a second product. If the autosave
     // flush just created the draft (new product), reuse the returned id and
     // PATCH it with the final publish values — otherwise the same variant
@@ -1377,7 +1457,6 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       : undefined;
     const workingHasVariants = workingForm.product_type === "variable";
     if (workingForm !== form) setForm(workingForm);
-
     const cleanVariants = workingForm.variants.map((v) => ({
       id: v.id || undefined,
       sku: v.sku.trim(),
@@ -1401,7 +1480,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
        barcode: workingHasVariants ? null : workingForm.barcode || '',
       short_description: workingForm.short_description,
       description: workingForm.description,
-      images_data: workingForm.gallery.map((g) => ({ image_url: g.url, alt_text: g.alt, variant_ids: g.variantIds, ...(g._storageKey && g.url.includes('/_temp/') ? { _storage_key: g._storageKey } : {}) })),
+      primary_image: workingForm.primaryImage || null,
+      primary_image_alt: workingForm.primaryImageAlt || null,
+      images_data: serializeGalleryImages(workingForm),
       price: Number(workingForm.price ?? 0),
       sale_price: workingForm.sale_price === null || workingForm.sale_price === undefined ? null : Number(workingForm.sale_price),
       compare_at_price: workingForm.compare_at_price === null || workingForm.compare_at_price === undefined ? null : Number(workingForm.compare_at_price),
@@ -1467,36 +1548,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
     try {
       if (effectiveId) {
-        updateProduct(
-          { resource: "catalog/products", id: effectiveId, values },
-          {
-            onSuccess: () => { message.success("Product updated"); router.push("/catalog/products"); },
-            onError: (err) => {
-              const formatted = formatSaveError(err, "Failed to update product", workingForm.variants);
-              if (Object.keys(formatted.fieldErrors).length > 0) {
-                setFieldErrors((prev) => ({ ...prev, ...formatted.fieldErrors }));
-              }
-              message.error(formatted.message);
-            },
-          },
-        );
+        await updateProductAsync({ resource: "catalog/products", id: effectiveId, values });
+        message.success("Product updated");
       } else {
-        createProduct(
-          { resource: "catalog/products", values },
-          {
-            onSuccess: () => { message.success("Product created"); router.push("/catalog/products"); },
-            onError: (err) => {
-              const formatted = formatSaveError(err, "Failed to create product", workingForm.variants);
-              if (Object.keys(formatted.fieldErrors).length > 0) {
-                setFieldErrors((prev) => ({ ...prev, ...formatted.fieldErrors }));
-              }
-              message.error(formatted.message);
-            },
-          },
-        );
+        await createProductAsync({ resource: "catalog/products", values });
+        message.success("Product created");
       }
-    } catch {
-      message.error("Failed to save product");
+      router.push("/catalog/products");
+    } catch (err) {
+      const formatted = formatSaveError(
+        err,
+        effectiveId ? "Failed to update product" : "Failed to create product",
+        workingForm.variants,
+      );
+      if (Object.keys(formatted.fieldErrors).length > 0) {
+        setFieldErrors((previous) => ({ ...previous, ...formatted.fieldErrors }));
+      }
+      message.error(formatted.message);
     } finally {
       setSaving(false);
     }
@@ -1811,12 +1879,10 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                 </label>
                 <input value={form.primaryImage} onChange={(e) => {
                   clearFieldError("primaryImage");
-                  const val = e.target.value;
-                  updateField("primaryImage", val);
-                  if (val && !form.gallery.some((g) => g.url === val)) {
-                    updateField("gallery", [{ _id: galleryId(), url: val, variantIds: [], alt: form.primaryImageAlt }, ...form.gallery]);
-                  }
+                  updateField("primaryImage", e.target.value);
                 }}
+                  onFocus={() => { primaryImageAtFocusRef.current = form.primaryImage; }}
+                  onBlur={handlePrimaryImageUrlBlur}
                   placeholder="https://cdn.bunoraa.com/images/product.jpg"
                   className={`admin-input${fieldErrors["primaryImage"] ? " error" : ""}`} />
               </div>
