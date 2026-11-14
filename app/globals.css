@@ -2131,6 +2131,68 @@ code,
 .product-editor-nav-index { color: var(--admin-muted-light); font-size: 9px; font-variant-numeric: tabular-nums; }
 .product-editor-form-grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .product-editor-form-grid.has-variants { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); }
+.product-editor-metadata-grid {
+  display: grid !important;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, .92fr);
+  grid-template-areas: "seo shipping" "seo schedule";
+  align-items: start;
+  gap: 14px !important;
+}
+.product-editor-metadata-grid.has-variants {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "seo" "schedule";
+}
+.product-editor-metadata-grid > .ant-card { width: 100%; min-width: 0; align-self: start; }
+.product-editor-seo-card { grid-area: seo; }
+.product-editor-shipping-card { grid-area: shipping; }
+.product-editor-scheduling-card { grid-area: schedule; }
+.product-editor-seo-card > .ant-card-body,
+.product-editor-shipping-card > .ant-card-body,
+.product-editor-scheduling-card > .ant-card-body { padding: 0; }
+.product-editor-collapsible-header {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 68px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 15px;
+  color: var(--admin-ink);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .16s ease;
+}
+.product-editor-collapsible-header:hover { background: var(--admin-hover-bg); }
+.product-editor-collapsible-header:focus-visible { outline: 2px solid var(--admin-brand); outline-offset: -3px; }
+.product-editor-collapsible-header[aria-expanded="true"] { border-bottom: 1px solid var(--admin-border); border-radius: 15px 15px 0 0; }
+.product-editor-collapsible-leading { display: flex; min-width: 0; align-items: center; gap: 11px; }
+.product-editor-collapsible-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid color-mix(in srgb, var(--admin-brand) 22%, var(--admin-border)); border-radius: 11px; color: var(--admin-brand); background: var(--admin-hover-brand); }
+.product-editor-collapsible-copy { display: grid; min-width: 0; gap: 3px; }
+.product-editor-collapsible-copy strong { color: var(--admin-ink); font-size: 12px; font-weight: 720; }
+.product-editor-collapsible-copy small { color: var(--admin-muted); font-size: 10px; font-weight: 450; line-height: 1.4; }
+.product-editor-collapsible-action { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--admin-border); border-radius: 9px; color: var(--admin-muted); background: var(--admin-bg); }
+.product-editor-section-content { display: grid; min-width: 0; gap: 14px; padding: 16px; }
+.product-editor-seo-preview { display: grid; min-width: 0; gap: 5px; padding: 13px 14px; border: 1px solid var(--admin-border); border-radius: 12px; background: var(--admin-bg); }
+.product-editor-seo-preview-label { color: var(--admin-muted); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.product-editor-seo-preview > strong { overflow: hidden; color: #1a5e2a; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.dark .product-editor-seo-preview > strong { color: #8fc99a; }
+.product-editor-seo-preview-url { overflow: hidden; color: var(--admin-brand); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.product-editor-seo-preview p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--admin-muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.product-editor-field-count,
+.product-editor-field-hint { color: var(--admin-muted); font-size: 10px; line-height: 1.45; }
+.product-editor-shipping-grid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.product-editor-free-shipping { display: flex; min-width: 0; min-height: 56px; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--admin-border); border-radius: 11px; background: var(--admin-bg); cursor: pointer; }
+.product-editor-free-shipping > span { display: grid; min-width: 0; gap: 3px; }
+.product-editor-free-shipping strong { color: var(--admin-ink-secondary); font-size: 11px; font-weight: 650; }
+.product-editor-free-shipping small { color: var(--admin-muted); font-size: 9px; line-height: 1.4; }
+.product-editor-scheduling-fields { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 13px; }
+.product-editor-datetime { width: 100%; min-width: 0; padding-inline: 9px !important; font-size: 12px !important; }
 .admin-product-editor [id^="product-"] { scroll-margin-top: 112px; }
 .admin-product-editor .ant-card-head { scroll-margin-top: 112px; }
 .admin-product-editor .admin-type-pill {
@@ -2216,6 +2278,20 @@ code,
 
 @media (max-width: 767px) {
   .admin-product-editor { gap: 14px !important; padding-bottom: 18px; }
+  .product-editor-metadata-grid,
+  .product-editor-metadata-grid.has-variants {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "seo" "shipping" "schedule";
+    gap: 11px !important;
+  }
+  .product-editor-metadata-grid.has-variants { grid-template-areas: "seo" "schedule"; }
+  .product-editor-collapsible-header { min-height: 62px; padding: 10px 12px; }
+  .product-editor-collapsible-icon { width: 33px; height: 33px; }
+  .product-editor-section-content { gap: 12px; padding: 13px; }
+  .product-editor-seo-preview { padding: 11px 12px; }
+  .product-editor-shipping-grid { gap: 9px; }
+  .product-editor-free-shipping { min-height: 52px; }
+  .product-editor-datetime { font-size: 11px !important; }
   .product-editor-header {
     align-items: stretch !important;
     flex-direction: column;
@@ -2290,6 +2366,12 @@ code,
 @media (min-width: 768px) and (max-width: 1120px) {
   .product-editor-workbench { grid-template-columns: minmax(170px, 200px) minmax(0, 1fr); gap: 14px; }
   .product-editor-form-grid.has-variants { grid-template-columns: minmax(0, 1fr); }
+  .product-editor-metadata-grid,
+  .product-editor-metadata-grid.has-variants {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "seo" "shipping" "schedule";
+  }
+  .product-editor-metadata-grid.has-variants { grid-template-areas: "seo" "schedule"; }
   .product-editor-sidebar { top: 8px; }
   .product-editor-nav-item { min-height: 42px; }
 }

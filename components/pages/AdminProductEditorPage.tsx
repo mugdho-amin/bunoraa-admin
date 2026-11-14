@@ -2563,34 +2563,46 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           )}
 
           {/* SEO + Shipping — side by side */}
-          <Flex gap={16} wrap="wrap">
-            <Card id="product-seo" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <div onClick={() => setSeoCollapsed((p) => !p)} className="admin-section-header">
-                <Typography.Text strong style={{ fontSize: 13 }}>Search Engine Optimization</Typography.Text>
-                {seoCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              </div>
+          <Flex gap={16} wrap="wrap" className={`product-editor-metadata-grid${hasVariants ? " has-variants" : ""}`}>
+            <Card id="product-seo" className="admin-soft-panel product-editor-seo-card" variant="borderless" style={{ minWidth: 0 }}>
+              <button
+                type="button"
+                className="product-editor-collapsible-header"
+                aria-expanded={!seoCollapsed}
+                aria-controls="product-seo-fields"
+                onClick={() => setSeoCollapsed((p) => !p)}
+              >
+                <span className="product-editor-collapsible-leading">
+                  <span className="product-editor-collapsible-icon"><Search size={15} /></span>
+                  <span className="product-editor-collapsible-copy"><strong>Search appearance</strong><small>SEO title, description, and keywords</small></span>
+                </span>
+                <span className="product-editor-collapsible-action">{seoCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</span>
+              </button>
               {!seoCollapsed && (
-                <div style={{ padding: "0 20px 20px" }}>
+                <div id="product-seo-fields" className="product-editor-section-content">
                   <Flex vertical gap={12} style={{ marginTop: 12 }}>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      Leave blank to derive from product name and short description.
-                    </Typography.Text>
+                    <div className="product-editor-seo-preview">
+                      <span className="product-editor-seo-preview-label">Search result preview</span>
+                      <strong>{form.meta_title.trim() || form.name.trim() || "Your product title"}</strong>
+                      <span className="product-editor-seo-preview-url">bunoraa.com › {form.slug || "product"}</span>
+                      <p>{form.meta_description.trim() || form.short_description.trim() || "Add a concise description to preview how this product may appear in search."}</p>
+                    </div>
                     <Flex vertical gap={4}>
-                      <label className="admin-field-label">Meta Title</label>
+                      <label className="admin-field-label" htmlFor="product-meta-title">Meta title</label>
                       <input
+                        id="product-meta-title"
                         value={form.meta_title}
                         onChange={(e) => updateField("meta_title", e.target.value)}
                         placeholder={form.name ? `${form.name} | Bunoraa` : "SEO title for search results"}
                         maxLength={255}
                         className="admin-input"
                       />
-                      <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
-                        {(form.meta_title || form.name || "").length}/255
-                      </span>
+                      <span className="product-editor-field-count">{form.meta_title.length}/255 characters</span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label className="admin-field-label">Meta Description</label>
+                      <label className="admin-field-label" htmlFor="product-meta-description">Meta description</label>
                       <textarea
+                        id="product-meta-description"
                         value={form.meta_description}
                         onChange={(e) => updateField("meta_description", e.target.value)}
                         placeholder={form.short_description || "Brief description for search engines (recommended ~150–160 characters)"}
@@ -2598,19 +2610,19 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         maxLength={500}
                         className="admin-textarea"
                       />
-                      <span style={{ fontSize: 10, color: "var(--admin-muted-light)" }}>
-                        {(form.meta_description || form.short_description || "").length}/500
-                      </span>
+                      <span className="product-editor-field-count">{form.meta_description.length}/500 characters</span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label className="admin-field-label">Meta Keywords</label>
+                      <label className="admin-field-label" htmlFor="product-meta-keywords">Meta keywords</label>
                       <input
+                        id="product-meta-keywords"
                         value={form.meta_keywords}
                         onChange={(e) => updateField("meta_keywords", e.target.value)}
                         placeholder="Comma-separated keywords, e.g. handmade, cotton, gift"
                         maxLength={500}
                         className="admin-input"
                       />
+                      <span className="product-editor-field-hint">Separate terms with commas. Leave blank to derive from product details.</span>
                     </Flex>
 
                   </Flex>
@@ -2618,83 +2630,92 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               )}
             </Card>
             {!hasVariants && (
-              <Card id="product-shipping" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-                <div onClick={() => setShippingCollapsed((p) => !p)} className="admin-section-header">
-                  <Typography.Text strong style={{ fontSize: 13 }}>Shipping</Typography.Text>
-                  {shippingCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                </div>
+              <Card id="product-shipping" className="admin-soft-panel product-editor-shipping-card" variant="borderless" style={{ minWidth: 0 }}>
+                <button
+                  type="button"
+                  className="product-editor-collapsible-header"
+                  aria-expanded={!shippingCollapsed}
+                  aria-controls="product-shipping-fields"
+                  onClick={() => setShippingCollapsed((p) => !p)}
+                >
+                  <span className="product-editor-collapsible-leading">
+                    <span className="product-editor-collapsible-icon"><Package size={15} /></span>
+                    <span className="product-editor-collapsible-copy"><strong>Shipping</strong><small>Parcel weight and dimensions</small></span>
+                  </span>
+                  <span className="product-editor-collapsible-action">{shippingCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</span>
+                </button>
                 {!shippingCollapsed && (
-                  <div style={{ padding: "0 20px 20px" }}>
-                    <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
+                  <div id="product-shipping-fields" className="product-editor-section-content">
+                    <div className="product-editor-shipping-grid">
                       <Flex vertical gap={4}>
-                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Weight (kg)</label>
+                        <label className="admin-field-label" htmlFor="product-shipping-weight">Weight <span>(kg)</span></label>
                         <input type="number" step="0.01" value={form.variants[0]?.weight ?? ""} onChange={(e) => updateVariant(0, "weight", e.target.value ? Number(e.target.value) : null)}
-                          className="admin-input" />
+                          id="product-shipping-weight" className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Length (cm)</label>
+                        <label className="admin-field-label" htmlFor="product-shipping-length">Length <span>(cm)</span></label>
                         <input type="number" step="0.1" value={form.length ?? ""} onChange={(e) => updateField("length", e.target.value ? Number(e.target.value) : null)}
-                          className="admin-input" />
+                          id="product-shipping-length" className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Width (cm)</label>
+                        <label className="admin-field-label" htmlFor="product-shipping-width">Width <span>(cm)</span></label>
                         <input type="number" step="0.1" value={form.width ?? ""} onChange={(e) => updateField("width", e.target.value ? Number(e.target.value) : null)}
-                          className="admin-input" />
+                          id="product-shipping-width" className="admin-input" />
                       </Flex>
                       <Flex vertical gap={4}>
-                        <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>Height (cm)</label>
+                        <label className="admin-field-label" htmlFor="product-shipping-height">Height <span>(cm)</span></label>
                         <input type="number" step="0.1" value={form.height ?? ""} onChange={(e) => updateField("height", e.target.value ? Number(e.target.value) : null)}
-                          className="admin-input" />
+                          id="product-shipping-height" className="admin-input" />
                       </Flex>
                     </div>
-                    <Flex align="center" gap={8} style={{ marginTop: 12 }}>
-                      <Switch checked={form.free_shipping} onChange={(c) => updateField("free_shipping", c)} size="small" />
-                      <Typography.Text style={{ fontSize: 12, color: "var(--admin-muted-alpha-55)" }}>Free Shipping</Typography.Text>
-                    </Flex>
+                    <div className="product-editor-free-shipping">
+                      <Switch aria-label="Free shipping" checked={form.free_shipping} onChange={(c) => updateField("free_shipping", c)} size="small" />
+                      <span><strong>Free shipping</strong><small>Waive the shipping charge for this product.</small></span>
+                    </div>
                   </div>
                 )}
               </Card>
             )}
 
             {/* ── Scheduling (always visible) ── */}
-            <Card id="product-scheduling" className="admin-soft-panel" variant="borderless" style={{ flex: "1 1 300px", minWidth: 0 }}>
-              <div onClick={() => setScheduleCollapsed((p) => !p)} className="admin-section-header">
-                <Flex align="center" gap={8}>
-                  <Calendar size={16} color="var(--admin-muted)" />
-                  <Typography.Text strong style={{ fontSize: 13 }}>Scheduling</Typography.Text>
-                </Flex>
-                {scheduleCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              </div>
+            <Card id="product-scheduling" className="admin-soft-panel product-editor-scheduling-card" variant="borderless" style={{ minWidth: 0 }}>
+              <button
+                type="button"
+                className="product-editor-collapsible-header"
+                aria-expanded={!scheduleCollapsed}
+                aria-controls="product-scheduling-fields"
+                onClick={() => setScheduleCollapsed((p) => !p)}
+              >
+                <span className="product-editor-collapsible-leading">
+                  <span className="product-editor-collapsible-icon"><Calendar size={15} /></span>
+                  <span className="product-editor-collapsible-copy"><strong>Scheduling</strong><small>Set optional visibility dates</small></span>
+                </span>
+                <span className="product-editor-collapsible-action">{scheduleCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</span>
+              </button>
               {!scheduleCollapsed && (
-                <div style={{ padding: "0 20px 20px" }}>
-                  <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", marginTop: 12 }}>
+                <div id="product-scheduling-fields" className="product-editor-section-content">
+                  <div className="product-editor-scheduling-fields">
                     <Flex vertical gap={4}>
-                      <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>
-                        Publish From
-                      </label>
+                      <label className="admin-field-label" htmlFor="product-publish-from">Publish from</label>
                       <input
+                        id="product-publish-from"
                         type="datetime-local"
-                        value={form.publish_from ? form.publish_from.slice(0, 16) : "2000-01-01T00:00"}
+                        value={form.publish_from ? form.publish_from.slice(0, 16) : ""}
                         onChange={(e) => updateField("publish_from", e.target.value ? e.target.value + ":00Z" : "")}
-                        className="admin-input"
+                        className="admin-input product-editor-datetime"
                       />
-                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                        Schedule when the product becomes visible on your store.
-                      </Typography.Text>
+                      <span className="product-editor-field-hint">Leave blank to make it visible as soon as it is published.</span>
                     </Flex>
                     <Flex vertical gap={4}>
-                      <label className="admin-field-label" style={{ fontSize: 10, letterSpacing: "0.2em" }}>
-                        Publish Until
-                      </label>
+                      <label className="admin-field-label" htmlFor="product-publish-until">Publish until</label>
                       <input
+                        id="product-publish-until"
                         type="datetime-local"
-                        value={form.publish_until ? form.publish_until.slice(0, 16) : "2000-01-01T00:00"}
+                        value={form.publish_until ? form.publish_until.slice(0, 16) : ""}
                         onChange={(e) => updateField("publish_until", e.target.value ? e.target.value + ":00Z" : "")}
-                        className="admin-input"
+                        className="admin-input product-editor-datetime"
                       />
-                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                        Automatically unpublish the product after this date.
-                      </Typography.Text>
+                      <span className="product-editor-field-hint">Optional end date; the product will be hidden after this time.</span>
                     </Flex>
                   </div>
                 </div>
