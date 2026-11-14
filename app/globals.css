@@ -1406,6 +1406,11 @@ html, body { color: var(--admin-ink); }
 .admin-sidebar-glass .ant-menu-item:hover { color: var(--admin-ink) !important; }
 .admin-app-header { min-width: 0; }
 .admin-header-btn { border-radius: 11px; }
+.admin-account-menu-anchor { position: relative; display: inline-flex; flex: 0 0 auto; }
+.admin-account-menu-anchor.is-above { display: block; width: 100%; }
+.admin-account-menu-popover { position: absolute; z-index: 1700; width: min(284px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
+.admin-account-menu-popover.is-below { top: calc(100% + 8px); right: 0; }
+.admin-account-menu-popover.is-above { bottom: calc(100% + 8px); left: 0; }
 .ant-dropdown,
 .ant-select-dropdown,
 .ant-picker-dropdown { z-index: 1600 !important; }

@@ -6,7 +6,6 @@ import {
   Avatar,
   Button,
   Drawer,
-  Dropdown,
   Flex,
   Grid,
   Layout,
@@ -129,6 +128,25 @@ export function AdminShell({ route, children }: AdminShellProps) {
     }
   }, [sidebarCollapsed, sidebarPreferenceLoaded]);
 
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Element && event.target.closest(".admin-account-menu-anchor")) return;
+      setHeaderAccountMenuOpen(false);
+      setSidebarAccountMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setHeaderAccountMenuOpen(false);
+      setSidebarAccountMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
   const toggleTheme = useCallback(() => {
     const next: Record<string, ThemeMode> = { light: "dark", dark: "system", system: "light" };
     setMode(next[mode] as ThemeMode);
@@ -245,14 +263,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
     </div>
   );
 
-  const accountDropdownProps = (open: boolean, onOpenChange: (open: boolean) => void) => ({
-    trigger: ["click"] as ("click")[],
-    open,
-    onOpenChange,
-    popupRender: () => accountMenuContent,
-    getPopupContainer: () => document.body,
-    overlayStyle: { maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)" },
-  });
+  const accountMenuPopover = (open: boolean, placement: "below" | "above" = "below") =>
+    open ? <div className={`admin-account-menu-popover is-${placement}`}>{accountMenuContent}</div> : null;
 
   const sideMenu = (
     <Flex vertical style={{ height: "100%", minHeight: 0, minWidth: 0 }}>
@@ -323,11 +335,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
         }}
       >
         {sidebarIsCollapsed ? (
-          <Dropdown
-            {...accountDropdownProps(sidebarAccountMenuOpen, onSidebarAccountMenuChange)}
-            placement="topLeft"
-          >
-            <Button type="text" aria-label={`Open account menu for ${userName}`} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
+          <div className="admin-account-menu-anchor is-above">
+            <Button type="text" aria-label={`Open account menu for ${userName}`} aria-haspopup="menu" aria-expanded={sidebarAccountMenuOpen} onClick={() => onSidebarAccountMenuChange(!sidebarAccountMenuOpen)} style={{ width: "100%", height: "auto", padding: "4px 0" }}>
               <Avatar
                 size={32}
                 shape="circle"
@@ -336,16 +345,17 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 {nameInitial}
               </Avatar>
             </Button>
-          </Dropdown>
+            {accountMenuPopover(sidebarAccountMenuOpen, "above")}
+          </div>
         ) : (
-          <Dropdown
-            {...accountDropdownProps(sidebarAccountMenuOpen, onSidebarAccountMenuChange)}
-            placement="topLeft"
-          >
+          <div className="admin-account-menu-anchor is-above">
             <Button
               type="text"
               block
               aria-label={`Open account menu for ${userName}`}
+              aria-haspopup="menu"
+              aria-expanded={sidebarAccountMenuOpen}
+              onClick={() => onSidebarAccountMenuChange(!sidebarAccountMenuOpen)}
               style={{ height: "auto", padding: "4px 0", textAlign: "left" }}
             >
               <Flex align="center" gap={10} style={{ minWidth: 0, width: "100%" }}>
@@ -382,7 +392,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
                 </div>
               </Flex>
             </Button>
-          </Dropdown>
+            {accountMenuPopover(sidebarAccountMenuOpen, "above")}
+          </div>
         )}
       </div>
     </Flex>
@@ -483,16 +494,14 @@ export function AdminShell({ route, children }: AdminShellProps) {
                   />
                 </Tooltip>
                 <NotificationBell />
-                <Dropdown
-                  {...accountDropdownProps(headerAccountMenuOpen, onHeaderAccountMenuChange)}
-                  placement="bottomRight"
-                >
+                <div className="admin-account-menu-anchor is-below">
                   <Button
                     type="text"
                     className="admin-header-btn admin-user-trigger"
                     aria-label={`Open account menu for ${userName}`}
                     aria-haspopup="menu"
                     aria-expanded={headerAccountMenuOpen}
+                    onClick={() => onHeaderAccountMenuChange(!headerAccountMenuOpen)}
                     style={{ gap: 6, width: "auto", paddingInline: isMobile ? 4 : 8, minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40 }}
                   >
                     <Avatar
@@ -511,7 +520,8 @@ export function AdminShell({ route, children }: AdminShellProps) {
                       </span>
                     )}
                   </Button>
-                </Dropdown>
+                  {accountMenuPopover(headerAccountMenuOpen, "below")}
+                </div>
               </Space>
             </Flex>
           </Header>
