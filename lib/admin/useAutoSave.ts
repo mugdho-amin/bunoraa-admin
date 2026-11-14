@@ -31,6 +31,7 @@ export function useAutoSave<T>({
   const [draftId, setDraftId] = useState<string | number | null>(id ?? null);
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const [lastSaved, setLastSaved] = useState<number | null>(null);
+  const [, setSnapshotRevision] = useState(0);
   const lastSnapshot = useRef<string>(JSON.stringify(formData));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
@@ -48,6 +49,7 @@ export function useAutoSave<T>({
 
   const resetSnapshot = useCallback(() => {
     lastSnapshot.current = JSON.stringify(formData);
+    setSnapshotRevision((revision) => revision + 1);
   }, [formData]);
 
   const saveDraft = useCallback(async () => {
@@ -165,5 +167,7 @@ export function useAutoSave<T>({
     paused.current = false;
   }, []);
 
-  return { draftId, status, lastSaved, flush, resetSnapshot, cancel, resume };
+  const isDirty = JSON.stringify(formData) !== lastSnapshot.current;
+
+  return { draftId, status, lastSaved, flush, resetSnapshot, cancel, resume, isDirty };
 }

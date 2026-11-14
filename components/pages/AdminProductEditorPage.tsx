@@ -334,6 +334,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const slugManuallyEdited = useRef(false);
   const variantContainerRef = useRef<HTMLDivElement>(null);
+  const editorUrlRef = useRef("");
+  const allowNextPopRef = useRef(false);
+  const leaveEditorRef = useRef<(fromBrowserBack?: boolean) => void>(() => undefined);
 
   const { query: existingQuery, result: existing } = useOne({
     resource: "catalog/products",
@@ -537,6 +540,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   const canDiscardDraft = !id || product?.is_active === false;
 
   const formInitialized = useRef(false);
+  const resetSnapshotAfterInitRef = useRef(false);
 
   const handleDiscardDraft = () => {
     const draftId = currentId ?? id;
@@ -566,6 +570,69 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       },
     });
   };
+
+  const handleLeaveEditor = (fromBrowserBack = false) => {
+    const leave = () => {
+      if (fromBrowserBack) {
+        allowNextPopRef.current = true;
+        router.back();
+      } else {
+        router.push("/catalog/products");
+      }
+    };
+
+    if (!autoSave.isDirty) {
+      leave();
+      return;
+    }
+
+    modal.confirm({
+      title: "Leave product editor?",
+      content: "Your latest changes are still waiting to be saved. Save them before leaving the editor?",
+      okText: "Save and leave",
+      cancelText: "Keep editing",
+      onOk: async () => {
+        const saved = await autoSave.flush();
+        if (!saved) {
+          message.error("Your changes could not be saved. Please try again before leaving.");
+          throw new Error("Product changes were not saved");
+        }
+        leave();
+      },
+    });
+  };
+
+  leaveEditorRef.current = handleLeaveEditor;
+
+  useEffect(() => {
+    editorUrlRef.current = window.location.href;
+  }, []);
+
+  useEffect(() => {
+    if (!autoSave.isDirty) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const handlePopState = () => {
+      if (allowNextPopRef.current) {
+        allowNextPopRef.current = false;
+        return;
+      }
+      if (editorUrlRef.current) {
+        window.history.pushState(window.history.state, "", editorUrlRef.current);
+      }
+      leaveEditorRef.current(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [autoSave.isDirty]);
 
   const initForm = useCallback(() => {
     if (formInitialized.current) return;
@@ -604,6 +671,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
       const hasOptions = variants.some((v) => v.size || v.color);
       const loadedAsVariantProduct = variants.length > 1 || hasOptions || Boolean(product.has_variants);
        setHasVariants(loadedAsVariantProduct);
+      resetSnapshotAfterInitRef.current = true;
       setForm({
         product_type: loadedAsVariantProduct ? "variable" : "simple",
         name: product.name ?? "",
@@ -684,9 +752,14 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   }, [autoSave.resetSnapshot]);
 
   useEffect(() => {
+    if (!resetSnapshotAfterInitRef.current) return;
+    resetSnapshotAfterInitRef.current = false;
+    resetSnapshotRef.current();
+  }, [form, autoSave.resetSnapshot]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       initForm();
-      resetSnapshotRef.current();
     }, 0);
     return () => clearTimeout(timer);
   }, [initForm]);
@@ -1439,7 +1512,9 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     <Flex vertical gap={20} className="admin-product-editor">
       <Flex justify="space-between" align="center" wrap="wrap" gap={12} className="product-editor-header">
         <Flex align="center" gap={12} className="product-editor-heading">
-          <Button icon={<ArrowLeft size={16} />} onClick={() => router.push("/catalog/products")} />
+          <Button className="product-editor-cancel-button" icon={<ArrowLeft size={16} />} onClick={() => handleLeaveEditor()}>
+            Cancel
+          </Button>
           <div className="product-editor-title-group">
             <span className="product-editor-eyebrow">Catalog / Products</span>
             <Typography.Title level={3} className="product-editor-title">
