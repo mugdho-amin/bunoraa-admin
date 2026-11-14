@@ -2316,6 +2316,34 @@ code,
   .product-type-option-copy strong { padding-right: 18px; }
   .product-type-option-icon { width: 30px; height: 30px; }
 }
+@media (min-width: 1121px) {
+  .product-editor-form-grid.has-variants {
+    height: clamp(400px, calc(100dvh - 460px), 760px);
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .product-editor-form-grid.has-variants > .product-editor-primary-column,
+  .product-editor-form-grid.has-variants > .ant-flex:last-child {
+    height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 8px 12px 0;
+    scrollbar-color: var(--admin-scrollbar-thumb) transparent;
+    scrollbar-width: thin;
+  }
+  .product-editor-form-grid.has-variants > .product-editor-primary-column::-webkit-scrollbar,
+  .product-editor-form-grid.has-variants > .ant-flex:last-child::-webkit-scrollbar { width: 7px; }
+  .product-editor-form-grid.has-variants > .product-editor-primary-column::-webkit-scrollbar-thumb,
+  .product-editor-form-grid.has-variants > .ant-flex:last-child::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: var(--admin-scrollbar-thumb);
+    background-clip: padding-box;
+  }
+}
 
 .admin-site-settings-form { display: flex; min-width: 0; flex-direction: column; gap: 18px; }
 .ai-provider-mobile-actions { display: flex; flex-wrap: wrap; gap: 6px; }
