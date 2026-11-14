@@ -34,7 +34,7 @@ export type AiReviewDecision = {
 
 export async function startProductAutofill(payload: {
   product_id?: string;
-  image_keys: string[];
+  image_sources: Array<{ type: "storage_key" | "url"; value: string }>;
   currency: string;
   locale?: string;
   allow_external?: boolean;

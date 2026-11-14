@@ -1271,13 +1271,24 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
   );
 
   const runAiAutofill = useCallback(async (): Promise<Omit<AiDraftGeneration, "createdAt">> => {
-    const aiImages = orderImagesForAi(form.gallery, form.primaryImage);
-    const imageKeys = aiImages.map((image) => image._storageKey).filter((key): key is string => Boolean(key));
+    const galleryForAi = form.primaryImage && !form.gallery.some((image) => image.url === form.primaryImage)
+      ? [{ _id: "ai-primary-image", url: form.primaryImage, variantIds: [], alt: form.primaryImageAlt }, ...form.gallery]
+      : form.gallery;
+    const aiImages = orderImagesForAi(galleryForAi, form.primaryImage);
+    const imageSources = aiImages.flatMap((image): Array<{ type: "storage_key" | "url"; value: string }> => {
+      if (image._storageKey) {
+        return [{ type: "storage_key" as const, value: image._storageKey }];
+      }
+      if (/^https?:\/\//i.test(image.url)) {
+        return [{ type: "url" as const, value: image.url }];
+      }
+      return [];
+    });
     // A new draft can be autosaved before the button is pressed. Use its new
     // server ID so the backend can analyze promoted primary/gallery images.
     const productId = currentId ?? id;
-    if (!productId && imageKeys.length === 0) {
-      throw new Error("Upload at least one product image before running AI autofill.");
+    if (!productId && imageSources.length === 0) {
+      throw new Error("Add an image by uploading a file or pasting a public HTTPS image URL before running AI autofill.");
     }
     const selectedCategories = categories.filter(
       (category) => form.categoryIds.includes(String(category.id)),
@@ -1286,7 +1297,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     const primaryCategoryName = categories.find((category) => String(category.id) === form.primaryCategoryId)?.name ?? "";
     const started = await startProductAutofill({
       product_id: productId ? String(productId) : undefined,
-      image_keys: imageKeys,
+      image_sources: imageSources,
       currency: form.currency,
       locale: "en",
       allow_external: true,
