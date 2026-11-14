@@ -35,6 +35,7 @@ export function useAutoSave<T>({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
   const mounted = useRef(true);
+  const paused = useRef(false);
   const flushResolve = useRef<((data?: Record<string, unknown>) => void) | null>(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export function useAutoSave<T>({
   }, [formData]);
 
   const saveDraft = useCallback(async () => {
-    if (saving.current || !mounted.current) return;
+    if (saving.current || !mounted.current || paused.current) return;
     saving.current = true;
     setStatus("saving");
 
@@ -138,6 +139,7 @@ export function useAutoSave<T>({
   }, [enabled, intervalMs, formData, saveDraft]);
 
   const flush = useCallback((): Promise<Record<string, unknown> | undefined> => {
+    if (paused.current) return Promise.resolve(undefined);
     if (timer.current) clearTimeout(timer.current);
     return new Promise<Record<string, unknown> | undefined>((resolve) => {
       if (!saving.current) {
@@ -151,5 +153,17 @@ export function useAutoSave<T>({
     });
   }, [saveDraft]);
 
-  return { draftId, status, lastSaved, flush, resetSnapshot };
+  const cancel = useCallback(() => {
+    paused.current = true;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    paused.current = false;
+  }, []);
+
+  return { draftId, status, lastSaved, flush, resetSnapshot, cancel, resume };
 }

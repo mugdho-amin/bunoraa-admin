@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
+import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { App, Button, Card, Flex, Grid, Typography, Spin, Tag, Switch, Modal, Space, Select } from "antd";
 import Image from "next/image";
 import { uploadImage } from "@/lib/upload";
@@ -300,12 +300,13 @@ const emptyForm: ProductForm = {
 };
 
 export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const router = useRouter();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [discardingDraft, setDiscardingDraft] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
   const [aiRegenerating, setAiRegenerating] = useState(false);
   const [aiReview, setAiReview] = useState<AiDraftGeneration | null>(null);
@@ -530,9 +531,40 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
 
   const { mutate: createProduct } = useCreate();
   const { mutate: updateProduct } = useUpdate();
+  const { mutateAsync: deleteProductAsync } = useDelete();
   const product = existing;
+  const canDiscardDraft = !id || product?.is_active === false;
 
   const formInitialized = useRef(false);
+
+  const handleDiscardDraft = () => {
+    const draftId = currentId ?? id;
+    modal.confirm({
+      title: "Discard product draft?",
+      content: draftId
+        ? "This removes the saved draft and its editor data. This cannot be undone."
+        : "This clears the unsaved product form and returns to the product list.",
+      okText: "Discard draft",
+      okButtonProps: { danger: true },
+      cancelText: "Keep editing",
+      onOk: async () => {
+        setDiscardingDraft(true);
+        autoSave.cancel();
+        try {
+          if (draftId) {
+            await deleteProductAsync({ resource: "catalog/products", id: draftId });
+          }
+          message.success("Draft discarded");
+          router.push("/catalog/products");
+        } catch (error) {
+          autoSave.resume();
+          setDiscardingDraft(false);
+          message.error(error instanceof Error ? error.message : "Unable to discard this draft");
+          throw error;
+        }
+      },
+    });
+  };
 
   const initForm = useCallback(() => {
     if (formInitialized.current) return;
@@ -1382,6 +1414,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
           </div>
         </Flex>
         <Flex align="center" gap={8} className="product-editor-actions">
+          {canDiscardDraft && (
+            <Button
+              danger
+              icon={<Trash2 size={14} />}
+              onClick={handleDiscardDraft}
+              disabled={saving || discardingDraft || autoSave.status === "saving"}
+              loading={discardingDraft}
+            >
+              Discard draft
+            </Button>
+          )}
           <Button
             icon={<WandSparkles size={15} />}
             onClick={handleAiAutofill}
@@ -2012,19 +2055,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Aspect Ratio
                     </label>
-                    <Select
-                      value={form.aspect_ratio || undefined}
-                      onChange={(v) => {
-                        aspectRatioManuallySet.current = Boolean(v && v !== categoryAspectRatio);
-                        updateField("aspect_ratio", v ?? categoryAspectRatio);
+                    <select
+                      className="admin-select"
+                      aria-label="Aspect ratio"
+                      value={form.aspect_ratio}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        aspectRatioManuallySet.current = Boolean(value && value !== categoryAspectRatio);
+                        updateField("aspect_ratio", value || categoryAspectRatio);
                       }}
-                      placeholder="Select aspect ratio"
-                      allowClear
-                      style={{ width: "100%" }}
-                      getPopupContainer={() => document.body}
-                      placement="bottomLeft"
-                      options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
-                    />
+                    >
+                      <option value="">
+                        {categoryAspectRatio ? `Category default (${categoryAspectRatio})` : "Select aspect ratio"}
+                      </option>
+                      {aspectChoices.map((choice) => (
+                        <option key={choice.code} value={choice.code}>{choice.label}</option>
+                      ))}
+                    </select>
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                       Image display ratio for product cards.
                       {categoryAspectRatio && !form.aspect_ratio ? ` (Category default: ${categoryAspectRatio})` : ""}
@@ -2199,19 +2246,23 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                     <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.3em", color: "var(--admin-muted)", fontWeight: 500 }}>
                       Aspect Ratio
                     </label>
-                    <Select
-                      value={form.aspect_ratio || undefined}
-                      onChange={(v) => {
-                        aspectRatioManuallySet.current = Boolean(v && v !== categoryAspectRatio);
-                        updateField("aspect_ratio", v ?? categoryAspectRatio);
+                    <select
+                      className="admin-select"
+                      aria-label="Aspect ratio"
+                      value={form.aspect_ratio}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        aspectRatioManuallySet.current = Boolean(value && value !== categoryAspectRatio);
+                        updateField("aspect_ratio", value || categoryAspectRatio);
                       }}
-                      placeholder="Select aspect ratio"
-                      allowClear
-                      style={{ width: "100%" }}
-                      getPopupContainer={() => document.body}
-                      placement="bottomLeft"
-                      options={aspectChoices.map((c) => ({ value: c.code, label: c.label }))}
-                    />
+                    >
+                      <option value="">
+                        {categoryAspectRatio ? `Category default (${categoryAspectRatio})` : "Select aspect ratio"}
+                      </option>
+                      {aspectChoices.map((choice) => (
+                        <option key={choice.code} value={choice.code}>{choice.label}</option>
+                      ))}
+                    </select>
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                       Image display ratio for product cards.
                       {categoryAspectRatio && !form.aspect_ratio ? ` (Category default: ${categoryAspectRatio})` : ""}
