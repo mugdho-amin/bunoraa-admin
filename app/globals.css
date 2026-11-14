@@ -1941,9 +1941,7 @@ code,
   color: var(--admin-ink);
 }
 .product-editor-header {
-  position: sticky;
-  z-index: 30;
-  top: 0;
+  position: relative;
   min-width: 0;
   padding: 14px 18px;
   border: 1px solid var(--admin-border);
@@ -2070,7 +2068,7 @@ code,
 }
 .product-editor-sidebar {
   position: sticky;
-  top: 104px;
+  top: 12px;
   display: grid;
   min-width: 0;
   gap: 12px;
@@ -2250,7 +2248,7 @@ code,
 @media (min-width: 768px) and (max-width: 1120px) {
   .product-editor-workbench { grid-template-columns: minmax(170px, 200px) minmax(0, 1fr); gap: 14px; }
   .product-editor-form-grid.has-variants { grid-template-columns: minmax(0, 1fr); }
-  .product-editor-sidebar { top: 98px; }
+  .product-editor-sidebar { top: 8px; }
   .product-editor-nav-item { min-height: 42px; }
 }
 @media (max-width: 380px) {
