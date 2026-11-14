@@ -7,7 +7,6 @@ import { humanizeLabel } from "@/lib/admin/utils";
 import type { AiReviewDecision, ProductAiSuggestion } from "@/lib/productAi";
 
 const LONG_FIELDS = new Set(["description", "short_description", "meta_description", "meta_keywords"]);
-const READONLY_FIELDS = new Set(["tags"]);
 const AUTOFILL_FIELDS = new Set([
   "name",
   "short_description",
@@ -37,8 +36,8 @@ type ReviewItem = {
 };
 
 function confidenceTier(confidence: number) {
-  if (confidence >= 0.8) return { label: "High", color: "green" };
-  if (confidence >= 0.6) return { label: "Medium", color: "orange" };
+  if (confidence >= 0.8) return { label: "High", color: "green" as const };
+  if (confidence >= 0.6) return { label: "Medium", color: "orange" as const };
   return { label: "Low", color: "red" };
 }
 
@@ -131,7 +130,9 @@ export default function AiReviewModal({
   };
 
   const setEditedValue = (index: number, value: string) => {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, editedValue: value } : item)));
+    setItems((prev) => prev.map((item, i) => (
+      i === index ? { ...item, editedValue: value, decision: "accepted" } : item
+    )));
   };
 
   const buildDecisions = (applyAll = false): AiReviewDecision[] => {
@@ -139,17 +140,9 @@ export default function AiReviewModal({
       .filter((item) => applyAll || item.decision !== "pending")
       .map((item) => {
         const { suggestion } = item;
-        if (!applyAll && item.decision === "rejected") {
+        // A deliberate rejection always wins, even during bulk apply.
+        if (item.decision === "rejected") {
           return { field_name: suggestion.field_name, action: "rejected" as const };
-        }
-        if (READONLY_FIELDS.has(suggestion.field_name)) {
-          // Taxonomy fields apply server-side from value_json (IDs); keep the
-          // raw value so the recorded feedback matches the applied data.
-          return {
-            field_name: suggestion.field_name,
-            action: "applied" as const,
-            final_value: suggestion.value,
-          };
         }
         const edited = item.editedValue.trim() !== suggestedText(suggestion).trim();
         return {
@@ -181,9 +174,6 @@ export default function AiReviewModal({
           autoSize={{ minRows: 2, maxRows: 8 }}
         />
       );
-    }
-    if (READONLY_FIELDS.has(field)) {
-      return <Typography.Text type="secondary">{suggestedText(item.suggestion)}</Typography.Text>;
     }
     return (
       <Input
@@ -227,11 +217,11 @@ export default function AiReviewModal({
             <Button icon={<RefreshCw size={14} />} onClick={onRegenerate} loading={regenerating}>
               Regenerate
             </Button>
-            <Button disabled={items.length === 0} onClick={handleApplyAll}>
-              Apply all ({items.length})
+            <Button disabled={items.every((item) => item.decision === "rejected")} onClick={handleApplyAll}>
+              Apply remaining ({items.filter((item) => item.decision !== "rejected").length})
             </Button>
-            <Button type="primary" disabled={acceptedCount === 0} onClick={handleApply}>
-              Apply changes ({acceptedCount})
+            <Button type="primary" disabled={acceptedCount + rejectedCount === 0} onClick={handleApply}>
+              {acceptedCount > 0 ? `Apply changes (${acceptedCount})` : `Save review (${rejectedCount})`}
             </Button>
           </Space>
         </Flex>
@@ -257,7 +247,9 @@ export default function AiReviewModal({
       <Flex vertical gap={12}>
         {items.map((item, index) => {
           const { suggestion } = item;
-          const tier = confidenceTier(suggestion.confidence);
+          const tier = suggestion.low_confidence
+            ? { label: "Low", color: "red" as const }
+            : confidenceTier(Number.isFinite(suggestion.confidence) ? suggestion.confidence : 0);
           const current = currentValues[suggestion.field_name];
           const currentText = current === undefined || current === null || current === ""
             ? null
@@ -328,9 +320,9 @@ export default function AiReviewModal({
                   {suggestion.rationale}
                 </Typography.Paragraph>
               )}
-              {suggestion.source_urls.length > 0 && (
+              {Array.isArray(suggestion.source_urls) && suggestion.source_urls.some(isSafeSourceUrl) && (
                 <Space size={4} wrap>
-                  {suggestion.source_urls.slice(0, 3).map((url) => (
+                  {suggestion.source_urls.filter(isSafeSourceUrl).slice(0, 3).map((url) => (
                     <a
                       key={url}
                       href={url}
@@ -349,4 +341,14 @@ export default function AiReviewModal({
       </Flex>
     </Modal>
   );
+}
+
+function isSafeSourceUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
 }

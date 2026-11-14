@@ -1121,24 +1121,17 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
         case "name": next.name = String(value); break;
         case "description": next.description = String(value); break;
         case "short_description": next.short_description = String(value); break;
-        case "price": next.price = Number(value); break;
-        case "sale_price": next.sale_price = Number(value); break;
-        case "compare_at_price": next.compare_at_price = Number(value); break;
-        case "cost": next.cost = Number(value); break;
-        case "stock_quantity": next.stock_quantity = Number(value); break;
-        case "low_stock_threshold": next.low_stock_threshold = Number(value); break;
-        case "weight": next.weight = Number(value); break;
-        case "length": next.length = Number(value); break;
-        case "width": next.width = Number(value); break;
-        case "height": next.height = Number(value); break;
         case "meta_title": next.meta_title = String(value); break;
         case "meta_description": next.meta_description = String(value); break;
         case "meta_keywords": next.meta_keywords = String(value); break;
         case "tags": {
-          const names = suggestion.metadata.names;
-          next.tags = Array.isArray(names)
-            ? names.map(String)
-            : Array.isArray(value) ? value.map(String) : [String(value)];
+          const names = suggestion.metadata?.names;
+          const tagValues = overrideValue !== undefined
+            ? overrideValue
+            : Array.isArray(names) ? names : value;
+          next.tags = Array.isArray(tagValues)
+            ? tagValues.map(String).map((tag) => tag.trim()).filter(Boolean)
+            : String(tagValues).split(",").map((tag) => tag.trim()).filter(Boolean);
           break;
         }
       }
@@ -1538,7 +1531,8 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
             icon={<WandSparkles size={15} />}
             onClick={handleAiAutofill}
             loading={aiRunning}
-            disabled={saving}
+            disabled={saving || aiRunning || aiRegenerating}
+            title="Generate reviewable product copy. Nothing is changed until you approve suggestions."
           >
             {aiRunning ? "Analyzing product..." : "AI Autofill"}
           </Button>
