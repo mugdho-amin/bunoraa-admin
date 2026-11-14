@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCreate, useDelete, useList, useOne, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
 import { Button, Card, Flex, Grid, Image, Input, Modal, Pagination, Space, Table, Tag, Typography, Skeleton, App, Switch } from "antd";
-import { Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { uploadImage } from "@/lib/upload";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, Eye, ArrowLeft, Check, FolderTree } from "lucide-react";
@@ -13,6 +13,7 @@ import type { ColumnsType } from "antd/es/table";
 import { CategoryTreeSelect, type CategoryNode } from "@/components/forms/CategoryTreeSelect";
 import { useAutoSave } from "@/lib/admin/useAutoSave";
 import { AdminPageHeader } from "@/components/shared/AdminPageHeader";
+import { requestAdminData } from "@/lib/admin/http";
 
 type CategoryRecord = BaseRecord & {
   id: string;
@@ -91,6 +92,8 @@ const emptyForm: CategoryFormData = {
   set_aspect_default_for_descendants: false,
 };
 
+const PRODUCT_CATEGORY_IMAGE_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23e5e7eb'/%3E%3C/svg%3E";
+
 function CategoryListView() {
   const router = useRouter();
   const screens = Grid.useBreakpoint();
@@ -98,7 +101,10 @@ function CategoryListView() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const { message } = App.useApp();
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const { message, notification } = App.useApp();
   const searchRef = useRef<InputRef>(null);
 
   useEffect(() => {
@@ -134,6 +140,45 @@ function CategoryListView() {
 
   const { mutate: deleteCategory } = useDelete();
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const data = await requestAdminData<{ filename: string; content: string; content_type: string }>("/admin/catalog/categories/export/");
+      const url = URL.createObjectURL(new Blob([data.content], { type: data.content_type || "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.filename || "categories.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      message.success("Categories exported");
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Failed to export categories");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (file: File) => {
+    setIsImporting(true);
+    try {
+      const result = await requestAdminData<{ created: number; updated: number; skipped: number; error: number; errors?: Array<{ row: number; error: string }> }>(
+        "/admin/catalog/categories/import/",
+        { method: "POST", body: { content: (await file.text()).replace(/^\uFEFF/, "") } },
+      );
+      if (result.error || result.errors?.length) {
+        const first = result.errors?.[0];
+        notification.warning({ message: `Import completed with ${result.error} row error(s)`, description: first ? `Row ${first.row}: ${first.error}` : undefined });
+      } else {
+        message.success(`Imported ${result.created + result.updated} categories`);
+      }
+      void refetch();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Failed to import categories");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleDelete = useCallback(
     (record: CategoryRecord) => {
       Modal.confirm({
@@ -164,6 +209,15 @@ function CategoryListView() {
   }), [categories, total]);
 
   const columns: ColumnsType<CategoryRecord> = useMemo(() => [
+    {
+      title: "Image",
+      dataIndex: "image",
+      key: "image",
+      width: 76,
+      render: (image: string | null, record: CategoryRecord) => image
+        ? <Image src={image} alt={`${record.name} category`} width={40} height={40} preview={false} style={{ display: "block", borderRadius: 8, objectFit: "cover" }} fallback={PRODUCT_CATEGORY_IMAGE_FALLBACK} />
+        : <div className="category-table-image-placeholder" aria-label={`No image for ${record.name}`}><FolderTree size={17} /></div>,
+    },
     {
       title: "Name",
       dataIndex: "name",
@@ -276,9 +330,16 @@ function CategoryListView() {
         eyebrow="Catalog"
         description="Organize products and merchandising."
         meta={`${total} total · ${stats.active} active · ${stats.featured} featured`}
-        actions={<Button type="primary" icon={<Plus size={14} />} onClick={() => router.push("/catalog/categories/create")}>
-          Create category
-        </Button>}
+        actions={<Space wrap>
+          <input ref={importFileRef} type="file" accept=".csv,text/csv" className="admin-hidden-file-input" onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleImport(file);
+            event.target.value = "";
+          }} />
+          <Button icon={<Upload size={14} />} loading={isImporting} onClick={() => importFileRef.current?.click()}>Import CSV</Button>
+          <Button icon={<Download size={14} />} loading={isExporting} onClick={() => void handleExport()}>Export CSV</Button>
+          <Button type="primary" icon={<Plus size={14} />} onClick={() => router.push("/catalog/categories/create")}>Create category</Button>
+        </Space>}
       />
       <Flex gap={12} wrap="wrap" align="center" justify="space-between" className="admin-resource-search-row">
         <Input

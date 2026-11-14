@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDelete, useList, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Grid, Image, Input, Modal, Pagination, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
+import { Button, Card, Checkbox, Flex, Grid, Image, Input, Modal, Pagination, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch, Upload, Download } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
@@ -56,11 +56,12 @@ export function AdminProductListPage() {
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const searchRef = useRef<InputRef>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
-  const { mutate: updateProduct } = useUpdate();
+  const { mutate: updateProduct, mutateAsync: updateProductAsync } = useUpdate();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -97,7 +98,7 @@ export function AdminProductListPage() {
   const error = listQuery.error;
   const refetch = listQuery.refetch;
 
-  const { mutate: deleteProduct, mutation: deleteMutation } = useDelete();
+  const { mutate: deleteProduct, mutateAsync: deleteProductAsync, mutation: deleteMutation } = useDelete();
   const isDeleting = deleteMutation.isPending;
 
   const handleExport = useCallback(async () => {
@@ -252,6 +253,59 @@ export function AdminProductListPage() {
 
   const products = listResult?.data ?? [];
   const total = listResult?.total ?? 0;
+  const selectedProducts = products.filter((product) => selectedIds.includes(product.id));
+
+  const bulkUpdate = useCallback(async (values: Partial<ProductRecord>) => {
+    if (selectedIds.length === 0) return;
+    try {
+      const results = await Promise.allSettled(selectedIds.map((id) => updateProductAsync({
+        resource: "catalog/products",
+        id,
+        values,
+      })));
+      const succeeded = results.filter((result) => result.status === "fulfilled").length;
+      const failed = results.length - succeeded;
+      if (failed) notification.warning({ message: `${succeeded} updated; ${failed} failed` });
+      else notification.success({ message: `${succeeded} products updated` });
+      setSelectedIds([]);
+      void refetch();
+    } catch {
+      notification.error({ message: "Could not update selected products" });
+    }
+  }, [selectedIds, updateProductAsync, refetch]);
+
+  const bulkDelete = useCallback(() => {
+    if (!selectedIds.length) return;
+    Modal.confirm({
+      title: `Delete ${selectedIds.length} products?`,
+      content: "This action cannot be undone.",
+      okText: "Delete products",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        const results = await Promise.allSettled(selectedIds.map((id) => deleteProductAsync({ resource: "catalog/products", id })));
+        const succeeded = results.filter((result) => result.status === "fulfilled").length;
+        const failed = results.length - succeeded;
+        if (failed) notification.warning({ message: `${succeeded} deleted; ${failed} failed` });
+        else notification.success({ message: `${succeeded} products deleted` });
+        setSelectedIds([]);
+        void refetch();
+      },
+    });
+  }, [deleteProductAsync, refetch, selectedIds]);
+
+  const exportSelected = useCallback(() => {
+    if (!selectedProducts.length) return;
+    const headers = ["id", "name", "slug", "sku", "price", "sale_price", "stock_quantity", "is_active"];
+    const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const csv = [headers.join(","), ...selectedProducts.map((product) => headers.map((key) => csvCell(product[key as keyof ProductRecord])).join(","))].join("\r\n");
+    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "selected-products.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [selectedProducts]);
 
   const columns: ColumnsType<ProductRecord> = [
     {
@@ -510,6 +564,35 @@ export function AdminProductListPage() {
             )}
           </Flex>
 
+          {products.length > 0 && (
+            <Flex align="center" justify="space-between" wrap="wrap" gap={10} className="admin-product-selection-toolbar">
+              <Flex align="center" gap={10} wrap="wrap">
+                <Checkbox
+                  checked={selectedProducts.length === products.length && products.length > 0}
+                  indeterminate={selectedProducts.length > 0 && selectedProducts.length < products.length}
+                  onChange={(event) => {
+                    const currentIds = new Set(products.map((product) => product.id));
+                    setSelectedIds((previous) => event.target.checked
+                      ? Array.from(new Set([...previous, ...currentIds]))
+                      : previous.filter((id) => !currentIds.has(id)));
+                  }}
+                >
+                  Select this page
+                </Checkbox>
+                {selectedIds.length > 0 && <Typography.Text type="secondary">{selectedIds.length} selected</Typography.Text>}
+              </Flex>
+              {selectedIds.length > 0 && (
+                <Space wrap size={6}>
+                  <Button size="small" onClick={() => void bulkUpdate({ is_active: true })}>Publish</Button>
+                  <Button size="small" onClick={() => void bulkUpdate({ is_active: false })}>Unpublish</Button>
+                  <Button size="small" icon={<Download size={13} />} onClick={exportSelected}>Export selected</Button>
+                  <Button size="small" danger icon={<Trash2 size={13} />} onClick={bulkDelete}>Delete selected</Button>
+                  <Button size="small" type="text" onClick={() => setSelectedIds([])}>Clear</Button>
+                </Space>
+              )}
+            </Flex>
+          )}
+
           {isLoading ? (
             <Flex vertical gap={1}>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -539,6 +622,13 @@ export function AdminProductListPage() {
               {products.map((product) => (
                 <article className="admin-mobile-record product-mobile-card" key={product.id}>
                   <div className="admin-mobile-record-body">
+                    <Checkbox
+                      aria-label={`Select ${product.name}`}
+                      checked={selectedIds.includes(product.id)}
+                      onChange={(event) => setSelectedIds((previous) => event.target.checked
+                        ? Array.from(new Set([...previous, product.id]))
+                        : previous.filter((id) => id !== product.id))}
+                    />
                     <div className="product-mobile-main">
                       <Image
                         src={product.primary_image ?? undefined}
@@ -578,7 +668,7 @@ export function AdminProductListPage() {
                 pageSize={pageSize}
                 total={total}
                 showSizeChanger={false}
-                onChange={(nextPage) => setPage(nextPage)}
+                onChange={(nextPage) => { setSelectedIds([]); setPage(nextPage); }}
               />
             </div>
           ) : (
@@ -587,8 +677,12 @@ export function AdminProductListPage() {
               dataSource={products}
               columns={columns}
               rowKey="id"
+              rowSelection={{
+                selectedRowKeys: selectedIds,
+                onChange: (keys) => setSelectedIds(keys.map(String)),
+              }}
               tableLayout="fixed"
-              scroll={{ x: 1455 }}
+              scroll={{ x: 1515 }}
               pagination={{
                 current: page,
                 pageSize,
@@ -599,9 +693,11 @@ export function AdminProductListPage() {
               }}
               onChange={(pagination: TablePaginationConfig, _filters: Record<string, unknown>, sorter: SorterResult<ProductRecord> | SorterResult<ProductRecord>[]) => {
                 if (pagination.current && pagination.current !== page) {
+                  setSelectedIds([]);
                   setPage(pagination.current);
                 }
                 if (pagination.pageSize && pagination.pageSize !== pageSize) {
+                  setSelectedIds([]);
                   setPageSize(pagination.pageSize);
                 }
                 const s = Array.isArray(sorter) ? sorter[0] : sorter;

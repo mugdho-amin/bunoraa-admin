@@ -1436,6 +1436,12 @@ html, body { color: var(--admin-ink); }
 .admin-product-table .ant-table-thead > tr > th { white-space: nowrap; }
 .admin-product-table .ant-table-tbody > tr > td { vertical-align: middle; }
 .admin-product-table .ant-table-cell:first-child { padding-inline: 12px; }
+.admin-product-selection-toolbar { padding: 10px 12px; border: 1px solid var(--admin-border); border-radius: 12px; background: var(--admin-bg); }
+.admin-hidden-file-input { display: none; }
+.category-table-image-placeholder { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 8px; color: var(--admin-muted); background: var(--admin-bg); }
+.product-mobile-card .admin-mobile-record-body { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.product-mobile-card .product-mobile-facts,
+.product-mobile-card .product-mobile-actions { grid-column: 1 / -1; }
 .admin-account-menu-anchor { position: relative; display: inline-flex; flex: 0 0 auto; }
 .admin-account-menu-anchor.is-above { display: block; width: 100%; }
 .admin-account-menu-popover { position: absolute; z-index: 1700; width: min(284px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
