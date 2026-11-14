@@ -199,6 +199,7 @@ export default function AiReviewModal({
               size="small"
               value={activeDraftId}
               onChange={onSelectDraft}
+              getPopupContainer={() => document.body}
               style={{ minWidth: 180 }}
               options={drafts.map((draft, index) => ({
                 value: draft.jobId,
