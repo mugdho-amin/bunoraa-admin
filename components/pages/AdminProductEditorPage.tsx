@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreate, useList, useOne, useUpdate } from "@refinedev/core";
-import { Button, Card, Flex, Grid, Typography, message, Spin, Tag, Switch, Modal, Space, Select } from "antd";
+import { App, Button, Card, Flex, Grid, Typography, Spin, Tag, Switch, Modal, Space, Select } from "antd";
 import Image from "next/image";
 import { uploadImage } from "@/lib/upload";
 import { uploadVideo } from "@/lib/uploadVideo";
@@ -300,6 +300,7 @@ const emptyForm: ProductForm = {
 };
 
 export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
+  const { message } = App.useApp();
   const router = useRouter();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
@@ -1742,7 +1743,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                           <button onClick={() => {
                             setForm((p) => ({ ...p, videos: p.videos.filter((_, j) => j !== i) }));
                           }}
-                            style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 11 }}>
+                            style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)", fontSize: 11 }}>
                             Remove
                           </button>
                         </Flex>
@@ -1876,7 +1877,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                           <button onClick={() => {
                             setForm((p) => ({ ...p, customization_options: p.customization_options.filter((_, j) => j !== oi) }));
                           }}
-                            style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 11 }}>
+                            style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)", fontSize: 11 }}>
                             Remove
                           </button>
                         </Flex>
@@ -1904,7 +1905,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                     return { ...p, customization_options: next };
                                   });
                                 }}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)", fontSize: 10 }}>
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)", fontSize: 10 }}>
                                   <X size={12} />
                                 </button>
                               </Flex>
@@ -2597,7 +2598,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                   {variant.enabled ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
                                 <button onClick={() => removeVariant(actualIdx)}
-                                  style={{ border: "none", background: "none", cursor: "pointer", color: "rgba(190,18,60,0.4)" }}
+                                  style={{ border: "none", background: "none", cursor: "pointer", color: "var(--admin-danger-muted)" }}
                                   title="Remove">
                                   <Trash2 size={14} />
                                 </button>
@@ -2682,7 +2683,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                                       {COLOR_PRESETS.slice(0, 12).map((c) => (
                                         <button key={c.name} onClick={() => updateVariant(actualIdx, "color", c.name)}
                                           title={c.name}
-                                          style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid #0f766e" : "1px solid var(--admin-input-border)", cursor: "pointer", background: c.hex }} />
+                                          style={{ width: 18, height: 18, borderRadius: "50%", border: variant.color === c.name ? "2px solid var(--admin-brand)" : "1px solid var(--admin-input-border)", cursor: "pointer", background: c.hex }} />
                                       ))}
                                     </Flex>
                                   </Flex>

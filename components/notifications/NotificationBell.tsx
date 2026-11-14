@@ -223,7 +223,7 @@ export function NotificationBell() {
                   style={{
                     padding: "12px 16px",
                     cursor: "pointer",
-                    background: item.is_read ? "transparent" : "rgba(15, 118, 110, 0.03)",
+                    background: item.is_read ? "transparent" : "var(--admin-hover-brand)",
                     borderBottom: "1px solid var(--admin-divider)",
                   }}
                   onClick={() => markAsRead(item.id)}
@@ -231,7 +231,7 @@ export function NotificationBell() {
                   <Flex vertical gap={3} style={{ width: "100%" }}>
                     <Flex align="center" justify="space-between">
                       <Space size={6}>
-                        {!item.is_read && <Circle size={8} fill="#0f766e" color="#0f766e" style={{ flexShrink: 0 }} />}
+                        {!item.is_read && <Circle size={8} fill="var(--admin-brand)" color="var(--admin-brand)" style={{ flexShrink: 0 }} />}
                         <Typography.Text strong style={{ fontSize: 13, lineHeight: 1.3 }}>{item.title}</Typography.Text>
                       </Space>
                       <Tag

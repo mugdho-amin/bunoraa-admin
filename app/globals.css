@@ -9,7 +9,7 @@
   --card: 0 0% 100%;
   --border: 220 14% 88%;
   --muted: 222 20% 40%;
-  --muted-foreground: 215 20% 65%;
+  --muted-foreground: 215 16% 46%;
   --primary-foreground: 0 0% 100%;
   --accent-foreground: 0 0% 100%;
   --success: 163 94% 24%;
@@ -24,7 +24,15 @@
   --admin-ink: hsl(var(--foreground));
   --admin-ink-secondary: hsl(var(--muted));
   --admin-muted: hsl(var(--muted-foreground));
-  --admin-muted-light: hsl(215 20% 65%);
+  --admin-muted-light: hsl(215 16% 48%);
+  --admin-muted-alpha-05: hsl(var(--admin-shadow-color) / 0.05);
+  --admin-border-strong: hsl(220 14% 78%);
+  --admin-danger-muted: hsl(var(--destructive) / 0.48);
+  --admin-table-header: hsl(220 25% 97%);
+  --admin-table-hover: hsl(222 47% 11% / 0.035);
+  --admin-overlay: hsl(222 47% 11% / 0.38);
+  --admin-code-bg: hsl(220 27% 96%);
+  --admin-focus-ring: hsl(var(--primary) / 0.2);
   --admin-brand: hsl(var(--primary));
   --admin-brand-strong: hsl(173 71% 22%);
   --admin-brand-light: hsl(var(--primary) / 0.12);
@@ -60,7 +68,7 @@
   --admin-scrollbar-thumb-hover: hsl(var(--admin-shadow-color) / 0.25);
 
   /* ── Chart ── */
-  --admin-chart-grid: hsl(0 0% 0% / 0.04);
+  --admin-chart-grid: hsl(0 0% 0% / 0.08);
   --admin-chart-tooltip-bg: hsl(0 0% 100%);
 
   /* ── Alpha helpers ── */
@@ -83,12 +91,13 @@
   --card: 222 30% 12%;
   --border: 217 20% 20%;
   --muted: 220 20% 63%;
-  --muted-foreground: 220 20% 40%;
+  --muted-foreground: 220 15% 70%;
   --primary-foreground: 0 0% 100%;
   --accent-foreground: 0 0% 100%;
-  --success: 163 94% 24%;
-  --warning: 26 91% 37%;
-  --destructive: 344 83% 41%;
+  --success: 153 62% 54%;
+  --warning: 38 92% 64%;
+  --destructive: 347 83% 68%;
+  --accent: 217 91% 65%;
   --ring: 173 70% 35%;
 
   /* ── Recompute admin aliases from dark semantic tokens ── */
@@ -98,7 +107,15 @@
   --admin-ink: hsl(var(--foreground));
   --admin-ink-secondary: hsl(var(--muted-foreground));
   --admin-muted: hsl(var(--muted-foreground));
-  --admin-muted-light: hsl(217 20% 40%);
+  --admin-muted-light: hsl(217 15% 62%);
+  --admin-muted-alpha-05: hsl(var(--admin-shadow-color) / 0.12);
+  --admin-border-strong: hsl(217 20% 30%);
+  --admin-danger-muted: hsl(var(--destructive) / 0.75);
+  --admin-table-header: hsl(220 20% 18%);
+  --admin-table-hover: hsl(0 0% 100% / 0.045);
+  --admin-overlay: hsl(224 50% 4% / 0.72);
+  --admin-code-bg: hsl(223 32% 12%);
+  --admin-focus-ring: hsl(var(--primary) / 0.36);
   --admin-brand: hsl(var(--primary));
   --admin-brand-strong: hsl(173 71% 30%);
   --admin-brand-light: hsl(var(--primary) / 0.15);
@@ -184,7 +201,7 @@ html, body { overscroll-behavior: none; }
 }
 
 .dark .ant-table-thead > tr > th {
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: var(--admin-table-header) !important;
   border-bottom-color: var(--admin-border) !important;
   color: var(--admin-muted) !important;
 }
@@ -194,7 +211,7 @@ html, body { overscroll-behavior: none; }
 }
 
 .dark .ant-table-tbody > tr:hover > td {
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: var(--admin-table-hover) !important;
 }
 
 .dark .ant-modal-content {
@@ -1442,6 +1459,143 @@ html, body { color: var(--admin-ink); }
 .product-mobile-card .admin-mobile-record-body { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
 .product-mobile-card .product-mobile-facts,
 .product-mobile-card .product-mobile-actions { grid-column: 1 / -1; }
+
+/* Shared light/dark component surfaces. Keep Ant Design aligned with the
+   semantic palette so page-specific views do not drift between modes. */
+.ant-card,
+.ant-modal-content,
+.ant-modal-header,
+.ant-drawer-content,
+.ant-dropdown-menu,
+.ant-select-dropdown,
+.ant-picker-dropdown .ant-picker-panel-container,
+.ant-popover .ant-popover-inner,
+.ant-popconfirm .ant-popconfirm-inner-content {
+  color: var(--admin-ink);
+  background-color: var(--admin-panel);
+  border-color: var(--admin-border);
+}
+.ant-card-head,
+.ant-modal-header,
+.ant-modal-footer,
+.ant-drawer-header,
+.ant-picker-header,
+.ant-picker-footer,
+.ant-dropdown-menu-item-divider {
+  border-color: var(--admin-border) !important;
+}
+.ant-table,
+.ant-table-container,
+.ant-table-content,
+.ant-table-tbody > tr > td {
+  color: var(--admin-ink-secondary);
+  background: transparent;
+}
+.ant-table-thead > tr > th {
+  color: var(--admin-muted) !important;
+  background: var(--admin-table-header) !important;
+  border-color: var(--admin-border) !important;
+}
+.ant-table-tbody > tr > td { border-color: var(--admin-border) !important; }
+.ant-table-tbody > tr:hover > td,
+.ant-table-tbody > tr.ant-table-row-selected > td { background: var(--admin-table-hover) !important; }
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-input-number-input,
+.ant-select-selector,
+.ant-picker {
+  color: var(--admin-input-color) !important;
+  background: var(--admin-input-bg) !important;
+  border-color: var(--admin-input-border) !important;
+}
+.ant-input::placeholder,
+.ant-input-affix-wrapper .ant-input::placeholder,
+.ant-select-selection-placeholder,
+.ant-picker-input > input::placeholder { color: var(--admin-muted) !important; }
+.ant-input:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-number-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  border-color: var(--admin-brand) !important;
+  box-shadow: 0 0 0 3px var(--admin-focus-ring) !important;
+}
+.ant-form-item-label > label,
+.ant-checkbox-wrapper,
+.ant-radio-wrapper,
+.ant-descriptions-item-label,
+.ant-descriptions-item-content { color: var(--admin-ink-secondary); }
+.ant-dropdown-menu-item,
+.ant-select-item,
+.ant-picker-content th,
+.ant-picker-header button,
+.ant-pagination,
+.ant-pagination .ant-pagination-item a,
+.ant-pagination .ant-pagination-prev button,
+.ant-pagination .ant-pagination-next button { color: var(--admin-ink-secondary); }
+.ant-dropdown-menu-item:hover,
+.ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.ant-picker-cell:hover:not(.ant-picker-cell-in-view) .ant-picker-cell-inner,
+.ant-picker-cell-in-view.ant-picker-cell:hover .ant-picker-cell-inner { background: var(--admin-hover-bg); }
+.ant-btn-default {
+  color: var(--admin-ink-secondary);
+  background: var(--admin-panel);
+  border-color: var(--admin-border);
+}
+.ant-btn-default:hover,
+.ant-btn-text:hover { color: var(--admin-brand) !important; border-color: var(--admin-brand) !important; }
+.ant-alert,
+.ant-collapse,
+.ant-collapse > .ant-collapse-item,
+.ant-radio-button-wrapper { border-color: var(--admin-border); }
+.ant-collapse-content { color: var(--admin-ink-secondary); background: transparent; }
+.ant-empty-description,
+.ant-typography-secondary,
+.ant-breadcrumb-link,
+.ant-breadcrumb-separator { color: var(--admin-muted); }
+.ant-tag { border-color: var(--admin-border); }
+.ant-modal-mask,
+.ant-drawer-mask { background: var(--admin-overlay) !important; }
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev button,
+.ant-pagination .ant-pagination-next button {
+  color: var(--admin-ink-secondary);
+  background: var(--admin-panel);
+  border-color: var(--admin-border);
+}
+.ant-pagination .ant-pagination-item-active {
+  background: var(--admin-brand-light);
+  border-color: var(--admin-brand);
+}
+.ant-pagination .ant-pagination-item-active a { color: var(--admin-brand); }
+code,
+.ant-typography code { color: var(--admin-ink-secondary); background: var(--admin-code-bg); border-color: var(--admin-border); }
+.recharts-cartesian-axis-tick-value { fill: var(--admin-muted); }
+.admin-click-popover-panel,
+.admin-account-menu,
+.admin-soft-panel,
+.admin-glass-card,
+.ant-card,
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-select-selector,
+.ant-picker,
+.ant-btn-default { transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+
+.dark .ant-tag-green,
+.dark .ant-tag-success { color: var(--admin-success); background: hsl(var(--success) / .12); border-color: hsl(var(--success) / .28); }
+.dark .ant-tag-gold,
+.dark .ant-tag-orange,
+.dark .ant-tag-warning { color: var(--admin-warning); background: hsl(var(--warning) / .12); border-color: hsl(var(--warning) / .28); }
+.dark .ant-tag-red,
+.dark .ant-tag-volcano,
+.dark .ant-tag-error { color: var(--admin-danger); background: hsl(var(--destructive) / .12); border-color: hsl(var(--destructive) / .28); }
+.dark .ant-tag-blue,
+.dark .ant-tag-cyan,
+.dark .ant-tag-processing { color: #7dd3fc; background: hsl(199 89% 48% / .12); border-color: hsl(199 89% 48% / .28); }
+.dark .ant-tag-purple,
+.dark .ant-tag-magenta { color: #c4b5fd; background: hsl(263 70% 50% / .14); border-color: hsl(263 70% 65% / .3); }
 .admin-account-menu-anchor { position: relative; display: inline-flex; flex: 0 0 auto; }
 .admin-account-menu-anchor.is-above { display: block; width: 100%; }
 .admin-account-menu-popover { position: absolute; z-index: 1700; width: min(284px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
@@ -1508,8 +1662,7 @@ html, body { color: var(--admin-ink); }
 .admin-page-scroll .ant-alert { border-color: var(--admin-border); }
 .admin-page-scroll .ant-card { border-radius: 16px; box-shadow: var(--admin-shadow-sm); }
 .admin-page-scroll .ant-table-wrapper { overflow: hidden; border: 1px solid var(--admin-border); border-radius: 14px; background: var(--admin-panel); }
-.admin-page-scroll .ant-table-thead > tr > th { background: hsl(220 25% 97%); color: var(--admin-muted); font-size: 11px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
-.dark .admin-page-scroll .ant-table-thead > tr > th { background: hsl(220 20% 18%); }
+.admin-page-scroll .ant-table-thead > tr > th { background: var(--admin-table-header); color: var(--admin-muted); font-size: 11px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
 .admin-page-scroll .ant-table-tbody > tr > td { border-bottom-color: var(--admin-border); }
 .admin-page-scroll .ant-input, .admin-page-scroll .ant-select-selector, .admin-page-scroll .ant-picker,
 .admin-page-scroll .ant-input-number, .admin-page-scroll .ant-input-affix-wrapper { border-radius: 9px !important; }

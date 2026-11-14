@@ -2,7 +2,7 @@
 
 import "@ant-design/v5-patch-for-react-19";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { App as AntApp, ConfigProvider } from "antd";
+import { App as AntApp, ConfigProvider, theme as antdTheme } from "antd";
 import { RefineThemes } from "@refinedev/antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Refine } from "@refinedev/core";
@@ -143,19 +143,25 @@ function useThemeAwareConfig() {
   const isDark = resolved === "dark";
   return useMemo(() => ({
     ...adminTheme,
+    algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
       ...adminTheme.token,
       // Keep menus and field popups above the app shell, sticky controls, and
       // mobile navigation. Ant Design applies this value inline to popup roots.
       zIndexPopupBase: 1600,
-      colorBgLayout: isDark ? "#0b1120" : "#eef2f7",
-      colorBgContainer: isDark ? "#161c30" : "#ffffff",
-      colorBgElevated: isDark ? "#1c2440" : "#ffffff",
+      colorPrimary: "#0f766e",
+      colorInfo: isDark ? "#60a5fa" : "#1d4ed8",
+      colorSuccess: isDark ? "#4ade80" : "#047857",
+      colorWarning: isDark ? "#fbbf24" : "#b45309",
+      colorError: isDark ? "#fb7185" : "#be123c",
+      colorBgLayout: isDark ? "#10151c" : "#f5f7fa",
+      colorBgContainer: isDark ? "#171e27" : "#ffffff",
+      colorBgElevated: isDark ? "#1d2733" : "#ffffff",
       colorBorderSecondary: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)",
       colorBorder: isDark ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.12)",
       colorText: isDark ? "#e8edf5" : "#0f172a",
-      colorTextSecondary: isDark ? "#8a99b5" : "#52607a",
-      colorTextTertiary: isDark ? "#5e6e88" : "#8293a8",
+      colorTextSecondary: isDark ? "#aab7c8" : "#52607a",
+      colorTextTertiary: isDark ? "#91a0b4" : "#65758b",
       colorFillQuaternary: isDark ? "rgba(255,255,255,0.04)" : "rgba(15,23,42,0.04)",
       boxShadow: isDark
         ? "0 6px 16px rgba(0,0,0,0.32)"
@@ -168,13 +174,13 @@ function useThemeAwareConfig() {
       ...adminTheme.components,
       Table: {
         ...adminTheme.components?.Table,
-        headerBg: isDark ? "rgba(255,255,255,0.04)" : "transparent",
-        rowHoverBg: isDark ? "rgba(255,255,255,0.04)" : undefined,
-        colorBgContainer: isDark ? "#161c30" : "#ffffff",
+        headerBg: isDark ? "#202a36" : "#f5f7fa",
+        rowHoverBg: isDark ? "rgba(255,255,255,0.045)" : "rgba(15,23,42,0.035)",
+        colorBgContainer: isDark ? "#171e27" : "#ffffff",
       },
       Card: {
         ...adminTheme.components?.Card,
-        colorBgContainer: isDark ? "#161c30" : "#ffffff",
+        colorBgContainer: isDark ? "#171e27" : "#ffffff",
       },
       Menu: {
         ...adminTheme.components?.Menu,
@@ -184,16 +190,16 @@ function useThemeAwareConfig() {
       },
       Modal: {
         ...adminTheme.components?.Modal,
-        contentBg: isDark ? "#161c30" : "#ffffff",
-        headerBg: isDark ? "#161c30" : "#ffffff",
+        contentBg: isDark ? "#171e27" : "#ffffff",
+        headerBg: isDark ? "#171e27" : "#ffffff",
       },
       Drawer: {
         ...adminTheme.components?.Drawer,
-        colorBgElevated: isDark ? "#161c30" : "#ffffff",
+        colorBgElevated: isDark ? "#171e27" : "#ffffff",
       },
       Dropdown: {
         ...adminTheme.components?.Dropdown,
-        colorBgElevated: isDark ? "#1c2440" : "#ffffff",
+        colorBgElevated: isDark ? "#1d2733" : "#ffffff",
       },
     },
   }), [isDark]);

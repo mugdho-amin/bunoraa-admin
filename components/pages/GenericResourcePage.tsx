@@ -145,12 +145,12 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
     liveMode: "auto",
   });
   const deleteOne = useDelete();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
 
   const handleDelete = useMemo(
     () => (record: BaseRecord) => {
       if (!record?.id) return;
-      Modal.confirm({
+      modal.confirm({
         title: `Delete ${resource.label} record?`,
         content: `This will permanently delete record ${record.id}.`,
         okText: "Delete",
@@ -162,7 +162,7 @@ function ResourceListView({ resource }: { resource: AdminResourceConfig }) {
         },
       });
     },
-    [deleteOne, message, query, resource.label, resource.name],
+    [deleteOne, message, modal, query, resource.label, resource.name],
   );
 
   const columns = useMemo(

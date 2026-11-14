@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDelete, useList, useUpdate } from "@refinedev/core";
 import { useRouter } from "next/navigation";
-import { Button, Card, Checkbox, Flex, Grid, Image, Input, Modal, Pagination, Space, Switch, Table, Tag, Typography, Skeleton, notification } from "antd";
+import { App, Button, Card, Checkbox, Flex, Grid, Image, Input, Pagination, Space, Switch, Table, Tag, Typography, Skeleton } from "antd";
 import type { InputRef } from "antd";
 import { Plus, Search, Trash2, Pencil, PackageSearch, Upload, Download } from "lucide-react";
 import type { BaseRecord } from "@refinedev/core";
@@ -59,6 +59,7 @@ export function AdminProductListPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const { modal, notification } = App.useApp();
   const searchRef = useRef<InputRef>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const { mutate: updateProduct, mutateAsync: updateProductAsync } = useUpdate();
@@ -169,7 +170,7 @@ export function AdminProductListPage() {
 
   const handleDelete = useCallback(
     (record: ProductRecord) => {
-      Modal.confirm({
+      modal.confirm({
         title: "Delete product",
         content: `Are you sure you want to delete "${record.name}"? This action cannot be undone.`,
         okText: "Delete",
@@ -196,7 +197,7 @@ export function AdminProductListPage() {
           }),
       });
     },
-    [deleteProduct],
+    [deleteProduct, modal],
   );
 
   const handleCellSave = useCallback(
@@ -276,7 +277,7 @@ export function AdminProductListPage() {
 
   const bulkDelete = useCallback(() => {
     if (!selectedIds.length) return;
-    Modal.confirm({
+    modal.confirm({
       title: `Delete ${selectedIds.length} products?`,
       content: "This action cannot be undone.",
       okText: "Delete products",
@@ -292,7 +293,7 @@ export function AdminProductListPage() {
         void refetch();
       },
     });
-  }, [deleteProductAsync, refetch, selectedIds]);
+  }, [deleteProductAsync, modal, refetch, selectedIds]);
 
   const exportSelected = useCallback(() => {
     if (!selectedProducts.length) return;

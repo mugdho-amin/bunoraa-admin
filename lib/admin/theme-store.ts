@@ -11,8 +11,8 @@ type ThemeState = {
   setMode: (mode: ThemeMode) => void;
 };
 
-const THEME_COLOR_LIGHT = "#f3f5f9";
-const THEME_COLOR_DARK = "#0b1120";
+const THEME_COLOR_LIGHT = "#f5f7fa";
+const THEME_COLOR_DARK = "#10151c";
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
@@ -39,7 +39,7 @@ function applyTheme(resolved: "light" | "dark") {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      mode: "light",
+      mode: "system",
       resolved: "light",
       setMode: (mode: ThemeMode) => {
         const resolved = resolveTheme(mode);
@@ -55,6 +55,7 @@ export function initTheme() {
   if (typeof document === "undefined") return;
   const state = useThemeStore.getState();
   const resolved = resolveTheme(state.mode);
+  useThemeStore.setState({ resolved });
   applyTheme(resolved);
 
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {

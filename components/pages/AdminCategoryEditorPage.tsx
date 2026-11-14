@@ -104,7 +104,7 @@ function CategoryListView() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
-  const { message, notification } = App.useApp();
+  const { message, notification, modal } = App.useApp();
   const searchRef = useRef<InputRef>(null);
 
   useEffect(() => {
@@ -181,7 +181,7 @@ function CategoryListView() {
 
   const handleDelete = useCallback(
     (record: CategoryRecord) => {
-      Modal.confirm({
+      modal.confirm({
         title: "Delete category",
         content: `Are you sure you want to delete "${record.name}"? This action cannot be undone.`,
         okText: "Delete",
@@ -197,7 +197,7 @@ function CategoryListView() {
         },
       });
     },
-    [deleteCategory, message, refetch],
+    [deleteCategory, message, modal, refetch],
   );
 
   const categories = useMemo(() => listResult?.data ?? [], [listResult?.data]);

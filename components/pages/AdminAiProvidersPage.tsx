@@ -137,7 +137,7 @@ const emptyForm: FormValues = {
 export function AdminAiProvidersPage() {
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [form] = Form.useForm<FormValues>();
   const [editing, setEditing] = useState<AiProviderRecord | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -239,7 +239,7 @@ export function AdminAiProvidersPage() {
   };
 
   const handleDelete = async (record: AiProviderRecord) => {
-    Modal.confirm({
+    modal.confirm({
       title: `Delete ${record.label}?`,
       content: "Its API key (if any) will be permanently removed. Autofill will fall back to other providers.",
       okText: "Delete",
