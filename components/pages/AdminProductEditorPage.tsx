@@ -1050,8 +1050,33 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
     if (url) updateField("gallery", [...form.gallery, { _id: galleryId(), url, variantIds: [], alt: "" }]);
   };
 
+  const handleRemovePrimaryImage = () => {
+    setForm((previous) => {
+      const gallery = previous.gallery.filter((image) => image.url !== previous.primaryImage);
+      const nextPrimary = gallery[0];
+      return {
+        ...previous,
+        gallery,
+        primaryImage: nextPrimary?.url ?? "",
+        primaryImageAlt: nextPrimary?.alt ?? "",
+      };
+    });
+  };
+
   const handleRemoveGalleryImage = (index: number) => {
-    updateField("gallery", form.gallery.filter((_, j) => j !== index));
+    setForm((previous) => {
+      const removed = previous.gallery[index];
+      if (!removed) return previous;
+      const gallery = previous.gallery.filter((_, currentIndex) => currentIndex !== index);
+      if (removed.url !== previous.primaryImage) return { ...previous, gallery };
+      const nextPrimary = gallery[0];
+      return {
+        ...previous,
+        gallery,
+        primaryImage: nextPrimary?.url ?? "",
+        primaryImageAlt: nextPrimary?.alt ?? "",
+      };
+    });
   };
 
   const generateMatrix = () => {
@@ -1799,7 +1824,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
               {form.primaryImage && (
                 <div style={{ position: "relative", display: "inline-block", marginTop: 8 }}>
                   <Image src={form.primaryImage} alt="Primary" width={64} height={80} unoptimized style={{ borderRadius: 8, border: "1px solid var(--admin-input-border)", objectFit: "cover" }} />
-                  <button onClick={() => updateField("primaryImage", "")}
+                  <button type="button" aria-label="Remove primary image" onClick={handleRemovePrimaryImage}
                     style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "var(--admin-danger)", color: "var(--admin-input-bg)", fontSize: 10, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     ×
                   </button>
@@ -1842,7 +1867,7 @@ export function AdminProductEditorPage({ id }: { id?: BaseKey }) {
                         </div>
                         <div style={{ position: "relative", flexShrink: 0 }}>
                           <Image src={img.url} alt={`Gallery ${i}`} width={48} height={64} unoptimized style={{ borderRadius: 8, border: "1px solid var(--admin-input-border)", objectFit: "cover" }} />
-                          <button onClick={() => handleRemoveGalleryImage(i)}
+                          <button type="button" aria-label={`Remove gallery image ${i + 1}`} onClick={() => handleRemoveGalleryImage(i)}
                             style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "var(--admin-danger)", color: "var(--admin-input-bg)", fontSize: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             ×
                           </button>
